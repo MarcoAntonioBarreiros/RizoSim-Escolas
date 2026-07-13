@@ -41,6 +41,9 @@ Foi criado um novo repositório independente em `outputs/RizoSim-Escolas`.
 - O indicador **Água** passou a mostrar conforto hídrico, não volume bruto: água equilibrada aparece como boa, enquanto excesso aparece como excesso.
 - Os indicadores infantis ganharam explicações dinâmicas baseadas no estado real: crescimento, nitrogênio, fósforo, água e saúde da raiz indicam causas positivas e negativas.
 - Os textos de Rizóbio e Pseudomonas foram refinados para explicitar fixação de nitrogênio, ferro disponível e interação com patógenos.
+- A explicação de crescimento passou a considerar deficiência real, sem tratar automaticamente o menor nutriente relativo como baixo.
+- Quando Pseudomonas já está presente, a interface diferencia presença na comunidade, atuação perto da raiz e resposta gradual da planta.
+- O comando **Observar** passou a pausar, escolher um exemplar real, priorizar a região das raízes e centralizá-lo com ampliação no canvas.
 - A tradução de eventos passou a reconhecer controle por Trichoderma e captura por Arthrobotrys antes das mensagens genéricas de dano.
 - **Crescimento** passou a representar as condições atuais para crescer, sem confundir uma planta jovem com uma planta prejudicada apenas por ter pouca biomassa acumulada.
 - **Saúde da raiz** passou a diferenciar organismos próximos da raiz daqueles apenas presentes na comunidade.
@@ -56,6 +59,7 @@ Foi criado um novo repositório independente em `outputs/RizoSim-Escolas`.
 - Painel técnico movido para **Modo professor**.
 - Tutorial e cenários.
 - Destaque ao selecionar organismo.
+- Centralização e ampliação do organismo escolhido pelo cartão **Observar**.
 
 ## Tradução de eventos técnicos
 

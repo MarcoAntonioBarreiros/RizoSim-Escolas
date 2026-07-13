@@ -55,6 +55,18 @@
       'Planta grande limitada: '+blockedGrowth.state+'; planta jovem favorecida: '+favorableGrowth.state
     ));
 
+    const relativeFactorState={
+      ...baseState,
+      plant:{...baseState.plant,n:74,p:82,fe:90,stress:0,limitFactor:'N'},
+      env:{...baseState.env,moist:60,temp:25,tox:0}
+    };
+    const relativeFactorText=target.RizoSchoolPlant.explainIndicator(relativeFactorState,'growth');
+    results.push(result(
+      'Crescimento não chama um nutriente bom de deficiência',
+      !relativeFactorText.includes('nitrogênio está limitando'),
+      relativeFactorText
+    ));
+
     engine.resetWith({...defaults,microbeMult:0,NH4:2,NO3:2,organicC:950});
     engine.raw.plant.n=5;
     closeToRoot(5,18);
@@ -120,6 +132,16 @@
       'Fe planta: '+feBefore.toFixed(2)+' -> '+engine.state.plant.fe.toFixed(2)+'; Fe2 solo: '+engine.state.soil.Fe2.toFixed(2)
     ));
 
+    engine.resetWith({...defaults,microbeMult:0,Fe2:1,Fe3:130});
+    engine.raw.plant.fe=12;
+    closeToRoot(0,4);
+    const pseudomonasText=target.RizoSchoolPlant.explainIndicator(engine.state,'growth');
+    results.push(result(
+      'Explicação reconhece Pseudomonas já atuando perto da raiz',
+      pseudomonasText.includes('Pseudomonas perto da raiz atuando')&&pseudomonasText.includes('gradualmente'),
+      pseudomonasText
+    ));
+
     engine.resetWith({...defaults,microbeMult:0,organicC:900,Fe2:4,Fe3:95});
     closeToRoot(6,8);
     closeToRoot(9,6);
@@ -152,6 +174,23 @@
       engine.state.env.moist===22&&engine.state.env.temp===31&&Number(engine.state.env.ph.toFixed(1))===6.1&&engine.state.env.tox===5,
       JSON.stringify(engine.state.env)
     ));
+
+    engine.resetWith({...defaults,microbeMult:0});
+    closeToRoot(5,1);
+    const observeButton=target.document.querySelector('[data-observe="5"]');
+    if(observeButton)observeButton.click();
+    await wait(30);
+    const focusedGeo=engine.geometry;
+    const ring=target.document.getElementById('selectionRing');
+    const bubble=target.document.getElementById('selectedBubble');
+    const focusedX=Number.parseFloat(ring.style.left);
+    const focusedY=Number.parseFloat(ring.style.top);
+    results.push(result(
+      'Observar amplia, centraliza e identifica um organismo real',
+      Boolean(observeButton)&&engine.state.paused&&focusedGeo.zoom>=3.2&&!bubble.hidden&&target.document.getElementById('selectedName').textContent==='Rizóbio'&&Math.abs(focusedX-focusedGeo.cW*.58)<3&&Math.abs(focusedY-focusedGeo.cH*.48)<3,
+      'Zoom: '+focusedGeo.zoom.toFixed(1)+'; foco: '+focusedX.toFixed(1)+','+focusedY.toFixed(1)
+    ));
+    target.document.getElementById('closeSelectionBtn')?.click();
 
     return {
       ok:results.every(item=>item.pass),

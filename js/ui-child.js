@@ -226,9 +226,21 @@
   });
 
   function observeGuild(guildId){
-    const found=RizoSimEngine.raw.sw.find(item=>item.alive&&item.g.guild===guildId);
+    const geo=RizoSimEngine.geometry;
+    const rootTargetY=geo.gY+Math.min(90,Math.max(24,geo.rootDepth*.5));
+    const candidates=RizoSimEngine.raw.sw
+      .filter(item=>item.alive&&item.g.guild===guildId)
+      .sort((a,b)=>{
+        const aOutsideRoot=a.y<geo.gY||a.y>geo.gY+geo.rootDepth+32?400:0;
+        const bOutsideRoot=b.y<geo.gY||b.y>geo.gY+geo.rootDepth+32?400:0;
+        return aOutsideRoot+Math.hypot(a.x-geo.wCx,a.y-rootTargetY)-bOutsideRoot-Math.hypot(b.x-geo.wCx,b.y-rootTargetY);
+      });
+    const found=candidates[0];
     const data=RizoSchoolOrganisms.get(guildId);
     if(found){
+      const zoom=Math.max(3.2,Math.min(geo.zoom,5));
+      RizoSimEngine.setPaused(true);
+      RizoSimEngine.focusAtWorld(found.x,found.y,zoom,geo.cW*.58,geo.cH*.48);
       selectOrganism(found);
       addChildEvent({
         priority:2,
@@ -366,7 +378,8 @@
       return 'Este Bacillus está consumindo recursos e pode atuar quando encontra a rizosfera.';
     }
     if(gid===0){
-      if(state.plant.fe<35||state.plant.limitFactor==='Fe')return 'Esta Pseudomonas é importante agora: o ferro está limitando a planta, e ela pode deixá-lo mais disponível perto da raiz.';
+      if(state.plant.fe<35&&nearRoot)return 'O ferro ainda está baixo, mas esta Pseudomonas já está perto da raiz e pode torná-lo mais disponível. A resposta da planta não é imediata: continue a simulação e acompanhe o indicador.';
+      if(state.plant.fe<35)return 'O ferro está baixo. Esta Pseudomonas ainda precisa chegar perto da raiz para atuar onde a planta absorve nutrientes.';
       if(nearbyPathogens>0||((state.guildCounts[6]||0)>0&&state.soil.Fe2<8))return 'Esta Pseudomonas está perto de uma disputa por ferro. No modelo, isso pode reduzir o dano causado por alguns patógenos.';
       if(nearRoot&&local.Fe3>local.Fe2)return 'Esta Pseudomonas está perto da raiz e pode tornar parte do ferro mais disponível.';
       return 'Esta Pseudomonas está se movendo e competindo por recursos; ela aparece mais quando ferro ou patógenos viram parte do problema.';
@@ -516,12 +529,13 @@
 
   function monitorState(){
     const state=RizoSimEngine.state;
+    const pseudomonas=state.guildCounts[0]||0;
     if(state.plant.n<24)addChildEvent({priority:2,key:'low-n',message:'A planta está com pouco nitrogênio.',title:'Nitrogênio baixo',detail:'No motor, o crescimento fica limitado quando o nitrogênio interno da planta cai.'});
     if(state.plant.p<24)addChildEvent({priority:2,key:'low-p',message:'A planta está com pouco fósforo.',title:'Fósforo baixo',detail:'O fósforo livre no solo é pouco móvel. Alguns organismos podem aumentar sua disponibilidade quando estão perto da raiz.'});
-    if(state.plant.fe<24||state.plant.limitFactor==='Fe')addChildEvent({priority:2,key:'low-fe',message:'A planta está com pouco ferro disponível.',title:'Ferro baixo',detail:'Quando o ferro é o fator limitante, Pseudomonas pode ajudar perto da raiz ao transformar Fe3+ em Fe2+, forma que o motor trata como mais disponível.'});
+    if(state.plant.fe<24)addChildEvent({priority:2,key:'low-fe',message:'A planta está com pouco ferro disponível.',title:'Ferro baixo',detail:pseudomonas>0?'Há Pseudomonas na comunidade. Sua ação depende de chegar perto da raiz, e a resposta da planta aparece gradualmente enquanto a simulação avança.':'Pseudomonas pode ajudar perto da raiz ao transformar Fe3+ em Fe2+, forma que o motor trata como mais disponível.'});
     if(state.env.moist<30)addChildEvent({priority:2,key:'dry-soil',message:'O solo ficou mais seco.',title:'Período seco',detail:'Menos água aumenta a viscosidade do solo e pode elevar o estresse da planta.'});
     if(state.plant.stress>36)addChildEvent({priority:2,key:'stress-high',message:'A raiz está sob estresse.',title:'Estresse',detail:'O estresse resume efeitos de ambiente, nutrição e interações com organismos como patógenos e nematoides.'});
-    if((state.guildCounts[6]||0)>0&&state.soil.Fe2<8)addChildEvent({priority:2,key:'pseudo-pathogen-help',message:'Pseudomonas pode ajudar na disputa por ferro.',title:'Pseudomonas e patógenos',detail:'No motor, patógenos próximos da raiz causam mais dano quando há pouco Fe2 local. Pseudomonas pode aumentar Fe2 perto da raiz e mudar essa interação.'});
+    if((state.guildCounts[6]||0)>0&&state.soil.Fe2<8)addChildEvent({priority:2,key:'pseudo-pathogen-help',message:pseudomonas>0?'Pseudomonas está participando da disputa por ferro.':'Pseudomonas pode ajudar na disputa por ferro.',title:'Pseudomonas e patógenos',detail:pseudomonas>0?'Há Pseudomonas na comunidade, mas o resultado depende do encontro com os patógenos e da proximidade da raiz. Continue observando a simulação.':'No motor, patógenos próximos da raiz causam mais dano quando há pouco Fe2 local. Pseudomonas pode aumentar Fe2 perto da raiz e mudar essa interação.'});
     if(previousState){
       if(previousState.plant.nodules===0&&state.plant.nodules>0)addChildEvent({priority:4,key:'new-nodule',message:'A raiz começou a formar um nódulo.',title:'Nodulação',detail:'Rizóbios nodulados podem transferir nitrogênio para a planta quando há carbono disponível.'});
       if(previousState.plant.stress-state.plant.stress>8)addChildEvent({priority:3,key:'recovering',message:'A planta começou a se recuperar.',title:'Recuperação gradual',detail:'Quando nutrientes e ambiente melhoram, o motor reduz o estresse por homeostase.'});

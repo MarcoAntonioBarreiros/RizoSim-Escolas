@@ -2130,6 +2130,17 @@ cv.addEventListener('touchend',e=>{
     return {x:x*zm+px,y:y*zm+py};
   }
 
+  function focusAtWorld(x,y,zoom,screenX,screenY){
+    const targetZoom=cl(Number.isFinite(zoom)?zoom:zm,.3,15);
+    const targetX=Number.isFinite(screenX)?cl(screenX,0,cW):cW*.5;
+    const targetY=Number.isFinite(screenY)?cl(screenY,0,cH):cH*.5;
+    zm=targetZoom;
+    px=targetX-x*zm;
+    py=targetY-y*zm;
+    updZI();
+    return {zoom:zm,x:targetX,y:targetY};
+  }
+
   function screenToWorld(x,y){
     return s2w(x,y);
   }
@@ -2212,6 +2223,7 @@ cv.addEventListener('touchend',e=>{
     selectMode,
     addMode,
     worldToScreen,
+    focusAtWorld,
     screenToWorld,
     findOrganismAtWorld,
     findOrganismAtScreen,

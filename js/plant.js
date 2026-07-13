@@ -31,6 +31,23 @@
     return (state.guildCounts&&state.guildCounts[id])||0;
   }
 
+  function nearRootGuildCount(guildId,maxDistance){
+    const engine=window.RizoSimEngine;
+    const raw=engine&&engine.raw;
+    const geo=engine&&engine.geometry;
+    if(!raw||!Array.isArray(raw.sw)||!geo)return 0;
+    const distance=Number.isFinite(maxDistance)?maxDistance:35;
+    const minY=geo.gY;
+    const maxY=geo.gY+geo.rootDepth+22;
+    return raw.sw.filter(item=>
+      item.alive&&
+      item.g.guild===guildId&&
+      item.y>=minY&&
+      item.y<=maxY&&
+      Math.abs(item.x-geo.wCx)<distance
+    ).length;
+  }
+
   function plural(value,singular,pluralForm){
     return value===1?singular:pluralForm;
   }
@@ -101,18 +118,25 @@
     const rhizobium=guildCount(state,5);
     const bacillus=guildCount(state,1);
     const pseudomonas=guildCount(state,0);
+    const pseudomonasNearRoot=nearRootGuildCount(0,35);
     const mycorrhiza=guildCount(state,11);
     const azospirillum=guildCount(state,2);
     const causes=[];
     const helps=[];
 
     if(id==='growth'){
-      const nBlocked=plant.n<35||plant.limitFactor==='N';
-      const pBlocked=plant.p<35||plant.limitFactor==='P';
-      const feBlocked=plant.fe<35||plant.limitFactor==='Fe';
+      const nBlocked=plant.n<35;
+      const pBlocked=plant.p<35;
+      const feBlocked=plant.fe<35;
       add(causes,nBlocked,'O nitrogênio está limitando o crescimento.');
       add(causes,pBlocked,'O fósforo está limitando o crescimento.');
-      add(causes,feBlocked,'O ferro está limitando o crescimento; neste caso Pseudomonas pode ser importante porque aumenta Fe2+ perto da raiz.');
+      if(feBlocked&&pseudomonasNearRoot>0){
+        causes.push('O ferro ainda está baixo, mas há Pseudomonas perto da raiz atuando para torná-lo mais disponível. A resposta da planta pode aparecer gradualmente.');
+      }else if(feBlocked&&pseudomonas>0){
+        causes.push('O ferro está baixo. Há Pseudomonas na comunidade, mas ela precisa chegar perto da raiz para atuar onde a planta absorve nutrientes.');
+      }else if(feBlocked){
+        causes.push('O ferro está baixo e limita o crescimento. Pseudomonas pode ajudar quando atua perto da raiz.');
+      }
       add(causes,plant.stress>30,'A planta está gastando energia para lidar com estresse.');
       add(causes,water<68,'A água não está em uma faixa confortável para a planta.');
       add(causes,env.temp<15||env.temp>34,'A temperatura está fora da faixa mais favorável.');
@@ -241,7 +265,10 @@
     parts.push('Há '+state.population+' organismos visíveis na rizosfera.');
     if(state.plant.nodules>0)parts.push('A raiz tem '+state.plant.nodules+' '+plural(state.plant.nodules,'nódulo em formação','nódulos em formação')+'.');
     const factorNames={N:'nitrogênio',P:'fósforo',Fe:'ferro'};
-    if(state.plant.limitFactor&&factorNames[state.plant.limitFactor])parts.push('O nutriente mais limitante agora é '+factorNames[state.plant.limitFactor]+'.');
+    const factorValues={N:state.plant.n,P:state.plant.p,Fe:state.plant.fe};
+    if(state.plant.limitFactor&&factorNames[state.plant.limitFactor]&&factorValues[state.plant.limitFactor]<35){
+      parts.push('O nutriente que precisa de mais atenção agora é '+factorNames[state.plant.limitFactor]+'.');
+    }
     return parts.join(' ');
   }
 
