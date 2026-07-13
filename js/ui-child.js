@@ -20,6 +20,7 @@
   let activeCategory=RizoSchoolOrganisms.categories[0].id;
   let currentIndicators=[];
   let selectedOrganism=null;
+  let suppressCanvasClickUntil=0;
   let eventItems=[];
   const lastEventByKey=new Map();
   let previousState=null;
@@ -298,9 +299,27 @@
     selectedAction.textContent=explainOrganism(selectedOrganism);
   }
 
-  document.getElementById('closeSelectionBtn')?.addEventListener('click',clearSelection);
+  function suppressCanvasClick(){
+    suppressCanvasClickUntil=performance.now()+350;
+  }
+
+  selectedBubble?.addEventListener('pointerdown',event=>event.stopPropagation());
+  selectedBubble?.addEventListener('pointerup',event=>event.stopPropagation());
+  selectedBubble?.addEventListener('click',event=>event.stopPropagation());
+  document.getElementById('closeSelectionBtn')?.addEventListener('pointerdown',event=>{
+    suppressCanvasClick();
+    event.stopPropagation();
+  });
+  document.getElementById('closeSelectionBtn')?.addEventListener('click',event=>{
+    event.preventDefault();
+    event.stopPropagation();
+    suppressCanvasClick();
+    clearSelection();
+  });
 
   document.getElementById('cw')?.addEventListener('click',event=>{
+    if(performance.now()<suppressCanvasClickUntil)return;
+    if(event.target.closest('.selected-bubble'))return;
     const sel=document.getElementById('selInoc');
     if(sel&&Number(sel.value)>=0)return;
     const rect=document.getElementById('pond').getBoundingClientRect();

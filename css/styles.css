@@ -166,7 +166,7 @@ input:focus-visible,
   padding:10px;
   display:grid;
   grid-template-columns:minmax(0,1fr) 330px;
-  grid-template-rows:minmax(0,1fr) 166px;
+  grid-template-rows:minmax(0,1fr) 196px 140px;
   gap:10px;
 }
 
@@ -185,7 +185,7 @@ input:focus-visible,
 
 .simulation-region{
   grid-column:1;
-  grid-row:1;
+  grid-row:1 / 3;
   position:relative;
   min-width:0;
   min-height:0;
@@ -325,29 +325,31 @@ input:focus-visible,
 .bean-region{
   grid-column:2;
   grid-row:1;
-  align-self:start;
-  overflow:auto;
-  max-height:66%;
+  align-self:stretch;
+  min-height:0;
+  overflow:hidden;
+  max-height:none;
 }
 .events-region{
   grid-column:2;
-  grid-row:1;
-  align-self:end;
+  grid-row:2;
+  align-self:stretch;
+  min-height:0;
   overflow:hidden;
-  max-height:32%;
+  max-height:none;
 }
 .indicator-stack{
   display:grid;
-  gap:6px;
-  padding:0 10px 10px;
+  gap:5px;
+  padding:0 10px 8px;
 }
 .indicator{
   display:grid;
-  grid-template-columns:32px 1fr;
-  gap:7px;
+  grid-template-columns:28px 1fr;
+  gap:6px;
   align-items:center;
-  min-height:42px;
-  padding:5px 8px;
+  min-height:37px;
+  padding:3px 7px;
   background:#f7fbf9;
   border:1px solid #d9e7e0;
   border-radius:var(--radius);
@@ -355,8 +357,8 @@ input:focus-visible,
   text-align:left;
 }
 .indicator-icon{
-  width:32px;
-  height:32px;
+  width:28px;
+  height:28px;
   border-radius:50%;
   display:grid;
   place-items:center;
@@ -427,7 +429,7 @@ input:focus-visible,
 
 .organisms-region{
   grid-column:1 / 3;
-  grid-row:2;
+  grid-row:3;
   display:grid;
   grid-template-rows:auto minmax(0,1fr);
   min-height:0;
@@ -445,17 +447,17 @@ input:focus-visible,
   display:flex;
   gap:5px;
   overflow-x:auto;
-  padding:6px 0;
+  padding:4px 0;
 }
 .category-tabs button{
   white-space:nowrap;
-  min-height:32px;
+  min-height:30px;
   border:1px solid var(--line);
   border-radius:var(--radius);
   background:#fff;
   padding:0 9px;
   cursor:pointer;
-  font-size:.88rem;
+  font-size:.84rem;
 }
 .category-tabs button[aria-selected="true"]{
   background:var(--teal);
@@ -463,7 +465,7 @@ input:focus-visible,
   border-color:var(--teal);
 }
 .organism-cards{
-  padding:6px 8px 8px;
+  padding:4px 8px 5px;
   display:grid;
   grid-auto-flow:column;
   grid-auto-columns:minmax(210px,260px);
@@ -472,20 +474,20 @@ input:focus-visible,
   overflow-y:hidden;
 }
 .organism-card{
-  min-height:96px;
+  min-height:82px;
   display:grid;
-  grid-template-columns:54px 1fr;
+  grid-template-columns:46px 1fr;
   grid-template-rows:auto 1fr auto;
-  gap:5px 10px;
-  padding:8px;
+  gap:3px 8px;
+  padding:6px;
   background:#fff;
   border:1px solid var(--line);
   border-radius:var(--radius);
 }
 .org-icon{
   grid-row:1 / 3;
-  width:54px;
-  height:54px;
+  width:46px;
+  height:46px;
   border-radius:var(--radius);
   position:relative;
   overflow:hidden;
@@ -511,13 +513,13 @@ input:focus-visible,
 .org-icon.morph-proto{clip-path:polygon(50% 0,96% 35%,78% 100%,20% 90%,0 28%)}
 .organism-card h3{
   margin:0;
-  font-size:.92rem;
+  font-size:.86rem;
   line-height:1.12;
 }
 .organism-card p{
   margin:0;
   color:var(--muted);
-  font-size:.8rem;
+  font-size:.74rem;
   line-height:1.2;
   display:-webkit-box;
   -webkit-line-clamp:2;
@@ -531,7 +533,7 @@ input:focus-visible,
   gap:6px;
 }
 .card-actions button{
-  min-height:30px;
+  min-height:28px;
   border-radius:var(--radius);
   border:1px solid var(--line);
   background:#fff;
@@ -841,8 +843,38 @@ input:focus-visible,
     grid-template-columns:repeat(5,minmax(128px,1fr));
     overflow-x:auto;
   }
+  .indicator{
+    grid-template-columns:34px 1fr;
+    gap:8px;
+    min-height:46px;
+    padding:7px 9px;
+  }
+  .indicator-icon{
+    width:34px;
+    height:34px;
+  }
+  .category-tabs{
+    padding:6px 0;
+  }
+  .category-tabs button{
+    min-height:36px;
+    font-size:.9rem;
+  }
   .organism-cards{
     grid-auto-columns:minmax(210px,260px);
+  }
+  .organism-card{
+    min-height:110px;
+    grid-template-columns:58px 1fr;
+    gap:6px 11px;
+    padding:10px;
+  }
+  .org-icon{
+    width:58px;
+    height:58px;
+  }
+  .card-actions button{
+    min-height:40px;
   }
 }
 
