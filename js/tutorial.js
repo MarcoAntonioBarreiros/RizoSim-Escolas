@@ -53,6 +53,7 @@
 
   function clearTarget(){
     if(currentTarget)currentTarget.classList.remove('tutorial-focus');
+    document.querySelectorAll('.tutorial-focus').forEach(item=>item.classList.remove('tutorial-focus'));
     currentTarget=null;
   }
 

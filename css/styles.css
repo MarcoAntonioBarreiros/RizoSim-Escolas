@@ -59,7 +59,7 @@ input:focus-visible,
   align-items:center;
   justify-content:space-between;
   gap:16px;
-  padding:12px 16px;
+  padding:9px 14px;
   background:rgba(255,255,255,.92);
   border-bottom:1px solid var(--line);
   box-shadow:0 4px 18px rgba(31,64,53,.08);
@@ -162,12 +162,12 @@ input:focus-visible,
 }
 
 .school-grid{
-  height:calc(100dvh - 72px);
-  padding:14px;
+  height:calc(100dvh - 64px);
+  padding:10px;
   display:grid;
   grid-template-columns:minmax(0,1fr) 330px;
-  grid-template-rows:minmax(0,1fr) 246px;
-  gap:14px;
+  grid-template-rows:minmax(0,1fr) 166px;
+  gap:10px;
 }
 
 .simulation-region,
@@ -186,6 +186,7 @@ input:focus-visible,
 .simulation-region{
   grid-column:1;
   grid-row:1;
+  position:relative;
   min-width:0;
   min-height:0;
   display:flex;
@@ -197,7 +198,7 @@ input:focus-visible,
   align-items:baseline;
   justify-content:space-between;
   gap:10px;
-  padding:10px 12px 8px;
+  padding:8px 12px 7px;
 }
 .section-label h2,
 .organism-head h2{
@@ -215,7 +216,7 @@ input:focus-visible,
 .canvas-shell{
   position:relative;
   flex:1;
-  min-height:350px;
+  min-height:0;
   overflow:hidden;
   background:#07120d;
   border-top:1px solid rgba(0,0,0,.08);
@@ -250,15 +251,9 @@ input:focus-visible,
   overflow:hidden;
 }
 #focusShade{
-  position:absolute;
-  inset:0;
-  z-index:5;
-  pointer-events:none;
-  opacity:0;
-  transition:opacity .2s ease;
-  background:radial-gradient(circle at var(--focus-x,50%) var(--focus-y,50%), transparent 0 76px, rgba(1,8,5,.45) 120px);
+  display:none;
 }
-#focusShade.is-active{opacity:1}
+#focusShade.is-active{display:none}
 #selectionRing{
   position:absolute;
   z-index:7;
@@ -280,7 +275,7 @@ input:focus-visible,
 .selected-bubble{
   position:absolute;
   left:16px;
-  bottom:16px;
+  bottom:44px;
   z-index:8;
   max-width:min(360px,calc(100% - 32px));
   padding:14px 44px 14px 14px;
@@ -305,45 +300,63 @@ input:focus-visible,
   font-weight:700;
 }
 .disclaimer{
-  margin:8px 12px 0;
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:8px;
+  z-index:6;
+  margin:0;
+  padding:6px 9px;
+  background:rgba(255,255,255,.82);
+  border:1px solid rgba(200,216,209,.8);
+  border-radius:var(--radius);
+  backdrop-filter:blur(6px);
+  font-size:.74rem;
 }
 .text-alternative{
-  margin:6px 12px 10px;
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip-path:inset(50%);
+  white-space:nowrap;
 }
 
 .bean-region{
   grid-column:2;
   grid-row:1;
   align-self:start;
-  overflow:hidden;
-  max-height:48%;
+  overflow:auto;
+  max-height:66%;
 }
 .events-region{
   grid-column:2;
   grid-row:1;
   align-self:end;
   overflow:hidden;
-  max-height:48%;
+  max-height:32%;
 }
 .indicator-stack{
   display:grid;
-  gap:8px;
-  padding:0 12px 12px;
+  gap:6px;
+  padding:0 10px 10px;
 }
 .indicator{
   display:grid;
-  grid-template-columns:42px 1fr;
-  gap:9px;
+  grid-template-columns:32px 1fr;
+  gap:7px;
   align-items:center;
-  padding:8px;
+  min-height:42px;
+  padding:5px 8px;
   background:#f7fbf9;
   border:1px solid #d9e7e0;
   border-radius:var(--radius);
   cursor:pointer;
+  text-align:left;
 }
 .indicator-icon{
-  width:42px;
-  height:42px;
+  width:32px;
+  height:32px;
   border-radius:50%;
   display:grid;
   place-items:center;
@@ -352,14 +365,16 @@ input:focus-visible,
 }
 .indicator strong{
   display:block;
-  font-size:.9rem;
+  font-size:.8rem;
+  line-height:1.1;
 }
 .indicator small{
   color:var(--muted);
+  font-size:.72rem;
 }
 .simple-bar{
-  height:9px;
-  margin-top:6px;
+  height:5px;
+  margin-top:3px;
   background:#dfe9e5;
   border-radius:999px;
   overflow:hidden;
@@ -378,7 +393,7 @@ input:focus-visible,
 .child-events{
   list-style:none;
   margin:0;
-  padding:0 12px 12px;
+  padding:0 10px 10px;
   display:grid;
   gap:8px;
   overflow:auto;
@@ -389,24 +404,24 @@ input:focus-visible,
   grid-template-columns:1fr auto;
   gap:8px;
   align-items:center;
-  padding:9px;
+  padding:7px 8px;
   background:#f8fbff;
   border:1px solid #dce6f8;
   border-radius:var(--radius);
 }
 .child-events p{
   margin:0;
-  font-size:.88rem;
+  font-size:.82rem;
 }
 .understand-btn{
   border:1px solid #bfd0ed;
   color:var(--blue);
   background:#fff;
   border-radius:var(--radius);
-  min-height:34px;
-  padding:0 9px;
+  min-height:30px;
+  padding:0 8px;
   cursor:pointer;
-  font-size:.76rem;
+  font-size:.72rem;
   font-weight:700;
 }
 
@@ -423,23 +438,24 @@ input:focus-visible,
   justify-content:space-between;
   gap:12px;
   align-items:center;
-  padding-right:10px;
+  padding-right:8px;
   border-bottom:1px solid var(--line);
 }
 .category-tabs{
   display:flex;
-  gap:6px;
+  gap:5px;
   overflow-x:auto;
-  padding:8px 0;
+  padding:6px 0;
 }
 .category-tabs button{
   white-space:nowrap;
-  min-height:38px;
+  min-height:32px;
   border:1px solid var(--line);
   border-radius:var(--radius);
   background:#fff;
-  padding:0 10px;
+  padding:0 9px;
   cursor:pointer;
+  font-size:.88rem;
 }
 .category-tabs button[aria-selected="true"]{
   background:var(--teal);
@@ -447,28 +463,29 @@ input:focus-visible,
   border-color:var(--teal);
 }
 .organism-cards{
-  padding:12px;
+  padding:6px 8px 8px;
   display:grid;
   grid-auto-flow:column;
-  grid-auto-columns:minmax(230px,280px);
-  gap:12px;
+  grid-auto-columns:minmax(210px,260px);
+  gap:8px;
   overflow-x:auto;
+  overflow-y:hidden;
 }
 .organism-card{
-  min-height:176px;
+  min-height:96px;
   display:grid;
-  grid-template-columns:68px 1fr;
+  grid-template-columns:54px 1fr;
   grid-template-rows:auto 1fr auto;
-  gap:8px 12px;
-  padding:12px;
+  gap:5px 10px;
+  padding:8px;
   background:#fff;
   border:1px solid var(--line);
   border-radius:var(--radius);
 }
 .org-icon{
   grid-row:1 / 3;
-  width:68px;
-  height:68px;
+  width:54px;
+  height:54px;
   border-radius:var(--radius);
   position:relative;
   overflow:hidden;
@@ -485,7 +502,7 @@ input:focus-visible,
   display:grid;
   place-items:center;
   color:#fff;
-  font-size:1.45rem;
+  font-size:1.12rem;
   font-weight:900;
   text-shadow:0 1px 8px rgba(0,0,0,.25);
 }
@@ -494,21 +511,27 @@ input:focus-visible,
 .org-icon.morph-proto{clip-path:polygon(50% 0,96% 35%,78% 100%,20% 90%,0 28%)}
 .organism-card h3{
   margin:0;
-  font-size:1rem;
+  font-size:.92rem;
+  line-height:1.12;
 }
 .organism-card p{
   margin:0;
   color:var(--muted);
-  font-size:.9rem;
+  font-size:.8rem;
+  line-height:1.2;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
 }
 .card-actions{
   grid-column:1 / 3;
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:8px;
+  gap:6px;
 }
 .card-actions button{
-  min-height:40px;
+  min-height:30px;
   border-radius:var(--radius);
   border:1px solid var(--line);
   background:#fff;
@@ -586,7 +609,7 @@ input:focus-visible,
   inset:0;
   z-index:70;
   pointer-events:none;
-  background:linear-gradient(90deg,rgba(7,18,13,.08),rgba(7,18,13,.28));
+  background:transparent;
 }
 .tutorial-card{
   pointer-events:auto;
@@ -611,7 +634,9 @@ input:focus-visible,
 .tutorial-focus{
   position:relative;
   z-index:71;
-  box-shadow:0 0 0 4px rgba(43,99,198,.34),0 0 0 9999px rgba(7,18,13,.12);
+  outline:4px solid rgba(43,99,198,.55);
+  outline-offset:3px;
+  box-shadow:0 0 0 8px rgba(255,255,255,.55);
 }
 
 .teacher-overlay{
@@ -801,7 +826,7 @@ input:focus-visible,
     height:auto;
     min-height:calc(100dvh - 126px);
     grid-template-columns:1fr;
-    grid-template-rows:minmax(440px,58dvh) auto auto auto;
+    grid-template-rows:minmax(520px,68dvh) auto auto auto;
     overflow:visible;
   }
   .simulation-region,
@@ -817,7 +842,7 @@ input:focus-visible,
     overflow-x:auto;
   }
   .organism-cards{
-    grid-auto-columns:minmax(236px,310px);
+    grid-auto-columns:minmax(210px,260px);
   }
 }
 
@@ -837,13 +862,13 @@ input:focus-visible,
   .school-grid{
     padding:10px;
     gap:10px;
-    grid-template-rows:minmax(380px,58dvh) auto auto auto;
+    grid-template-rows:minmax(460px,64dvh) auto auto auto;
   }
   .section-label{
     align-items:flex-start;
     flex-direction:column;
   }
-  .canvas-shell{min-height:330px}
+  .canvas-shell{min-height:0}
   .indicator-stack{
     grid-template-columns:1fr;
   }
@@ -855,7 +880,7 @@ input:focus-visible,
     padding:0 12px 10px;
   }
   .organism-cards{
-    grid-auto-columns:minmax(222px,82vw);
+    grid-auto-columns:minmax(205px,78vw);
   }
   .floating-panel{
     left:10px;
