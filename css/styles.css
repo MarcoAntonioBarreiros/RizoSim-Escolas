@@ -554,6 +554,28 @@ input:focus-visible,
   box-shadow:var(--shadow);
   padding:12px;
 }
+.scenario-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:84;
+  background:rgba(9,20,17,.34);
+  backdrop-filter:blur(2px);
+}
+.scenario-backdrop[hidden],
+.scenario-panel[hidden]{
+  display:none;
+}
+.scenario-panel{
+  top:82px;
+  right:16px;
+  z-index:85;
+  width:min(520px,calc(100vw - 32px));
+  max-height:calc(100dvh - 106px);
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  overflow:hidden;
+  background:#fff;
+}
 .floating-head{
   display:flex;
   align-items:center;
@@ -565,6 +587,9 @@ input:focus-visible,
 .scenario-list{
   display:grid;
   gap:8px;
+  min-height:0;
+  overflow:auto;
+  padding-right:4px;
 }
 .scenario-item{
   display:grid;
@@ -578,7 +603,11 @@ input:focus-visible,
   cursor:pointer;
 }
 .scenario-item strong{font-size:.94rem}
-.scenario-item span{color:var(--muted);font-size:.84rem}
+.scenario-item span{
+  color:var(--muted);
+  font-size:.84rem;
+  line-height:1.32;
+}
 
 .explain-dialog{
   width:min(520px,calc(100vw - 32px));
@@ -919,6 +948,13 @@ input:focus-visible,
     right:10px;
     top:84px;
     width:auto;
+  }
+  .scenario-panel{
+    left:12px;
+    right:12px;
+    top:72px;
+    width:auto;
+    max-height:calc(100dvh - 92px);
   }
   .tutorial-card{
     left:12px;

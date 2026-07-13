@@ -85,7 +85,8 @@
     </main>
   </div>
 
-  <section id="scenarioPanel" class="floating-panel scenario-panel" aria-label="Cenários didáticos" hidden>
+  <div id="scenarioBackdrop" class="scenario-backdrop" hidden></div>
+  <section id="scenarioPanel" class="floating-panel scenario-panel" role="dialog" aria-modal="true" aria-label="Cenários didáticos" tabindex="-1" hidden>
     <div class="floating-head">
       <h2>Cenários</h2>
       <button class="icon-command small" type="button" data-close-panel="scenarioPanel" aria-label="Fechar cenários">×</button>

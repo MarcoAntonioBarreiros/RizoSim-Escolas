@@ -4,6 +4,7 @@
   const indicatorHost=document.getElementById('beanIndicators');
   const eventList=document.getElementById('childEventList');
   const scenarioPanel=document.getElementById('scenarioPanel');
+  const scenarioBackdrop=document.getElementById('scenarioBackdrop');
   const scenarioList=document.getElementById('scenarioList');
   const selectedBubble=document.getElementById('selectedBubble');
   const selectedName=document.getElementById('selectedName');
@@ -353,11 +354,14 @@
 
   function openScenarioPanel(){
     scenarioPanel.hidden=false;
+    scenarioBackdrop.hidden=false;
     document.getElementById('scenarioBtn')?.setAttribute('aria-expanded','true');
+    document.querySelector('[data-close-panel="scenarioPanel"]')?.focus({preventScroll:true});
   }
 
   function closeScenarioPanel(){
     scenarioPanel.hidden=true;
+    scenarioBackdrop.hidden=true;
     document.getElementById('scenarioBtn')?.setAttribute('aria-expanded','false');
   }
 
@@ -367,8 +371,12 @@
   });
 
   document.querySelectorAll('[data-close-panel]').forEach(button=>{
-    button.addEventListener('click',()=>document.getElementById(button.dataset.closePanel).hidden=true);
+    button.addEventListener('click',()=>{
+      if(button.dataset.closePanel==='scenarioPanel')closeScenarioPanel();
+      else document.getElementById(button.dataset.closePanel).hidden=true;
+    });
   });
+  scenarioBackdrop?.addEventListener('click',closeScenarioPanel);
 
   document.getElementById('playBtn')?.addEventListener('click',()=>RizoSimEngine.togglePause());
   document.getElementById('resetBtn')?.addEventListener('click',()=>{
