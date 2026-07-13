@@ -239,9 +239,8 @@
     const data=RizoSchoolOrganisms.get(guildId);
     if(found){
       const zoom=Math.max(3.2,Math.min(geo.zoom,5));
-      RizoSimEngine.setPaused(true);
-      RizoSimEngine.focusAtWorld(found.x,found.y,zoom,geo.cW*.58,geo.cH*.48);
-      selectOrganism(found);
+      RizoSimEngine.followOrganism(found,zoom,.58,.48);
+      selectOrganism(found,true);
       addChildEvent({
         priority:2,
         key:'observe-'+guildId,
@@ -391,10 +390,10 @@
     return data.simple;
   }
 
-  function selectOrganism(org){
+  function selectOrganism(org,followedByCamera){
     selectedOrganism=org;
-    RizoSimEngine.setSpeed(1);
-    observeLabel.textContent='Observando '+GUILDS[org.g.guild].name+'.';
+    if(!followedByCamera)RizoSimEngine.stopFollowing();
+    observeLabel.textContent=(followedByCamera?'Acompanhando ':'Observando ')+GUILDS[org.g.guild].name+'.';
     selectedBubble.hidden=false;
     focusShade.classList.add('is-active');
     selectionRing.classList.add('is-active');
@@ -402,6 +401,7 @@
   }
 
   function clearSelection(){
+    RizoSimEngine.stopFollowing();
     selectedOrganism=null;
     selectedBubble.hidden=true;
     focusShade.classList.remove('is-active');
@@ -415,6 +415,7 @@
       return;
     }
     const point=RizoSimEngine.worldToScreen(selectedOrganism.x,selectedOrganism.y);
+    observeLabel.textContent=(RizoSimEngine.geometry.following?'Acompanhando ':'Observando ')+GUILDS[selectedOrganism.g.guild].name+'.';
     selectionRing.style.left=point.x+'px';
     selectionRing.style.top=point.y+'px';
     focusShade.style.setProperty('--focus-x',point.x+'px');
@@ -566,6 +567,7 @@
   }
 
   function handleCanvasKeys(event){
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','=','-','_'].includes(event.key))RizoSimEngine.stopFollowing();
     if(event.key==='ArrowLeft'){px+=32;event.preventDefault()}
     if(event.key==='ArrowRight'){px-=32;event.preventDefault()}
     if(event.key==='ArrowUp'){py+=32;event.preventDefault()}

@@ -175,22 +175,33 @@
       JSON.stringify(engine.state.env)
     ));
 
-    engine.resetWith({...defaults,microbeMult:0});
-    closeToRoot(5,1);
-    const observeButton=target.document.querySelector('[data-observe="5"]');
+    engine.resetWith({...defaults,microbeMult:0,organicC:1200});
+    const observed=closeToRoot(2,1)[0];
+    const otherOrganism=closeToRoot(1,1)[0];
+    const observedBefore={x:observed.x,y:observed.y};
+    const otherBefore={x:otherOrganism.x,y:otherOrganism.y};
+    engine.setSpeed(4);
+    engine.setPaused(false);
+    const observeButton=target.document.querySelector('[data-observe="2"]');
     if(observeButton)observeButton.click();
     await wait(30);
+    engine.step(12);
     const focusedGeo=engine.geometry;
+    const focusedPoint=engine.worldToScreen(observed.x,observed.y);
     const ring=target.document.getElementById('selectionRing');
     const bubble=target.document.getElementById('selectedBubble');
     const focusedX=Number.parseFloat(ring.style.left);
     const focusedY=Number.parseFloat(ring.style.top);
+    const observedMoved=Math.hypot(observed.x-observedBefore.x,observed.y-observedBefore.y);
+    const otherMoved=Math.hypot(otherOrganism.x-otherBefore.x,otherOrganism.y-otherBefore.y);
+    const keptRunning=!engine.state.paused&&engine.state.speed===4;
     results.push(result(
-      'Observar amplia, centraliza e identifica um organismo real',
-      Boolean(observeButton)&&engine.state.paused&&focusedGeo.zoom>=3.2&&!bubble.hidden&&target.document.getElementById('selectedName').textContent==='Rizóbio'&&Math.abs(focusedX-focusedGeo.cW*.58)<3&&Math.abs(focusedY-focusedGeo.cH*.48)<3,
-      'Zoom: '+focusedGeo.zoom.toFixed(1)+'; foco: '+focusedX.toFixed(1)+','+focusedY.toFixed(1)
+      'Observar acompanha sem pausar ou reduzir a comunidade',
+      Boolean(observeButton)&&keptRunning&&focusedGeo.following&&focusedGeo.zoom>=3.2&&!bubble.hidden&&target.document.getElementById('selectedName').textContent==='Azospirillum'&&observedMoved>.01&&otherMoved>.01&&Math.abs(focusedPoint.x-focusedGeo.cW*.58)<3&&Math.abs(focusedPoint.y-focusedGeo.cH*.48)<3&&Math.abs(focusedX-focusedGeo.cW*.58)<3&&Math.abs(focusedY-focusedGeo.cH*.48)<3,
+      'Zoom: '+focusedGeo.zoom.toFixed(1)+'; observado moveu '+observedMoved.toFixed(2)+'; outro organismo moveu '+otherMoved.toFixed(2)
     ));
     target.document.getElementById('closeSelectionBtn')?.click();
+    engine.setPaused(true);
 
     return {
       ok:results.every(item=>item.pass),

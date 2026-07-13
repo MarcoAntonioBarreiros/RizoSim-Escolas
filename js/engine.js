@@ -472,7 +472,7 @@ ctx.globalAlpha=1.0}}
 const cv=document.getElementById('pond'),ctx=cv.getContext('2d');
 let wCx,gY,cW,cH,rootDepth=50,worldDepth=400,worldWidth=600;
 let sw=[],fd=[],fx=[],nB=0,nD=0,mG=1,tk=0,fH=new SH(30),sHh=new SH(30),seeds=[],babyPlants=[];
-let paused=false,spd=1,pH=[],zm=1,px=0,py=0,drg=false,dsx=0,dsy=0,psx=0,psy=0,dragMoved=false,evLog=[];
+let paused=false,spd=1,pH=[],zm=1,px=0,py=0,drg=false,dsx=0,dsy=0,psx=0,psy=0,dragMoved=false,evLog=[],cameraFollow=null;
 
 function spF(){const side=Math.random()<0.5?1:-1;const distOff=-Math.log(Math.random()+0.01)*20;const sx=cl(wCx+distOff*side,wCx-worldWidth/2+5,wCx+worldWidth/2-5);return{x:sx,y:gY+rng(10,rootDepth),sz:0.5+Math.random()*0.7,hue:50+Math.random()*25,ph:Math.random()*Math.PI*2,age:0}}
 function addEv(cls,txt){evLog.unshift(`<span class="${cls}">${txt}</span>`);if(evLog.length>8)evLog.pop();document.getElementById('evl').innerHTML=evLog.join('<br>')}
@@ -523,7 +523,7 @@ function readInitSliders(){
   };
 }
 function getMicrobeMult(){return parseFloat(document.getElementById('rMI')?.value||1)}
-function initW(){resize();sw=[];fd=[];fx=[];nB=0;nD=0;mG=1;tk=0;pH=[];evLog=[];seeds=[];babyPlants=[];
+function initW(){resize();sw=[];fd=[];fx=[];nB=0;nD=0;mG=1;tk=0;pH=[];evLog=[];seeds=[];babyPlants=[];cameraFollow=null;
 /* Zoom inicial adaptado ao dispositivo */
 const isMob=window.innerWidth<=900;const isPort=window.innerWidth<=600;
 if(isPort){zm=1.6;px=cW/2-wCx*zm;py=cH*0.25-gY*zm}
@@ -550,8 +550,29 @@ function resetW(){initW()}function toggleP(){paused=!paused;document.getElementB
 function setSpd(v){spd=v;document.querySelectorAll('.srow button').forEach(b=>b.classList.remove('act'));const el=document.getElementById('sp'+v);if(el)el.classList.add('act')}
 function bottleneck(){if(sw.length<12)return;const kill=Math.floor(sw.length*0.8);for(let i=0;i<kill;i++){const idx=Math.floor(Math.random()*sw.length);if(sw[idx])sw[idx].alive=false}sw=sw.filter(s=>s.alive);nD+=kill;addEv('eB','☠ GARGALO! '+kill+' eliminados')}
 const ziEl=document.getElementById('zi');function updZI(){ziEl.textContent=`🔍 ${Math.round(zm*100)}%`}
-document.getElementById('cw').addEventListener('wheel',e=>{e.preventDefault();const rect=cv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;const oz=zm;zm=cl(zm*(e.deltaY<0?1.1:1/1.1),.3,15);const r=zm/oz;px=mx-r*(mx-px);py=my-r*(my-py);updZI()},{passive:false});
-cv.addEventListener('mousedown',e=>{if(e.button!==0)return;drg=true;dragMoved=false;dsx=e.clientX;dsy=e.clientY;psx=px;psy=py;cv.classList.add('drag');e.preventDefault()});window.addEventListener('mousemove',e=>{if(!drg)return;if(Math.abs(e.clientX-dsx)+Math.abs(e.clientY-dsy)>3)dragMoved=true;px=psx+(e.clientX-dsx);py=psy+(e.clientY-dsy)});window.addEventListener('mouseup',()=>{drg=false;cv.classList.remove('drag')});document.getElementById('cw').addEventListener('dblclick',()=>{zm=1;px=0;py=0;updZI()});
+function stopCameraFollow(){cameraFollow=null}
+function updateCameraFollow(){
+  if(!cameraFollow)return false;
+  const item=cameraFollow.item;
+  if(!item||!item.alive){cameraFollow=null;return false}
+  px=cW*cameraFollow.anchorX-item.x*zm;
+  py=cH*cameraFollow.anchorY-item.y*zm;
+  return true;
+}
+function startCameraFollow(item,zoom,anchorX,anchorY){
+  if(!item||!item.alive)return false;
+  zm=cl(Number.isFinite(zoom)?zoom:zm,.3,15);
+  cameraFollow={
+    item,
+    anchorX:cl(Number.isFinite(anchorX)?anchorX:.5,0,1),
+    anchorY:cl(Number.isFinite(anchorY)?anchorY:.5,0,1)
+  };
+  updZI();
+  updateCameraFollow();
+  return true;
+}
+document.getElementById('cw').addEventListener('wheel',e=>{e.preventDefault();stopCameraFollow();const rect=cv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;const oz=zm;zm=cl(zm*(e.deltaY<0?1.1:1/1.1),.3,15);const r=zm/oz;px=mx-r*(mx-px);py=my-r*(my-py);updZI()},{passive:false});
+cv.addEventListener('mousedown',e=>{if(e.button!==0)return;stopCameraFollow();drg=true;dragMoved=false;dsx=e.clientX;dsy=e.clientY;psx=px;psy=py;cv.classList.add('drag');e.preventDefault()});window.addEventListener('mousemove',e=>{if(!drg)return;if(Math.abs(e.clientX-dsx)+Math.abs(e.clientY-dsy)>3)dragMoved=true;px=psx+(e.clientX-dsx);py=psy+(e.clientY-dsy)});window.addEventListener('mouseup',()=>{drg=false;cv.classList.remove('drag')});document.getElementById('cw').addEventListener('dblclick',()=>{stopCameraFollow();zm=1;px=0;py=0;updZI()});
 function s2w(sx,sy){return{x:(sx-px)/zm,y:(sy-py)/zm}}
 
 /* ═══ UPDATE ═══ */
@@ -1834,7 +1855,7 @@ function updDiag(){
   else{dR.style.display='none'}
 }
 
-function loop(now){requestAnimationFrame(loop);if(!paused)for(let i=0;i<spd;i++)updateW();render(now);if(tk%18===0)updUI();if(tk%50===0)recH();if(tk%80===0){updDiag();updMobileInfo()}}
+function loop(now){requestAnimationFrame(loop);if(!paused)for(let i=0;i<spd;i++)updateW();updateCameraFollow();render(now);if(tk%18===0)updUI();if(tk%50===0)recH();if(tk%80===0){updDiag();updMobileInfo()}}
 requestAnimationFrame(loop);
 
 /* ═══ MOBILE SIDEBAR / SHEET TOGGLE ═══ */
@@ -1956,6 +1977,7 @@ cv.addEventListener('touchstart',e=>{
   const ty=e.touches[0].clientY;
   if(ty>rect.bottom-10)return; /* near edge, let browser handle */
   e.preventDefault();
+  stopCameraFollow();
   if(e.touches.length===2){
     const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;
     lastTouchDist=Math.hypot(dx,dy);
@@ -2131,6 +2153,7 @@ cv.addEventListener('touchend',e=>{
   }
 
   function focusAtWorld(x,y,zoom,screenX,screenY){
+    stopCameraFollow();
     const targetZoom=cl(Number.isFinite(zoom)?zoom:zm,.3,15);
     const targetX=Number.isFinite(screenX)?cl(screenX,0,cW):cW*.5;
     const targetY=Number.isFinite(screenY)?cl(screenY,0,cH):cH*.5;
@@ -2196,6 +2219,7 @@ cv.addEventListener('touchend',e=>{
   function step(count){
     const n=Math.max(1,Number(count)||1);
     for(let i=0;i<n;i++)updateW();
+    updateCameraFollow();
     render(performance.now());
     updUI();
     return getState();
@@ -2206,7 +2230,7 @@ cv.addEventListener('touchend',e=>{
     guilds:GUILDS,
     morphs:MORPH_GUILD,
     get state(){return getState()},
-    get geometry(){return {wCx,gY,cW,cH,rootDepth,worldDepth,worldWidth,gridX0,zoom:zm,panX:px,panY:py}},
+    get geometry(){return {wCx,gY,cW,cH,rootDepth,worldDepth,worldWidth,gridX0,zoom:zm,panX:px,panY:py,following:Boolean(cameraFollow)}},
     get organisms(){return organisms()},
     get raw(){return {plant,soil,env,sw,grid,rootCells}},
     countGuilds,
@@ -2224,6 +2248,8 @@ cv.addEventListener('touchend',e=>{
     addMode,
     worldToScreen,
     focusAtWorld,
+    followOrganism:startCameraFollow,
+    stopFollowing:stopCameraFollow,
     screenToWorld,
     findOrganismAtWorld,
     findOrganismAtScreen,

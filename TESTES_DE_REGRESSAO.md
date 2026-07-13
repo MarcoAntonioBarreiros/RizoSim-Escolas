@@ -22,7 +22,7 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 - Crescimento representa as condições atuais para crescer, não o tamanho acumulado da planta.
 - A explicação de crescimento não chama o nutriente relativamente menor de deficiência quando ele já está em faixa boa.
 - Quando Pseudomonas já está perto da raiz, a explicação reconhece a ação em andamento e informa que a resposta é gradual.
-- O botão **Observar** pausa, amplia, centraliza e identifica um organismo real no canvas.
+- O botão **Observar** amplia e acompanha um organismo real sem pausar ou reduzir a velocidade da comunidade.
 
 ## Verificações manuais recomendadas
 
@@ -37,7 +37,7 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 - Usar o cenário de ataque às raízes e adicionar Trichoderma/Arthrobotrys cedo.
 - Ativar mapa de nutrientes no modo professor.
 - Testar zoom e pan por mouse, toque e teclado.
-- Usar **Observar** em diferentes cartões e confirmar que o exemplar destacado fica visível, ampliado e próximo do centro.
+- Usar **Observar** em diferentes cartões e confirmar que a câmera acompanha o exemplar enquanto ele e os demais organismos continuam se movendo.
 - Confirmar que o botão de gargalo populacional não aparece na tela infantil.
 - Em 1024x768 horizontal, confirmar que simulação, indicadores, acontecimentos e cartões permanecem no mesmo quadro.
 
