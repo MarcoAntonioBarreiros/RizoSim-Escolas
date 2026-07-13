@@ -1,0 +1,458 @@
+(function(){
+  const categoryTabs=document.getElementById('categoryTabs');
+  const organismCards=document.getElementById('organismCards');
+  const indicatorHost=document.getElementById('beanIndicators');
+  const eventList=document.getElementById('childEventList');
+  const scenarioPanel=document.getElementById('scenarioPanel');
+  const scenarioList=document.getElementById('scenarioList');
+  const selectedBubble=document.getElementById('selectedBubble');
+  const selectedName=document.getElementById('selectedName');
+  const selectedAction=document.getElementById('selectedAction');
+  const selectionRing=document.getElementById('selectionRing');
+  const focusShade=document.getElementById('focusShade');
+  const textAlternative=document.getElementById('textAlternative');
+  const observeLabel=document.getElementById('observeModeLabel');
+  const explainDialog=document.getElementById('explainDialog');
+  const explainTitle=document.getElementById('explainTitle');
+  const explainText=document.getElementById('explainText');
+  const explainEyebrow=document.getElementById('explainEyebrow');
+
+  let activeCategory=RizoSchoolOrganisms.categories[0].id;
+  let currentIndicators=[];
+  let selectedOrganism=null;
+  let eventItems=[];
+  const lastEventByKey=new Map();
+  let previousState=null;
+
+  function stateLabel(kind){
+    return kind==='bom'?'bom':kind==='medio'?'médio':'baixo';
+  }
+
+  function openExplanation(title,text,eyebrow){
+    explainTitle.textContent=title;
+    explainText.textContent=text;
+    explainEyebrow.textContent=eyebrow||'Entenda';
+    if(typeof explainDialog.showModal==='function')explainDialog.showModal();
+    else explainDialog.setAttribute('open','');
+  }
+
+  function renderIndicators(){
+    const state=RizoSimEngine.state;
+    currentIndicators=RizoSchoolPlant.indicators(state);
+    indicatorHost.innerHTML=currentIndicators.map(item=>`
+      <button class="indicator" type="button" data-indicator="${item.id}" data-state="${item.state}">
+        <span class="indicator-icon" style="background:${item.state==='baixo'?'var(--coral)':item.state==='medio'?'var(--amber)':'var(--green)'}">${item.icon}</span>
+        <span>
+          <strong>${item.label}</strong>
+          <small>${stateLabel(item.state)}</small>
+          <span class="simple-bar" aria-hidden="true"><span style="width:${Math.round(item.value)}%"></span></span>
+        </span>
+      </button>
+    `).join('');
+    textAlternative.textContent=RizoSchoolPlant.describe(state);
+  }
+
+  indicatorHost.addEventListener('click',event=>{
+    const button=event.target.closest('[data-indicator]');
+    if(!button)return;
+    const indicator=currentIndicators.find(item=>item.id===button.dataset.indicator);
+    if(indicator)openExplanation(indicator.label,indicator.explanation,'Como está o feijão?');
+  });
+
+  function renderCategories(){
+    categoryTabs.innerHTML=RizoSchoolOrganisms.categories.map(category=>`
+      <button id="tab-${category.id}" role="tab" type="button" aria-selected="${category.id===activeCategory}" data-category="${category.id}">
+        ${category.label}
+      </button>
+    `).join('');
+  }
+
+  function renderCards(){
+    const category=RizoSchoolOrganisms.categories.find(item=>item.id===activeCategory);
+    organismCards.innerHTML=category.guilds.map(guildId=>{
+      const item=RizoSchoolOrganisms.get(guildId);
+      return `
+        <article class="organism-card" data-guild="${guildId}">
+          <span class="org-icon morph-${item.morph}" data-initial="${item.initial}" style="--org-color:${item.color}" aria-hidden="true"></span>
+          <h3>${item.name}</h3>
+          <p>${item.short}</p>
+          <div class="card-actions">
+            <button type="button" data-observe="${guildId}">Observar</button>
+            <button type="button" data-add="${guildId}">Adicionar</button>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  categoryTabs.addEventListener('click',event=>{
+    const tab=event.target.closest('[data-category]');
+    if(!tab)return;
+    activeCategory=tab.dataset.category;
+    renderCategories();
+    renderCards();
+  });
+
+  organismCards.addEventListener('click',event=>{
+    const observe=event.target.closest('[data-observe]');
+    const add=event.target.closest('[data-add]');
+    if(observe){
+      const guildId=Number(observe.dataset.observe);
+      RizoSimEngine.selectMode();
+      observeGuild(guildId);
+    }
+    if(add){
+      const guildId=Number(add.dataset.add);
+      const made=RizoSimEngine.inoculateNearRoot(guildId,3);
+      RizoSimEngine.selectMode();
+      RizoSimEngine.setPaused(false);
+      if(made[0])selectOrganism(made[0]);
+      const data=RizoSchoolOrganisms.get(guildId);
+      addChildEvent({
+        priority:3,
+        key:'card-add-'+guildId,
+        message:data.name+' foi adicionado perto da raiz.',
+        title:data.name,
+        detail:data.science
+      });
+    }
+  });
+
+  function observeGuild(guildId){
+    const found=RizoSimEngine.raw.sw.find(item=>item.alive&&item.g.guild===guildId);
+    const data=RizoSchoolOrganisms.get(guildId);
+    if(found){
+      selectOrganism(found);
+      addChildEvent({
+        priority:2,
+        key:'observe-'+guildId,
+        message:'Observando '+data.name+'.',
+        title:data.name,
+        detail:data.simple
+      });
+    }else{
+      addChildEvent({
+        priority:2,
+        key:'observe-empty-'+guildId,
+        message:'Ainda não vejo '+data.name+' nesta simulação.',
+        title:data.name,
+        detail:'Você pode adicionar este organismo ou continuar observando a comunidade atual.'
+      });
+    }
+  }
+
+  function translateEngineEvent(cls,txt){
+    const raw=String(txt||'');
+    if(raw.includes('Inoculado:')){
+      const name=raw.split('Inoculado:').pop().trim();
+      return {key:'inoc-'+name,message:name+' entrou na rizosfera.',title:'Organismo adicionado',detail:'O organismo foi inserido no motor real da simulação, perto do ponto escolhido.'};
+    }
+    if(raw.includes('Rhizobium'))return {key:'nodulo',message:'A raiz começou a formar um nódulo.',title:'Nódulo em formação',detail:'No motor, rizóbios próximos da raiz podem nodular. A chance aumenta quando o nitrogênio da planta está baixo.'};
+    if(raw.includes('Micorriza'))return {key:'micorriza-p',message:'A rede da micorriza alcançou uma nova região do solo.',title:'Micorriza e fósforo',detail:'A micorriza usa hifas para explorar células vizinhas da grade e pode transferir fósforo para a planta.'};
+    if(raw.includes('Bacillus'))return {key:'bacillus-p',message:'O fósforo disponível aumentou perto das raízes.',title:'Fósforo liberado',detail:'Bacillus pode solubilizar fósforo ligado. O efeito depende de pH, fósforo ligado e proximidade da raiz.'};
+    if(raw.includes('Pseudo'))return {key:'ferro',message:'O ferro solúvel aumentou perto da raiz.',title:'Ferro disponível',detail:'Pseudomonas pode converter Fe3+ em Fe2+, uma forma simulada como mais disponível.'};
+    if(raw.includes('Proto'))return {key:'proto-pred',message:'Um protozoário se alimentou de microrganismos.',title:'Predação',detail:'Protozoários controlam populações abundantes e reciclam parte dos nutrientes ao predar.'};
+    if(raw.includes('Nemat'))return {key:'raiz-dano',message:'A raiz sofreu dano.',title:'Dano radicular',detail:'Nematoides próximos da raiz podem aumentar o estresse e reduzir a biomassa da planta no simulador.'};
+    if(raw.includes('Pat'))return {key:'patogeno',message:'A raiz está sob pressão de patógenos.',title:'Patógenos',detail:'Patógenos oportunistas perto da raiz podem aumentar o estresse quando as condições permitem.'};
+    if(raw.includes('Sapr'))return {key:'reciclagem',message:'Restos estão sendo reciclados no solo.',title:'Reciclagem',detail:'Saprófitos decompõem carbono orgânico e liberam nutrientes como NH4+ e fósforo livre.'};
+    if(raw.includes('Arthrobotrys'))return {key:'arthro',message:'Uma armadilha capturou nematoide.',title:'Arthrobotrys',detail:'Arthrobotrys é representado como fungo nematófago; ao capturar nematoides, recicla nutrientes.'};
+    return null;
+  }
+
+  function addChildEvent(item){
+    const now=Date.now();
+    const key=item.key||item.message;
+    const minGap=item.priority>=4?1200:6500;
+    if(lastEventByKey.has(key)&&now-lastEventByKey.get(key)<minGap)return;
+    lastEventByKey.set(key,now);
+    eventItems.unshift({
+      title:item.title||'Acontecimento',
+      message:item.message,
+      detail:item.detail||item.message,
+      priority:item.priority||1,
+      at:now
+    });
+    eventItems=eventItems
+      .sort((a,b)=>b.priority-a.priority||b.at-a.at)
+      .slice(0,5);
+    renderEvents();
+  }
+
+  function renderEvents(){
+    eventList.innerHTML=eventItems.map((item,index)=>`
+      <li>
+        <p>${item.message}</p>
+        <button class="understand-btn" type="button" data-event-index="${index}">ENTENDA</button>
+      </li>
+    `).join('');
+  }
+
+  eventList.addEventListener('click',event=>{
+    const button=event.target.closest('[data-event-index]');
+    if(!button)return;
+    const item=eventItems[Number(button.dataset.eventIndex)];
+    if(item)openExplanation(item.title,item.detail,'Entenda');
+  });
+
+  if(typeof addEv==='function'){
+    const originalAddEv=addEv;
+    addEv=function(cls,txt){
+      originalAddEv(cls,txt);
+      const translated=translateEngineEvent(cls,txt);
+      if(translated)addChildEvent({...translated,priority:3});
+    };
+  }
+
+  window.RizoSchoolEvents={
+    add:addChildEvent,
+    fromEngine(cls,txt){
+      const translated=translateEngineEvent(cls,txt);
+      if(translated)addChildEvent({...translated,priority:3});
+    }
+  };
+
+  function explainOrganism(org){
+    const gid=org.g.guild;
+    const data=RizoSchoolOrganisms.get(gid);
+    const nearRoot=Math.abs(org.x-wCx)<35&&org.y>gY&&org.y<gY+rootDepth+22;
+    const local=gcAt(org.x,Math.max(org.y,gY));
+    const nearby=RizoSimEngine.raw.sw.filter(other=>other!==org&&other.alive&&Math.hypot(other.x-org.x,other.y-org.y)<34);
+    const nearbyBacteria=nearby.filter(other=>GUILDS[other.g.guild].type==='bact').length;
+    const nearbyPathogens=nearby.filter(other=>other.g.guild===6).length;
+    const nearbyNematodes=nearby.filter(other=>other.g.guild===9).length;
+
+    if(gid===5){
+      if(org.nodulated)return 'Este rizóbio já está ligado à raiz e participa da formação de um nódulo.';
+      if(nearRoot)return 'Este rizóbio está perto da raiz, mas ainda não formou um nódulo.';
+      return 'Este rizóbio está se movendo pelo solo em busca de sinais da raiz.';
+    }
+    if(gid===11){
+      if(nearRoot)return 'Esta micorriza está perto da raiz e pode ampliar a região explorada para fósforo.';
+      return 'Esta micorriza está estendendo hifas pelo solo, procurando regiões úteis para a planta.';
+    }
+    if(gid===8){
+      if(nearbyBacteria>0)return 'Este protozoário está perto de bactérias e pode se alimentar delas.';
+      return 'Este protozoário está procurando microrganismos para se alimentar.';
+    }
+    if(gid===9){
+      if(nearRoot)return 'Este nematoide está perto da raiz e pode estar causando dano.';
+      return 'Este nematoide está se movendo pelo solo e procurando alimento.';
+    }
+    if(gid===4){
+      if(nearbyPathogens>0)return 'Este Trichoderma está perto de patógenos e pode competir ou predar.';
+      return 'Este Trichoderma está explorando o solo e pode ajudar no equilíbrio da comunidade.';
+    }
+    if(gid===12){
+      if(nearbyNematodes>0)return 'Este Arthrobotrys está perto de nematoides e pode capturá-los.';
+      return 'Este Arthrobotrys está formando uma rede que pode funcionar como armadilha.';
+    }
+    if(gid===6){
+      if(nearRoot)return 'Este patógeno está perto da raiz e pode aumentar o estresse do feijão.';
+      return 'Este patógeno está no solo e ainda não está em contato forte com a raiz.';
+    }
+    if(gid===1){
+      if(nearRoot&&local.PO4bound>local.PO4free)return 'Este Bacillus está perto da raiz, onde pode liberar fósforo preso no solo.';
+      return 'Este Bacillus está consumindo recursos e pode atuar quando encontra a rizosfera.';
+    }
+    if(gid===0){
+      if(nearRoot&&local.Fe3>local.Fe2)return 'Esta Pseudomonas está perto da raiz e pode tornar ferro mais disponível.';
+      return 'Esta Pseudomonas está se movendo e competindo por recursos no solo.';
+    }
+    if(gid===10)return 'Este saprófito está ajudando a reciclar matéria orgânica no solo.';
+    if(gid===7)return 'Esta cianobactéria usa luz perto da superfície e pode contribuir com nitrogênio.';
+    if(gid===2)return 'Este Azospirillum pode contribuir com nitrogênio e sinais de crescimento perto da raiz.';
+    if(gid===3)return 'Este Methylobacterium pode produzir sinais de crescimento quando há recursos.';
+    return data.simple;
+  }
+
+  function selectOrganism(org){
+    selectedOrganism=org;
+    RizoSimEngine.setSpeed(1);
+    observeLabel.textContent='Observando '+GUILDS[org.g.guild].name+'.';
+    selectedBubble.hidden=false;
+    focusShade.classList.add('is-active');
+    selectionRing.classList.add('is-active');
+    updateSelectedOrganism();
+  }
+
+  function clearSelection(){
+    selectedOrganism=null;
+    selectedBubble.hidden=true;
+    focusShade.classList.remove('is-active');
+    selectionRing.classList.remove('is-active');
+    observeLabel.textContent='Toque em um organismo para observar.';
+  }
+
+  function updateSelectedOrganism(){
+    if(!selectedOrganism||!selectedOrganism.alive){
+      clearSelection();
+      return;
+    }
+    const point=RizoSimEngine.worldToScreen(selectedOrganism.x,selectedOrganism.y);
+    selectionRing.style.left=point.x+'px';
+    selectionRing.style.top=point.y+'px';
+    focusShade.style.setProperty('--focus-x',point.x+'px');
+    focusShade.style.setProperty('--focus-y',point.y+'px');
+    const data=RizoSchoolOrganisms.get(selectedOrganism.g.guild);
+    selectedName.textContent=data.name;
+    selectedAction.textContent=explainOrganism(selectedOrganism);
+  }
+
+  document.getElementById('closeSelectionBtn')?.addEventListener('click',clearSelection);
+
+  document.getElementById('cw')?.addEventListener('click',event=>{
+    const sel=document.getElementById('selInoc');
+    if(sel&&Number(sel.value)>=0)return;
+    const rect=document.getElementById('pond').getBoundingClientRect();
+    const org=RizoSimEngine.findOrganismAtScreen(event.clientX-rect.left,event.clientY-rect.top,34);
+    if(org)selectOrganism(org);
+  });
+
+  function renderScenarios(){
+    scenarioList.innerHTML=RizoSchoolEnvironment.scenarios.map(item=>`
+      <button class="scenario-item" type="button" data-scenario="${item.id}">
+        <strong>${item.name}</strong>
+        <span>${item.phrase}</span>
+      </button>
+    `).join('');
+  }
+
+  scenarioList.addEventListener('click',event=>{
+    const button=event.target.closest('[data-scenario]');
+    if(!button)return;
+    const scenario=RizoSchoolEnvironment.applyScenario(button.dataset.scenario);
+    closeScenarioPanel();
+    clearSelection();
+    addChildEvent({
+      priority:4,
+      key:'scenario-observe-'+scenario.id,
+      message:scenario.observe,
+      title:scenario.name,
+      detail:scenario.phrase+' '+scenario.observe
+    });
+  });
+
+  function openScenarioPanel(){
+    scenarioPanel.hidden=false;
+    document.getElementById('scenarioBtn')?.setAttribute('aria-expanded','true');
+  }
+
+  function closeScenarioPanel(){
+    scenarioPanel.hidden=true;
+    document.getElementById('scenarioBtn')?.setAttribute('aria-expanded','false');
+  }
+
+  document.getElementById('scenarioBtn')?.addEventListener('click',()=>{
+    if(scenarioPanel.hidden)openScenarioPanel();
+    else closeScenarioPanel();
+  });
+
+  document.querySelectorAll('[data-close-panel]').forEach(button=>{
+    button.addEventListener('click',()=>document.getElementById(button.dataset.closePanel).hidden=true);
+  });
+
+  document.getElementById('playBtn')?.addEventListener('click',()=>RizoSimEngine.togglePause());
+  document.getElementById('resetBtn')?.addEventListener('click',()=>{
+    RizoSimEngine.reset();
+    RizoSimEngine.setPaused(false);
+    clearSelection();
+    addChildEvent({
+      priority:4,
+      key:'reset',
+      message:'A simulação foi reiniciada.',
+      title:'Reinício',
+      detail:'O motor foi reiniciado usando os valores técnicos atuais do modo professor.'
+    });
+  });
+
+  document.querySelectorAll('[data-speed]').forEach(button=>{
+    button.addEventListener('click',()=>RizoSimEngine.setSpeed(Number(button.dataset.speed)));
+  });
+
+  document.getElementById('fullscreenBtn')?.addEventListener('click',()=>{
+    if(document.fullscreenElement)document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.();
+  });
+
+  function monitorState(){
+    const state=RizoSimEngine.state;
+    if(state.plant.n<24)addChildEvent({priority:2,key:'low-n',message:'A planta está com pouco nitrogênio.',title:'Nitrogênio baixo',detail:'No motor, o crescimento fica limitado quando o nitrogênio interno da planta cai.'});
+    if(state.plant.p<24)addChildEvent({priority:2,key:'low-p',message:'A planta está com pouco fósforo.',title:'Fósforo baixo',detail:'O fósforo livre no solo é pouco móvel. Alguns organismos podem aumentar sua disponibilidade quando estão perto da raiz.'});
+    if(state.env.moist<30)addChildEvent({priority:2,key:'dry-soil',message:'O solo ficou mais seco.',title:'Período seco',detail:'Menos água aumenta a viscosidade do solo e pode elevar o estresse da planta.'});
+    if(state.plant.stress>36)addChildEvent({priority:2,key:'stress-high',message:'A raiz está sob estresse.',title:'Estresse',detail:'O estresse resume efeitos de ambiente, nutrição e interações com organismos como patógenos e nematoides.'});
+    if(previousState){
+      if(previousState.plant.nodules===0&&state.plant.nodules>0)addChildEvent({priority:4,key:'new-nodule',message:'A raiz começou a formar um nódulo.',title:'Nodulação',detail:'Rizóbios nodulados podem transferir nitrogênio para a planta quando há carbono disponível.'});
+      if(previousState.plant.stress-state.plant.stress>8)addChildEvent({priority:3,key:'recovering',message:'A planta começou a se recuperar.',title:'Recuperação gradual',detail:'Quando nutrientes e ambiente melhoram, o motor reduz o estresse por homeostase.'});
+      const prevMicrobes=previousState.population;
+      if(prevMicrobes-state.population>18)addChildEvent({priority:2,key:'community-drop',message:'A comunidade de microrganismos diminuiu.',title:'Mudança na comunidade',detail:'Populações podem cair por predação, competição, falta de energia ou senescência.'});
+    }
+    previousState=state;
+  }
+
+  function handleKeyboard(event){
+    const tag=(event.target.tagName||'').toLowerCase();
+    if(['input','select','textarea','button'].includes(tag)||explainDialog.open)return;
+    if(event.code==='Space'){
+      event.preventDefault();
+      RizoSimEngine.togglePause();
+    }
+    if(event.key==='1')RizoSimEngine.setSpeed(1);
+    if(event.key==='2')RizoSimEngine.setSpeed(2);
+    if(event.key==='3')RizoSimEngine.setSpeed(4);
+    if(event.key.toLowerCase()==='r'){
+      RizoSimEngine.reset();
+      RizoSimEngine.setPaused(false);
+    }
+    if(event.key==='Escape'){
+      closeScenarioPanel();
+      clearSelection();
+    }
+  }
+
+  function handleCanvasKeys(event){
+    if(event.key==='ArrowLeft'){px+=32;event.preventDefault()}
+    if(event.key==='ArrowRight'){px-=32;event.preventDefault()}
+    if(event.key==='ArrowUp'){py+=32;event.preventDefault()}
+    if(event.key==='ArrowDown'){py-=32;event.preventDefault()}
+    if(event.key==='+'||event.key==='='){zm=cl(zm*1.12,.3,15);updZI();event.preventDefault()}
+    if(event.key==='-'||event.key==='_'){zm=cl(zm/1.12,.3,15);updZI();event.preventDefault()}
+  }
+
+  document.addEventListener('keydown',handleKeyboard);
+  document.getElementById('cw')?.addEventListener('keydown',handleCanvasKeys);
+
+  function applyReducedMotionPreference(){
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      document.body.classList.add('motion-reduced');
+      RizoSimEngine.setSpeed(1);
+      RizoSimEngine.setPaused(true);
+      addChildEvent({
+        priority:4,
+        key:'reduced-motion',
+        message:'Movimento reduzido ativado.',
+        title:'Movimento reduzido',
+        detail:'A simulação começa pausada para reduzir movimento. Use Iniciar quando quiser avançar e Pausar novamente a qualquer momento.'
+      });
+    }
+  }
+
+  function tickUI(){
+    renderIndicators();
+    updateSelectedOrganism();
+  }
+
+  renderCategories();
+  renderCards();
+  renderScenarios();
+  renderIndicators();
+  addChildEvent({
+    priority:4,
+    key:'welcome',
+    message:'A simulação da rizosfera está rodando.',
+    title:'Bem-vindo',
+    detail:'O motor original continua simulando organismos, nutrientes, raízes, nodulação, micorriza, predação, decomposição e estresse da planta.'
+  });
+  applyReducedMotionPreference();
+  setInterval(tickUI,500);
+  setInterval(monitorState,2500);
+})();

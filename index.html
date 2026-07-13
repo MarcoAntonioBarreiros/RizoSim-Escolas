@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RizoSim Escolas</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#mainStage">Pular para a simulação</a>
+
+  <div class="school-app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>RizoSim Escolas</h1>
+          <p>Simulação educativa da rizosfera do feijão</p>
+        </div>
+      </div>
+
+      <nav class="top-actions" aria-label="Controles principais">
+        <button id="playBtn" class="command primary" type="button">Pausar</button>
+        <div class="segmented" role="group" aria-label="Velocidade da simulação">
+          <button class="segment is-active" type="button" data-speed="1" aria-pressed="true">1x</button>
+          <button class="segment" type="button" data-speed="2" aria-pressed="false">2x</button>
+          <button class="segment" type="button" data-speed="4" aria-pressed="false">Aula</button>
+        </div>
+        <button id="resetBtn" class="command" type="button">Reiniciar</button>
+        <button id="scenarioBtn" class="command" type="button" aria-expanded="false" aria-controls="scenarioPanel">Cenários</button>
+        <button id="helpBtn" class="command" type="button">Ajuda</button>
+        <button id="fullscreenBtn" class="icon-command" type="button" aria-label="Tela cheia" title="Tela cheia">⛶</button>
+        <button id="teacherBtn" class="teacher-link" type="button" aria-controls="sb">Modo professor</button>
+      </nav>
+    </header>
+
+    <main id="mainStage" class="school-grid">
+      <section class="simulation-region" aria-labelledby="simTitle">
+        <div class="section-label">
+          <h2 id="simTitle">Planta e rizosfera</h2>
+          <span id="observeModeLabel">Toque em um organismo para observar.</span>
+        </div>
+
+        <div id="cw" class="canvas-shell" tabindex="0" role="img" aria-label="Simulação visual do feijão, suas raízes e organismos da rizosfera">
+          <canvas id="pond"></canvas>
+          <div id="zi" aria-hidden="true">100%</div>
+          <div id="evl" class="engine-log" aria-hidden="true"></div>
+          <div id="focusShade" aria-hidden="true"></div>
+          <div id="selectionRing" aria-hidden="true"></div>
+          <aside id="selectedBubble" class="selected-bubble" aria-live="polite" hidden>
+            <button id="closeSelectionBtn" class="icon-command small" type="button" aria-label="Fechar seleção">×</button>
+            <p class="eyebrow">O que está fazendo agora?</p>
+            <h3 id="selectedName">Organismo</h3>
+            <p id="selectedAction">Selecione um organismo na simulação.</p>
+          </aside>
+        </div>
+
+        <p class="disclaimer">Esta é uma simulação educativa. Na natureza, os resultados dependem do solo, da planta, do ambiente e das linhagens dos organismos.</p>
+        <p id="textAlternative" class="text-alternative" aria-live="polite">A simulação está iniciando.</p>
+      </section>
+
+      <aside class="bean-region" aria-labelledby="beanTitle">
+        <div class="section-label">
+          <h2 id="beanTitle">Como está o feijão?</h2>
+        </div>
+        <div id="beanIndicators" class="indicator-stack"></div>
+      </aside>
+
+      <aside class="events-region" aria-labelledby="eventsTitle">
+        <div class="section-label">
+          <h2 id="eventsTitle">O que está acontecendo?</h2>
+        </div>
+        <ol id="childEventList" class="child-events" aria-live="polite"></ol>
+      </aside>
+
+      <section class="organisms-region" aria-labelledby="organismsTitle">
+        <div class="organism-head">
+          <div class="section-label">
+            <h2 id="organismsTitle">Quem vamos observar ou adicionar?</h2>
+          </div>
+          <div id="categoryTabs" class="category-tabs" role="tablist" aria-label="Categorias de organismos"></div>
+        </div>
+        <div id="organismCards" class="organism-cards" aria-live="polite"></div>
+      </section>
+    </main>
+  </div>
+
+  <section id="scenarioPanel" class="floating-panel scenario-panel" aria-label="Cenários didáticos" hidden>
+    <div class="floating-head">
+      <h2>Cenários</h2>
+      <button class="icon-command small" type="button" data-close-panel="scenarioPanel" aria-label="Fechar cenários">×</button>
+    </div>
+    <div id="scenarioList" class="scenario-list"></div>
+  </section>
+
+  <dialog id="explainDialog" class="explain-dialog">
+    <form method="dialog">
+      <button class="icon-command small dialog-close" value="close" aria-label="Fechar">×</button>
+      <p id="explainEyebrow" class="eyebrow">Entenda</p>
+      <h2 id="explainTitle">Acontecimento</h2>
+      <p id="explainText"></p>
+    </form>
+  </dialog>
+
+  <section id="tutorialOverlay" class="tutorial-overlay" aria-label="Tutorial guiado" hidden>
+    <div class="tutorial-card">
+      <p class="eyebrow">Exploração guiada</p>
+      <h2 id="tutorialTitle">Este é o feijão.</h2>
+      <p id="tutorialText">Observe a parte aérea e as raízes crescendo juntas.</p>
+      <div class="tutorial-actions">
+        <button id="tutorialSkipBtn" class="command" type="button">Pular</button>
+        <button id="tutorialRestartBtn" class="command" type="button">Reiniciar tutorial</button>
+        <button id="tutorialNextBtn" class="command primary" type="button">Continuar</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="sbOverlay" class="teacher-overlay" hidden></div>
+  <button id="sheetToggle" type="button" hidden>Configurações</button>
+  <div id="mobileInfo" hidden></div>
+
+  <aside id="sb" class="teacher-drawer" aria-label="Modo professor" aria-hidden="true">
+    <div class="teacher-head">
+      <div>
+        <p class="eyebrow">Modo professor</p>
+        <h2>Controles técnicos</h2>
+      </div>
+      <button id="teacherClose" class="icon-command" type="button" aria-label="Fechar modo professor">×</button>
+    </div>
+
+    <div class="teacher-controls">
+      <button id="btnP" class="command primary" type="button" onclick="RizoSimEngine.togglePause()">Pausar</button>
+      <button class="command" type="button" onclick="RizoSimEngine.reset()">Reiniciar</button>
+      <button class="command danger" type="button" onclick="bottleneck()">Gargalo populacional</button>
+    </div>
+
+    <div class="teacher-card">
+      <h3>Velocidade</h3>
+      <div class="srow teacher-speed" role="group" aria-label="Velocidade técnica">
+        <button id="sp1" class="is-active" type="button" data-speed="1" onclick="RizoSimEngine.setSpeed(1)">1x</button>
+        <button id="sp2" type="button" data-speed="2" onclick="RizoSimEngine.setSpeed(2)">2x</button>
+        <button id="sp4" type="button" data-speed="4" onclick="RizoSimEngine.setSpeed(4)">Aula</button>
+        <button id="sp8" type="button" onclick="RizoSimEngine.setSpeed(8)">8x</button>
+      </div>
+    </div>
+
+    <div class="teacher-card">
+      <h3>Valores da planta</h3>
+      <div class="teacher-bars">
+        <div><span>Biomassa</span><b id="tBio">50</b><i><em id="bBio"></em></i></div>
+        <div><span>N</span><b id="tN">35</b><i><em id="bN"></em></i></div>
+        <div><span>P</span><b id="tP">30</b><i><em id="bP"></em></i></div>
+        <div><span>Fe</span><b id="tFe">25</b><i><em id="bFe"></em></i></div>
+        <div><span>AIA</span><b id="tAIA">10</b><i><em id="bAIA"></em></i></div>
+        <div><span>Estresse</span><b id="tStr">0</b><i><em id="bStr"></em></i></div>
+      </div>
+    </div>
+
+    <div class="teacher-card">
+      <h3>Estoques químicos</h3>
+      <div class="soil-readouts">
+        <div><span>C orgânico</span><i><em id="sbCorg"></em></i><b id="svCorg">800</b></div>
+        <div><span>NH4+</span><i><em id="sbNH4"></em></i><b id="svNH4">45</b></div>
+        <div><span>NO3-</span><i><em id="sbNO3"></em></i><b id="svNO3">35</b></div>
+        <div><span>Fósforo livre</span><i><em id="sbPfree"></em></i><b id="svPfree">25</b></div>
+        <div><span>Fósforo ligado</span><i><em id="sbPbound"></em></i><b id="svPbound">60</b></div>
+        <div><span>Fe3+</span><i><em id="sbFe3"></em></i><b id="svFe3">60</b></div>
+        <div><span>Fe2+</span><i><em id="sbFe2"></em></i><b id="svFe2">15</b></div>
+        <div><span>Oxigênio</span><i><em id="sbO2"></em></i><b id="svO2">75</b></div>
+      </div>
+    </div>
+
+    <div class="teacher-card">
+      <h3>Ambiente e estoques iniciais</h3>
+      <div class="soil-buttons" role="group" aria-label="Tipo de solo">
+        <button id="sSandy" type="button" onclick="setSoil('sandy')">Arenoso</button>
+        <button id="sLoam" class="act" type="button" onclick="setSoil('loam')">Franco</button>
+        <button id="sClay" type="button" onclick="setSoil('clay')">Argiloso</button>
+      </div>
+      <label>Microbiota inicial <output id="vMI">1.0x</output><input id="rMI" type="range" min="0" max="4" step="0.1" value="1"></label>
+      <label>C orgânico <output id="vIC">800</output><input id="rIC" type="range" min="0" max="1500" step="10" value="800"></label>
+      <label>NH4+ <output id="vINH4">45</output><input id="rINH4" type="range" min="0" max="150" value="45"></label>
+      <label>NO3- <output id="vINO3">35</output><input id="rINO3" type="range" min="0" max="150" value="35"></label>
+      <label>Fósforo livre <output id="vIPf">25</output><input id="rIPf" type="range" min="0" max="100" value="25"></label>
+      <label>Fósforo ligado <output id="vIPb">60</output><input id="rIPb" type="range" min="0" max="200" value="60"></label>
+      <label>Fe3+ <output id="vIFe3">60</output><input id="rIFe3" type="range" min="0" max="150" value="60"></label>
+      <label>Fe2+ <output id="vIFe2">15</output><input id="rIFe2" type="range" min="0" max="100" value="15"></label>
+      <label>Temperatura <output id="vT">25°C</output><input id="rT" type="range" min="5" max="45" value="25" oninput="updEnv()"></label>
+      <label>pH <output id="vPH">6.5</output><input id="rPH" type="range" min="4" max="9" step="0.1" value="6.5" oninput="updEnv()"></label>
+      <label>Umidade <output id="vM">60%</output><input id="rM" type="range" min="10" max="100" value="60" oninput="updEnv()"></label>
+      <label>Luz <output id="vLI">70%</output><input id="rLI" type="range" min="0" max="100" value="70" oninput="updEnv()"></label>
+      <label>UV <output id="vUV">15%</output><input id="rUV" type="range" min="0" max="100" value="15" oninput="updEnv()"></label>
+      <label>Agroquímicos <output id="vTX">0%</output><input id="rTX" type="range" min="0" max="100" value="0" oninput="updEnv()"></label>
+    </div>
+
+    <div class="teacher-card">
+      <h3>Inoculação técnica</h3>
+      <select id="selInoc">
+        <option value="-1">Seleção</option>
+        <option value="0">Pseudomonas</option>
+        <option value="1">Bacillus</option>
+        <option value="2">Azospirillum</option>
+        <option value="3">Methylobacterium</option>
+        <option value="4">Trichoderma</option>
+        <option value="5">Rhizobium</option>
+        <option value="6">Patógeno</option>
+        <option value="7">Cianobactéria</option>
+        <option value="8">Protozoário</option>
+        <option value="9">Nematoide</option>
+        <option value="10">Saprófito</option>
+        <option value="11">Micorriza</option>
+        <option value="12">Arthrobotrys</option>
+      </select>
+      <select id="selHM">
+        <option value="off">Mapa de nutrientes desligado</option>
+        <option value="NH4">NH4+</option>
+        <option value="NO3">NO3-</option>
+        <option value="PO4free">Fósforo livre</option>
+        <option value="Fe2">Fe2+</option>
+        <option value="Fe3">Fe3+</option>
+        <option value="organicC">Carbono orgânico</option>
+        <option value="O2">Oxigênio</option>
+      </select>
+      <p class="teacher-note">Grade: <span id="gridInfo">--</span></p>
+    </div>
+
+    <div class="teacher-card">
+      <h3>Populações e eventos</h3>
+      <div class="stat-grid">
+        <span>Micróbios</span><b id="sPop">0</b>
+        <span>Exsudatos</span><b id="sFd">0</b>
+        <span>Nódulos</span><b id="sNod">0</b>
+        <span>Mortes</span><b id="sDea">0</b>
+        <span>Nascidos</span><b id="sBir">0</b>
+        <span>Plântulas</span><b id="sSdl">0</b>
+        <span>Limitante</span><b id="sLim">--</b>
+      </div>
+      <svg id="cG" class="guild-chart" width="100%" height="96" aria-hidden="true"></svg>
+      <div id="legG" class="guild-legend"></div>
+      <div id="diagTxt" class="teacher-diagnostic">Aguardando dados...</div>
+      <div id="diagRec" class="teacher-recommendation"></div>
+    </div>
+
+    <div class="teacher-card ac" id="selP" style="display:none">
+      <h3>Organismo selecionado</h3>
+      <div id="selG" class="selected-technical"></div>
+    </div>
+  </aside>
+
+  <script src="js/engine.js"></script>
+  <script src="js/organisms.js"></script>
+  <script src="js/environment.js"></script>
+  <script src="js/plant.js"></script>
+  <script src="js/ui-teacher.js"></script>
+  <script src="js/tutorial.js"></script>
+  <script src="js/ui-child.js"></script>
+</body>
+</html>

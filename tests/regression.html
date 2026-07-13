@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RizoSim Escolas - Regressão</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:0;background:#eef7f4;color:#17231f}
+    main{max-width:980px;margin:0 auto;padding:24px}
+    button{min-height:42px;border:1px solid #c8d8d1;border-radius:8px;background:#28845f;color:#fff;padding:0 14px;font:inherit;cursor:pointer}
+    pre{white-space:pre-wrap;background:#fff;border:1px solid #c8d8d1;border-radius:8px;padding:14px;line-height:1.45}
+    iframe{width:100%;height:560px;border:1px solid #c8d8d1;border-radius:8px;background:#fff}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Testes de regressão</h1>
+    <p>Esta página carrega a aplicação real em um iframe e executa verificações sobre o motor preservado.</p>
+    <button id="runBtn" type="button">Executar testes</button>
+    <pre id="output">Aguardando execução.</pre>
+    <iframe id="appFrame" src="../index.html" title="RizoSim Escolas"></iframe>
+  </main>
+  <script src="regression.js"></script>
+  <script>
+    const output=document.getElementById('output');
+    document.getElementById('runBtn').addEventListener('click',async()=>{
+      output.textContent='Executando...';
+      try{
+        const report=await RizoSchoolRegression.run(document.getElementById('appFrame').contentWindow);
+        output.textContent=JSON.stringify(report,null,2);
+      }catch(error){
+        output.textContent=error.stack||String(error);
+      }
+    });
+  </script>
+</body>
+</html>
