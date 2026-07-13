@@ -899,6 +899,16 @@ body[data-water="wet"] .canvas-shell::after{
   }
   .top-actions{justify-content:flex-start}
   .school-grid{
+    height:calc(100dvh - 126px);
+    min-height:620px;
+    grid-template-rows:minmax(0,1fr) 180px 160px;
+  }
+  .category-tabs button{min-height:36px}
+  .card-actions button{min-height:40px}
+}
+
+@media (max-width:900px){
+  .school-grid{
     height:auto;
     min-height:calc(100dvh - 126px);
     grid-template-columns:1fr;
@@ -931,7 +941,7 @@ body[data-water="wet"] .canvas-shell::after{
     padding:6px 0;
   }
   .category-tabs button{
-    min-height:36px;
+    min-height:44px;
     font-size:.9rem;
   }
   .organism-cards{
@@ -948,7 +958,7 @@ body[data-water="wet"] .canvas-shell::after{
     height:58px;
   }
   .card-actions button{
-    min-height:40px;
+    min-height:44px;
   }
 }
 

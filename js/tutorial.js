@@ -7,12 +7,12 @@
     },
     {
       title:'Estas são suas raízes.',
-      text:'Elas crescem dentro do solo e absorvem água e nutrientes da grade simulada.',
+      text:'Elas crescem dentro do solo e absorvem água e nutrientes.',
       target:'#cw'
     },
     {
       title:'A região ao redor da raiz é a rizosfera.',
-      text:'É ali que os organismos encontram exsudatos, competem, ajudam, predam ou causam dano.',
+      text:'A raiz libera substâncias nessa região. Ali, os organismos podem cooperar, competir, alimentar-se ou causar dano.',
       target:'#cw'
     },
     {
@@ -22,17 +22,17 @@
     },
     {
       title:'Toque em um organismo para conhecê-lo.',
-      text:'A simulação reduz a atenção para o organismo selecionado e explica o que ele está fazendo agora.',
+      text:'A velocidade diminui, o organismo fica destacado e você descobre o que ele está fazendo.',
       target:'#observeModeLabel'
     },
     {
       title:'Escolha um organismo para adicionar.',
-      text:'Use os cartões por categoria. O botão Adicionar inocula organismos na rizosfera real da simulação.',
+      text:'Use os cartões por categoria. O botão Adicionar coloca esses organismos perto da raiz.',
       target:'.organisms-region'
     },
     {
       title:'Observe o que muda na planta e no solo.',
-      text:'Os cinco indicadores resumem valores técnicos sem esconder o motor do modo professor.',
+      text:'Os cinco indicadores mostram como o feijão está respondendo ao que acontece no solo.',
       target:'.bean-region'
     },
     {
@@ -50,6 +50,7 @@
   const restartBtn=document.getElementById('tutorialRestartBtn');
   let index=0;
   let currentTarget=null;
+  let returnFocus=null;
 
   function clearTarget(){
     if(currentTarget)currentTarget.classList.remove('tutorial-focus');
@@ -71,9 +72,11 @@
   }
 
   function start(){
+    if(overlay.hidden)returnFocus=document.activeElement;
     index=0;
     overlay.hidden=false;
     showStep();
+    nextBtn?.focus({preventScroll:true});
   }
 
   function close(markSeen){
@@ -82,6 +85,8 @@
     if(markSeen){
       try{localStorage.setItem('rizosim-escolas-tutorial','seen')}catch(_err){}
     }
+    if(returnFocus&&returnFocus!==document.body)returnFocus.focus?.({preventScroll:true});
+    returnFocus=null;
   }
 
   function next(){
@@ -97,6 +102,9 @@
   skipBtn?.addEventListener('click',()=>close(true));
   restartBtn?.addEventListener('click',start);
   document.getElementById('helpBtn')?.addEventListener('click',start);
+  overlay?.addEventListener('keydown',event=>{
+    if(event.key==='Escape')close(true);
+  });
 
   window.RizoSchoolTutorial={start,close,restart:start};
 

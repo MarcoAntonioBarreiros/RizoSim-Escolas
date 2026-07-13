@@ -30,7 +30,7 @@
         <button id="scenarioBtn" class="command" type="button" aria-expanded="false" aria-controls="scenarioPanel">Cenários</button>
         <button id="helpBtn" class="command" type="button">Ajuda</button>
         <button id="fullscreenBtn" class="icon-command" type="button" aria-label="Tela cheia" title="Tela cheia">⛶</button>
-        <button id="teacherBtn" class="teacher-link" type="button" aria-controls="sb">Modo professor</button>
+        <button id="teacherBtn" class="teacher-link" type="button" aria-controls="sb" aria-expanded="false">Modo professor</button>
       </nav>
     </header>
 
@@ -104,7 +104,7 @@
     </form>
   </dialog>
 
-  <section id="tutorialOverlay" class="tutorial-overlay" aria-label="Tutorial guiado" hidden>
+  <section id="tutorialOverlay" class="tutorial-overlay" role="dialog" aria-labelledby="tutorialTitle" aria-describedby="tutorialText" hidden>
     <div class="tutorial-card">
       <p class="eyebrow">Exploração guiada</p>
       <h2 id="tutorialTitle">Este é o feijão.</h2>

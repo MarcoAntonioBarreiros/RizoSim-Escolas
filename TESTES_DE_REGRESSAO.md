@@ -15,10 +15,11 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 - Patógenos e nematoides continuam afetando raízes.
 - Populações continuam interagindo por predação/competição.
 - Controles técnicos continuam alterando ambiente.
-
 - Pseudomonas continua útil quando ferro limita a planta.
 - Trichoderma e Arthrobotrys continuam reduzindo patógenos ou nematoides quando encontram seus alvos.
 - Indicador de água mede conforto hídrico: água equilibrada aparece como boa e excesso não aparece como bom.
+- Eventos de Trichoderma e Arthrobotrys são traduzidos como controle, não como dano à raiz.
+- Crescimento representa as condições atuais para crescer, não o tamanho acumulado da planta.
 
 ## Verificações manuais recomendadas
 
@@ -27,11 +28,13 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 - Adicionar rizóbio em cenário de pouco nitrogênio e observar eventual nodulação.
 - Clicar no indicador Água e alternar pouca água, água equilibrada e muita água.
 - Clicar em Crescimento e Saúde da raiz durante cenários de estresse e confirmar que a explicação cita causas reais.
+- Confirmar que Saúde da raiz diferencia organismos próximos da raiz daqueles apenas presentes no solo.
 - Usar o cenário de pouco ferro disponível e observar a utilidade de Pseudomonas.
 - Usar o cenário de ataque às raízes e adicionar Trichoderma/Arthrobotrys cedo.
 - Ativar mapa de nutrientes no modo professor.
 - Testar zoom e pan por mouse, toque e teclado.
 - Confirmar que o botão de gargalo populacional não aparece na tela infantil.
+- Em 1024x768 horizontal, confirmar que simulação, indicadores, acontecimentos e cartões permanecem no mesmo quadro.
 
 ## Regra de preservação
 

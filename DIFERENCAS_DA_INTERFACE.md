@@ -14,7 +14,7 @@ A tela infantil foi organizada em três regiões:
 
 ## Eventos
 
-O log técnico do motor continua existindo internamente, mas a criança vê o painel **O que está acontecendo?** com mensagens simples e botão **ENTENDA**.
+O log técnico do motor continua existindo internamente, mas a criança vê o painel **O que está acontecendo?** com mensagens simples e botão **Entenda**. Eventos positivos de controle biológico são diferenciados de eventos de dano, e mensagens antigas perdem prioridade conforme surgem acontecimentos novos.
 
 ## Controles movidos ao modo professor
 
@@ -35,5 +35,5 @@ O log técnico do motor continua existindo internamente, mas a criança vê o pa
 - Ajuda.
 - Escolha/adição de organismo.
 - Ajuste simples de água pelo indicador **Água**.
-- Explicações dinâmicas nos indicadores, mostrando causas reais do estado do feijão.
+- Explicações dinâmicas nos indicadores, distinguindo causas atuais, organismos apenas presentes e organismos que podem ajudar.
 - Modo professor discreto.

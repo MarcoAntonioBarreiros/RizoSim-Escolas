@@ -21,14 +21,51 @@
   function waterStatus(moist){
     const value=clamp(moist,0,100);
     if(value<30)return 'pouca';
-    if(value<45)return 'média';
-    if(value<=75)return 'bom';
-    if(value<=85)return 'média';
+    if(value<45)return 'abaixo do ideal';
+    if(value<=75)return 'equilibrada';
+    if(value<=85)return 'acima do ideal';
     return 'excesso';
   }
 
   function guildCount(state,id){
     return (state.guildCounts&&state.guildCounts[id])||0;
+  }
+
+  function plural(value,singular,pluralForm){
+    return value===1?singular:pluralForm;
+  }
+
+  function rootThreatState(state){
+    const result={
+      pathogens:guildCount(state,6),
+      nematodes:guildCount(state,9),
+      activePathogens:0,
+      activeNematodes:0
+    };
+    const engine=window.RizoSimEngine;
+    const raw=engine&&engine.raw;
+    const geo=engine&&engine.geometry;
+    if(!raw||!Array.isArray(raw.sw)||!geo)return result;
+    const minY=geo.gY;
+    const maxY=geo.gY+geo.rootDepth+22;
+    raw.sw.forEach(item=>{
+      if(!item.alive||item.y<minY||item.y>maxY)return;
+      const distance=Math.abs(item.x-geo.wCx);
+      if(item.g.guild===6&&distance<15)result.activePathogens++;
+      if(item.g.guild===9&&distance<25)result.activeNematodes++;
+    });
+    return result;
+  }
+
+  function growthPotential(state){
+    const plant=state.plant||{};
+    const env=state.env||{};
+    const nutrient=Math.min(plant.n||0,plant.p||0,plant.fe||0);
+    const stressFactor=clamp(1-(plant.stress||0)/100,.05,1);
+    const waterFactor=.55+.45*(waterComfort(env.moist)/100);
+    const temperatureFactor=clamp(1-Math.abs((env.temp||25)-25)/20,.15,1);
+    const toxicityFactor=clamp(1-(env.tox||0)/100,.1,1);
+    return clamp(nutrient*2*stressFactor*waterFactor*temperatureFactor*toxicityFactor,0,100);
   }
 
   function sentenceList(items){
@@ -45,12 +82,9 @@
   }
 
   function rootHealth(state){
-    const counts=state.guildCounts||{};
-    const total=Math.max(1,state.population||1);
-    const nematodes=counts[9]||0;
-    const pathogens=counts[6]||0;
-    const pressure=((nematodes+pathogens)/total)*100;
-    return clamp(100-state.plant.stress*.75-pressure*.65,0,100);
+    const threats=rootThreatState(state);
+    const activePressure=Math.min(25,threats.activePathogens*2.5+threats.activeNematodes*3.5);
+    return clamp(100-state.plant.stress*.75-activePressure,0,100);
   }
 
   function explainIndicator(state,id){
@@ -59,8 +93,9 @@
     const soil=state.soil||{};
     const roots=rootHealth(state);
     const water=waterComfort(env.moist);
-    const pathogens=guildCount(state,6);
-    const nematodes=guildCount(state,9);
+    const threats=rootThreatState(state);
+    const pathogens=threats.pathogens;
+    const nematodes=threats.nematodes;
     const trichoderma=guildCount(state,4);
     const arthrobotrys=guildCount(state,12);
     const rhizobium=guildCount(state,5);
@@ -86,9 +121,9 @@
       add(helps,!nBlocked&&!pBlocked&&!feBlocked&&plant.n>=50&&plant.p>=50&&plant.fe>=40,'Os principais nutrientes internos estão bons.');
       add(helps,plant.stress<18,'O estresse está baixo.');
       add(helps,water>=68,'A água está confortável.');
-      add(helps,plant.nodules>0,'Há nódulo(s) de rizóbio ligados à fixação de nitrogênio.');
+      add(helps,plant.nodules>0,'Há '+plant.nodules+' '+plural(plant.nodules,'nódulo de rizóbio ligado','nódulos de rizóbio ligados')+' à fixação de nitrogênio.');
       add(helps,mycorrhiza>0,'Há micorriza explorando mais solo para fósforo.');
-      return 'O crescimento depende da biomassa simulada, dos nutrientes mais limitantes e do estresse. '+withHelps(causes.length?'Agora: '+sentenceList(causes):'Agora o crescimento não tem uma trava forte visível.',helps);
+      return 'Este indicador mostra se as condições atuais permitem que o feijão continue crescendo. '+withHelps(causes.length?'Agora: '+sentenceList(causes):'Agora não há uma limitação forte visível.',helps);
     }
 
     if(id==='nitrogen'){
@@ -117,27 +152,29 @@
       add(causes,env.moist>=30&&env.moist<45,'A água ainda está abaixo da faixa mais confortável.');
       add(causes,env.moist>75&&env.moist<=85,'A água está acima do ideal, mas ainda não é encharcamento forte.');
       add(helps,env.moist>=45&&env.moist<=75,'A umidade está equilibrada para a simulação.');
-      return 'Este indicador mostra conforto hídrico, não simplesmente “quanto maior melhor”. Umidade atual: '+Math.round(env.moist)+'%. Oxigênio médio do solo: '+Math.round(soil.O2||0)+'%. '+sentenceList(causes.concat(helps));
+      return 'Este indicador mostra conforto hídrico, não simplesmente “quanto maior melhor”. '+sentenceList(causes.concat(helps));
     }
 
     if(id==='roots'){
       add(causes,plant.stress>30,'O estresse geral da planta está alto.');
-      add(causes,pathogens>0,'Há patógenos na comunidade.');
-      add(causes,nematodes>0,'Há nematoides que podem ferir raízes.');
+      add(causes,threats.activePathogens>0,'Há '+threats.activePathogens+' '+plural(threats.activePathogens,'patógeno próximo','patógenos próximos')+' da raiz causando pressão agora.');
+      add(causes,threats.activeNematodes>0,'Há '+threats.activeNematodes+' '+plural(threats.activeNematodes,'nematoide próximo','nematoides próximos')+' da raiz, onde podem causar dano.');
       add(causes,env.moist<30,'A seca aumenta a pressão sobre a raiz.');
       add(causes,env.moist>85,'Excesso de água reduz oxigênio no solo.');
       add(causes,plant.n<25||plant.p<25||plant.fe<25,'Deficiência nutricional também aparece como raiz menos saudável.');
-      add(helps,trichoderma>0,'Trichoderma pode reduzir patógenos quando encontra o alvo.');
-      add(helps,arthrobotrys>0,'Arthrobotrys pode capturar nematoides quando encontra o alvo.');
-      add(helps,pathogens===0&&nematodes===0,'Não há pressão forte de patógenos ou nematoides visível agora.');
-      return 'Saúde da raiz combina estresse da planta e pressão de organismos que podem causar dano. Valor pedagógico atual: '+Math.round(roots)+'%. '+withHelps(causes.length?'Agora: '+sentenceList(causes):'Agora a raiz está sem uma causa forte de dano.',helps);
+      add(helps,pathogens>0&&threats.activePathogens===0,'Há patógenos no solo, mas nenhum está pressionando a raiz agora.');
+      add(helps,nematodes>0&&threats.activeNematodes===0,'Há nematoides no solo, mas nenhum está junto da raiz agora.');
+      add(helps,trichoderma>0,'Trichoderma está presente e pode controlar patógenos quando encontra o alvo.');
+      add(helps,arthrobotrys>0,'Arthrobotrys está presente e pode capturar nematoides quando encontra o alvo.');
+      add(helps,pathogens===0&&nematodes===0,'Não há patógenos ou nematoides visíveis agora.');
+      return 'A saúde da raiz combina o estresse da planta com os organismos que estão realmente perto dela. '+withHelps(causes.length?'Agora: '+sentenceList(causes):'Agora a raiz está sem uma causa forte de dano.',helps);
     }
 
     return '';
   }
 
   function indicators(state){
-    const growth=clamp(((state.plant.bio-20)/130)*100,0,100);
+    const growth=growthPotential(state);
     const nitrogen=clamp(state.plant.n,0,100);
     const phosphorus=clamp(state.plant.p,0,100);
     const waterRaw=clamp(state.env.moist,0,100);
@@ -151,7 +188,7 @@
         icon:'↗',
         value:growth,
         state:level(growth),
-        explanation:'Mostra a biomassa simulada do feijão. Ela aumenta quando os nutrientes limitantes, a água e o estresse permitem crescimento.'
+        explanation:'Mostra se nutrientes, água, temperatura e estresse permitem que o feijão continue crescendo agora.'
       },
       {
         id:'nitrogen',
@@ -193,14 +230,18 @@
     const parts=[];
     const ind=indicators(state);
     const low=ind.filter(item=>item.state==='baixo').map(item=>item.label.toLowerCase());
+    const medium=ind.filter(item=>item.state==='medio').map(item=>item.label.toLowerCase());
     if(low.length){
       parts.push('O feijão precisa de atenção em '+low.join(', ')+'.');
+    }else if(medium.length){
+      parts.push('O feijão está em condição intermediária em '+medium.join(', ')+'.');
     }else{
       parts.push('O feijão está mantendo bons sinais gerais.');
     }
     parts.push('Há '+state.population+' organismos visíveis na rizosfera.');
-    if(state.plant.nodules>0)parts.push('A raiz tem '+state.plant.nodules+' nódulo(s) em formação.');
-    if(state.plant.limitFactor&&state.plant.limitFactor!=='—')parts.push('O fator mais limitante agora é '+state.plant.limitFactor+'.');
+    if(state.plant.nodules>0)parts.push('A raiz tem '+state.plant.nodules+' '+plural(state.plant.nodules,'nódulo em formação','nódulos em formação')+'.');
+    const factorNames={N:'nitrogênio',P:'fósforo',Fe:'ferro'};
+    if(state.plant.limitFactor&&factorNames[state.plant.limitFactor])parts.push('O nutriente mais limitante agora é '+factorNames[state.plant.limitFactor]+'.');
     return parts.join(' ');
   }
 
@@ -209,6 +250,7 @@
     describe,
     explainIndicator,
     waterComfort,
+    growthPotential,
     rootHealth
   };
 })();

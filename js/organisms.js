@@ -30,13 +30,13 @@
   const cards={
     0:{
       name:'Pseudomonas',
-      short:'Ferro disponível e defesa',
+      short:'Ajuda com ferro e proteção',
       initial:'Ps',
       morph:'bact',
       color:'#20b2aa',
       pattern:'pontos',
-      simple:'Torna parte do ferro mais disponível e muda a disputa com patógenos.',
-      science:'Pseudomonas representa PGPBs produtoras de sideróforos. No motor preservado, perto da raiz ela converte Fe3+ em Fe2+, pode melhorar o ferro da planta e também dificultar o ataque de patógenos quando a interação depende do Fe2+ local.'
+      simple:'Perto da raiz, pode ajudar o feijão a usar ferro e reduzir o dano de alguns patógenos.',
+      science:'Pseudomonas representa PGPBs produtoras de sideróforos. Como simplificação educativa, o motor representa essa ação convertendo Fe3+ em Fe2+ perto da raiz. Isso pode melhorar o ferro da planta e reduzir o dano de patógenos quando a interação depende do Fe2+ local; na natureza, sideróforos e disponibilidade de ferro envolvem mecanismos mais complexos.'
     },
     1:{
       name:'Bacillus',
@@ -50,7 +50,7 @@
     },
     2:{
       name:'Azospirillum',
-      short:'Ajuda com nitrogênio',
+      short:'Fixa nitrogênio e sinaliza crescimento',
       initial:'Az',
       morph:'bact',
       color:'#4dabf7',
@@ -65,12 +65,12 @@
       morph:'bact',
       color:'#ff69b4',
       pattern:'pontos',
-      simple:'Pode produzir AIA, um sinal ligado ao crescimento.',
+      simple:'Pode produzir um sinal químico que regula o crescimento.',
       science:'Methylobacterium atua como guilda mixotrófica associada a AIA no motor original. A produção diminui quando o AIA da planta já está alto.'
     },
     4:{
       name:'Trichoderma',
-      short:'Compete com patógenos',
+      short:'Controla alguns patógenos',
       initial:'Tr',
       morph:'fungi',
       color:'#9b59b6',
@@ -90,7 +90,7 @@
     },
     6:{
       name:'Patógeno',
-      short:'Pode estressar raízes',
+      short:'Pode danificar a raiz',
       initial:'Pa',
       morph:'bact',
       color:'#ef4444',
@@ -100,7 +100,7 @@
     },
     7:{
       name:'Cianobactéria',
-      short:'Usa luz e nitrogênio',
+      short:'Usa luz e fixa nitrogênio',
       initial:'Ci',
       morph:'bact',
       color:'#84cc16',
@@ -130,17 +130,17 @@
     },
     10:{
       name:'Saprófito',
-      short:'Recicla matéria orgânica',
+      short:'Recicla restos e libera nutrientes',
       initial:'Sa',
       morph:'fungi',
       color:'#a78bfa',
       pattern:'ramos',
-      simple:'Ajuda a transformar restos em nutrientes disponíveis.',
+      simple:'É um decompositor: transforma restos em nutrientes disponíveis.',
       science:'Saprófitos decompõem carbono orgânico em qualquer parte do solo, liberando NH4+ e PO4 livre conforme a cinética original.'
     },
     11:{
       name:'Micorriza',
-      short:'Explora mais solo',
+      short:'Amplia o alcance da raiz',
       initial:'Mi',
       morph:'fungi',
       color:'#d4d4d8',

@@ -112,8 +112,8 @@
     renderIndicators();
     renderExplainActions(waterActions());
     const state=RizoSimEngine.state;
-    const comfort=RizoSchoolPlant.waterComfort?Math.round(RizoSchoolPlant.waterComfort(state.env.moist)):moist;
-    explainText.textContent='A umidade do solo foi ajustada para '+moist+'%. O conforto hídrico agora é '+comfort+'%. Observe o tom do solo, o oxigênio, o movimento dos organismos e o estresse do feijão nos próximos passos da simulação.';
+    const water=RizoSchoolPlant.indicators(state).find(item=>item.id==='water');
+    explainText.textContent='A condição de água foi alterada. Agora ela está '+water.status+'. Observe o tom do solo, o movimento dos organismos e a resposta do feijão nos próximos passos da simulação.';
     addChildEvent({
       priority:4,
       key:'water-control-'+moist,
@@ -125,7 +125,7 @@
 
   function renderCategories(){
     categoryTabs.innerHTML=RizoSchoolOrganisms.categories.map(category=>`
-      <button id="tab-${category.id}" role="tab" type="button" aria-selected="${category.id===activeCategory}" data-category="${category.id}">
+      <button id="tab-${category.id}" role="tab" type="button" aria-selected="${category.id===activeCategory}" aria-controls="organismCards" tabindex="${category.id===activeCategory?'0':'-1'}" data-category="${category.id}">
         ${category.label}
       </button>
     `).join('');
@@ -133,6 +133,8 @@
 
   function renderCards(){
     const category=RizoSchoolOrganisms.categories.find(item=>item.id===activeCategory);
+    organismCards.setAttribute('role','tabpanel');
+    organismCards.setAttribute('aria-labelledby','tab-'+category.id);
     organismCards.innerHTML=category.guilds.map(guildId=>{
       const item=RizoSchoolOrganisms.get(guildId);
       return `
@@ -155,6 +157,22 @@
     activeCategory=tab.dataset.category;
     renderCategories();
     renderCards();
+  });
+
+  categoryTabs.addEventListener('keydown',event=>{
+    if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+    const categories=RizoSchoolOrganisms.categories;
+    const current=categories.findIndex(item=>item.id===activeCategory);
+    let next=current;
+    if(event.key==='ArrowLeft')next=(current-1+categories.length)%categories.length;
+    if(event.key==='ArrowRight')next=(current+1)%categories.length;
+    if(event.key==='Home')next=0;
+    if(event.key==='End')next=categories.length-1;
+    activeCategory=categories[next].id;
+    renderCategories();
+    renderCards();
+    document.getElementById('tab-'+activeCategory)?.focus();
+    event.preventDefault();
   });
 
   function findBiocontrolTarget(guildId){
@@ -241,10 +259,11 @@
     if(raw.includes('Bacillus'))return {key:'bacillus-p',message:'O fósforo disponível aumentou perto das raízes.',title:'Fósforo liberado',detail:'Bacillus pode solubilizar fósforo ligado. O efeito depende de pH, fósforo ligado e proximidade da raiz.'};
     if(raw.includes('Pseudo'))return {key:'ferro',message:'O ferro solúvel aumentou perto da raiz.',title:'Ferro disponível',detail:'Pseudomonas pode converter Fe3+ em Fe2+, uma forma simulada como mais disponível.'};
     if(raw.includes('Proto'))return {key:'proto-pred',message:'Um protozoário se alimentou de microrganismos.',title:'Predação',detail:'Protozoários controlam populações abundantes e reciclam parte dos nutrientes ao predar.'};
-    if(raw.includes('Nemat'))return {key:'raiz-dano',message:'A raiz sofreu dano.',title:'Dano radicular',detail:'Nematoides próximos da raiz podem aumentar o estresse e reduzir a biomassa da planta no simulador.'};
-    if(raw.includes('Pat'))return {key:'patogeno',message:'A raiz está sob pressão de patógenos.',title:'Patógenos',detail:'Patógenos oportunistas perto da raiz podem aumentar o estresse quando as condições permitem.'};
+    if(raw.includes('Trichoderma'))return {key:'trichoderma-control',message:'Trichoderma controlou um patógeno.',title:'Controle biológico',detail:'O Trichoderma encontrou um patógeno, reduziu essa população e aliviou parte da pressão sobre a raiz.'};
+    if(raw.includes('Arthrobotrys'))return {key:'arthro',message:'Uma armadilha capturou um nematoide.',title:'Arthrobotrys',detail:'Arthrobotrys é representado como fungo nematófago; ao capturar nematoides, reduz a pressão sobre a raiz e recicla nutrientes.'};
+    if(raw.includes('Nematóide: raiz dano'))return {key:'raiz-dano',message:'Um nematoide causou dano à raiz.',title:'Dano radicular',detail:'Um nematoide chegou perto da raiz, aumentou o estresse e reduziu parte da biomassa da planta no simulador.'};
+    if(raw.includes('Patógeno↑stress'))return {key:'patogeno',message:'Um patógeno aumentou o estresse da raiz.',title:'Patógenos',detail:'Um patógeno oportunista chegou perto da raiz e causou pressão nas condições atuais.'};
     if(raw.includes('Sapr'))return {key:'reciclagem',message:'Restos estão sendo reciclados no solo.',title:'Reciclagem',detail:'Saprófitos decompõem carbono orgânico e liberam nutrientes como NH4+ e fósforo livre.'};
-    if(raw.includes('Arthrobotrys'))return {key:'arthro',message:'Uma armadilha capturou nematoide.',title:'Arthrobotrys',detail:'Arthrobotrys é representado como fungo nematófago; ao capturar nematoides, recicla nutrientes.'};
     return null;
   }
 
@@ -262,7 +281,7 @@
       at:now
     });
     eventItems=eventItems
-      .sort((a,b)=>b.priority-a.priority||b.at-a.at)
+      .sort((a,b)=>(b.at+b.priority*6000)-(a.at+a.priority*6000))
       .slice(0,5);
     renderEvents();
   }
@@ -271,7 +290,7 @@
     eventList.innerHTML=eventItems.map((item,index)=>`
       <li>
         <p>${item.message}</p>
-        <button class="understand-btn" type="button" data-event-index="${index}">ENTENDA</button>
+        <button class="understand-btn" type="button" data-event-index="${index}">Entenda</button>
       </li>
     `).join('');
   }
@@ -294,6 +313,7 @@
 
   window.RizoSchoolEvents={
     add:addChildEvent,
+    translate:translateEngineEvent,
     fromEngine(cls,txt){
       const translated=translateEngineEvent(cls,txt);
       if(translated)addChildEvent({...translated,priority:3});
@@ -346,8 +366,8 @@
       return 'Este Bacillus está consumindo recursos e pode atuar quando encontra a rizosfera.';
     }
     if(gid===0){
-      if(state.plant.fe<35||state.plant.limitFactor==='Fe')return 'Esta Pseudomonas é importante agora: o ferro está limitando a planta, e ela pode transformar Fe3+ em Fe2+ perto da raiz.';
-      if(nearbyPathogens>0||((state.guildCounts[6]||0)>0&&state.soil.Fe2<8))return 'Esta Pseudomonas está em uma disputa por ferro. Isso pode mudar como patógenos afetam a raiz.';
+      if(state.plant.fe<35||state.plant.limitFactor==='Fe')return 'Esta Pseudomonas é importante agora: o ferro está limitando a planta, e ela pode deixá-lo mais disponível perto da raiz.';
+      if(nearbyPathogens>0||((state.guildCounts[6]||0)>0&&state.soil.Fe2<8))return 'Esta Pseudomonas está perto de uma disputa por ferro. No modelo, isso pode reduzir o dano causado por alguns patógenos.';
       if(nearRoot&&local.Fe3>local.Fe2)return 'Esta Pseudomonas está perto da raiz e pode tornar parte do ferro mais disponível.';
       return 'Esta Pseudomonas está se movendo e competindo por recursos; ela aparece mais quando ferro ou patógenos viram parte do problema.';
     }
@@ -435,7 +455,7 @@
     closeScenarioPanel();
     clearSelection();
     addChildEvent({
-      priority:4,
+      priority:3,
       key:'scenario-observe-'+scenario.id,
       message:scenario.observe,
       title:scenario.name,
@@ -451,9 +471,11 @@
   }
 
   function closeScenarioPanel(){
+    const wasOpen=!scenarioPanel.hidden;
     scenarioPanel.hidden=true;
     scenarioBackdrop.hidden=true;
     document.getElementById('scenarioBtn')?.setAttribute('aria-expanded','false');
+    if(wasOpen)document.getElementById('scenarioBtn')?.focus({preventScroll:true});
   }
 
   document.getElementById('scenarioBtn')?.addEventListener('click',()=>{
@@ -566,11 +588,11 @@
   renderScenarios();
   renderIndicators();
   addChildEvent({
-    priority:4,
+    priority:1,
     key:'welcome',
     message:'A simulação da rizosfera está rodando.',
     title:'Bem-vindo',
-    detail:'O motor original continua simulando organismos, nutrientes, raízes, nodulação, micorriza, predação, decomposição e estresse da planta.'
+    detail:'Observe os organismos perto das raízes e acompanhe como o feijão responde às mudanças no solo.'
   });
   applyReducedMotionPreference();
   setInterval(tickUI,500);

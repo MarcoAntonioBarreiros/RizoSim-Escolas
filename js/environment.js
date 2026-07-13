@@ -21,8 +21,8 @@
     {
       id:'equilibrado',
       name:'Solo equilibrado',
-      phrase:'O feijão começa em um solo com água e nutrientes moderados.',
-      observe:'Observe como a comunidade muda sem uma pressão forte no início.',
+      phrase:'O feijão começa sem seca ou falta extrema de nutrientes.',
+      observe:'Observe quais fatores mudam primeiro enquanto a comunidade se reorganiza.',
       values:{...defaults}
     },
     {
@@ -43,7 +43,7 @@
       id:'baixo-fe',
       name:'Pouco ferro disponível',
       phrase:'Há ferro no solo, mas pouco está em forma fácil para a raiz.',
-      observe:'Observe quando Pseudomonas pode ajudar a transformar o ferro perto da raiz.',
+      observe:'Observe quais organismos alteram a disponibilidade de ferro perto da raiz.',
       values:{...defaults,Fe2:1,Fe3:130,PO4free:24,NH4:42,NO3:34},
       afterReset(){
         RizoSimEngine.raw.plant.fe=8;
@@ -88,7 +88,7 @@
     RizoSimEngine.setPaused(false);
     if(window.RizoSchoolEvents){
       RizoSchoolEvents.add({
-        priority:4,
+        priority:3,
         key:'scenario-'+scenario.id,
         message:scenario.phrase,
         detail:scenario.observe,

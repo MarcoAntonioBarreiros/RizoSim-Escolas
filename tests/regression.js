@@ -5,7 +5,7 @@
 
   async function waitForEngine(target){
     for(let i=0;i<80;i++){
-      if(target.RizoSimEngine&&target.RizoSchoolEnvironment)return;
+      if(target.RizoSimEngine&&target.RizoSchoolEnvironment&&target.RizoSchoolPlant&&target.RizoSchoolEvents)return;
       await wait(100);
     }
     throw new Error('RizoSimEngine não ficou disponível.');
@@ -33,6 +33,26 @@
       'As 13 guildas originais continuam presentes',
       engine.guilds.length===13&&engine.guilds.some(g=>g.name==='Rhizobium')&&engine.guilds.some(g=>g.name==='Micorriza'),
       'Total de guildas: '+engine.guilds.length
+    ));
+
+    const trichodermaEvent=target.RizoSchoolEvents.translate('eP','🛡 Trichoderma→Patógeno');
+    const arthrobotrysEvent=target.RizoSchoolEvents.translate('eP','🪤 Arthrobotrys→Nematóide');
+    results.push(result(
+      'Eventos de biocontrole são traduzidos como resultados positivos',
+      trichodermaEvent&&trichodermaEvent.key==='trichoderma-control'&&arthrobotrysEvent&&arthrobotrysEvent.key==='arthro',
+      (trichodermaEvent?trichodermaEvent.message:'sem Trichoderma')+' | '+(arthrobotrysEvent?arthrobotrysEvent.message:'sem Arthrobotrys')
+    ));
+
+    engine.resetWith({...defaults,microbeMult:0});
+    const baseState=engine.state;
+    const blockedState={...baseState,plant:{...baseState.plant,bio:140,n:8,p:90,fe:90,stress:0},env:{...baseState.env,moist:60,temp:25,tox:0}};
+    const favorableState={...baseState,plant:{...baseState.plant,bio:30,n:60,p:60,fe:60,stress:0},env:{...baseState.env,moist:60,temp:25,tox:0}};
+    const blockedGrowth=target.RizoSchoolPlant.indicators(blockedState).find(item=>item.id==='growth');
+    const favorableGrowth=target.RizoSchoolPlant.indicators(favorableState).find(item=>item.id==='growth');
+    results.push(result(
+      'Crescimento representa condições atuais, não tamanho acumulado',
+      blockedGrowth.state==='baixo'&&favorableGrowth.state==='bom',
+      'Planta grande limitada: '+blockedGrowth.state+'; planta jovem favorecida: '+favorableGrowth.state
     ));
 
     engine.resetWith({...defaults,microbeMult:0,NH4:2,NO3:2,organicC:950});
@@ -122,7 +142,7 @@
     const waterExcess=target.RizoSchoolPlant.indicators(engine.state).find(item=>item.id==='water');
     results.push(result(
       'Indicador de água mede conforto hídrico, não volume bruto',
-      waterBalanced.state==='bom'&&waterBalanced.status==='bom'&&waterExcess.state!=='bom'&&waterExcess.status==='excesso',
+      waterBalanced.state==='bom'&&waterBalanced.status==='equilibrada'&&waterExcess.state!=='bom'&&waterExcess.status==='excesso',
       '60%: '+waterBalanced.status+'/'+waterBalanced.state+'; 88%: '+waterExcess.status+'/'+waterExcess.state
     ));
 
