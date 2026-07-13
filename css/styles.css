@@ -222,6 +222,28 @@ input:focus-visible,
   border-top:1px solid rgba(0,0,0,.08);
   border-bottom:1px solid rgba(0,0,0,.08);
 }
+.canvas-shell::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:3;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .25s ease,background .25s ease;
+  mix-blend-mode:soft-light;
+}
+body[data-water="dry"] .canvas-shell::after{
+  opacity:.28;
+  background:linear-gradient(180deg,rgba(183,109,18,.18),rgba(198,75,59,.28));
+}
+body[data-water="watch"] .canvas-shell::after{
+  opacity:.16;
+  background:linear-gradient(180deg,rgba(183,109,18,.14),rgba(43,99,198,.10));
+}
+body[data-water="wet"] .canvas-shell::after{
+  opacity:.24;
+  background:linear-gradient(180deg,rgba(43,99,198,.24),rgba(8,125,132,.24));
+}
 #pond{
   display:block;
   width:100%;

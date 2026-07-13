@@ -30,13 +30,13 @@
   const cards={
     0:{
       name:'Pseudomonas',
-      short:'Ajuda a obter ferro',
+      short:'Ferro disponível e defesa',
       initial:'Ps',
       morph:'bact',
       color:'#20b2aa',
       pattern:'pontos',
-      simple:'Ajuda quando falta ferro ou há patógenos competindo.',
-      science:'Pseudomonas representa PGPBs produtoras de sideróforos. No motor preservado, perto da raiz ela converte Fe3+ em Fe2+, pode melhorar o ferro da planta e também dificultar o ataque de patógenos dependentes de ferro.'
+      simple:'Torna parte do ferro mais disponível e muda a disputa com patógenos.',
+      science:'Pseudomonas representa PGPBs produtoras de sideróforos. No motor preservado, perto da raiz ela converte Fe3+ em Fe2+, pode melhorar o ferro da planta e também dificultar o ataque de patógenos quando a interação depende do Fe2+ local.'
     },
     1:{
       name:'Bacillus',
@@ -80,13 +80,13 @@
     },
     5:{
       name:'Rizóbio',
-      short:'Pode formar nódulos',
+      short:'Fixa nitrogênio em nódulos',
       initial:'Ri',
       morph:'bact',
       color:'#eab308',
       pattern:'anel',
-      simple:'Quando encontra a raiz, pode formar nódulos ligados ao nitrogênio.',
-      science:'Rhizobium preserva a morfologia radial e a regra de nodulação. A chance de nodular aumenta quando o nitrogênio da planta está baixo.'
+      simple:'Quando forma nódulos, pode transferir nitrogênio para a planta.',
+      science:'Rhizobium preserva a morfologia radial, a regra de nodulação e a fixação biológica de nitrogênio. A chance de nodular aumenta quando o nitrogênio da planta está baixo.'
     },
     6:{
       name:'Patógeno',

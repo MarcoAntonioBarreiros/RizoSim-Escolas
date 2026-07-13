@@ -58,21 +58,31 @@
   function waterActions(){
     const current=Math.round(RizoSimEngine.state.env.moist);
     return [
-      {action:'water',value:22,label:'Pouca água',pressed:current<35},
-      {action:'water',value:60,label:'Água equilibrada',pressed:current>=35&&current<78},
-      {action:'water',value:88,label:'Muita água',pressed:current>=78}
+      {action:'water',value:22,label:'Pouca água',pressed:current<45},
+      {action:'water',value:60,label:'Água equilibrada',pressed:current>=45&&current<=75},
+      {action:'water',value:88,label:'Muita água',pressed:current>75}
     ];
+  }
+
+  function syncWaterVisual(state){
+    const moist=state.env.moist;
+    let tone='balanced';
+    if(moist<30)tone='dry';
+    else if(moist<45||moist>75)tone='watch';
+    if(moist>85)tone='wet';
+    document.body.dataset.water=tone;
   }
 
   function renderIndicators(){
     const state=RizoSimEngine.state;
+    syncWaterVisual(state);
     currentIndicators=RizoSchoolPlant.indicators(state);
     indicatorHost.innerHTML=currentIndicators.map(item=>`
       <button class="indicator" type="button" data-indicator="${item.id}" data-state="${item.state}">
         <span class="indicator-icon" style="background:${item.state==='baixo'?'var(--coral)':item.state==='medio'?'var(--amber)':'var(--green)'}">${item.icon}</span>
         <span>
           <strong>${item.label}</strong>
-          <small>${stateLabel(item.state)}</small>
+          <small>${item.status||stateLabel(item.state)}</small>
           <span class="simple-bar" aria-hidden="true"><span style="width:${Math.round(item.value)}%"></span></span>
         </span>
       </button>
@@ -85,11 +95,12 @@
     if(!button)return;
     const indicator=currentIndicators.find(item=>item.id===button.dataset.indicator);
     if(!indicator)return;
+    const detail=RizoSchoolPlant.explainIndicator?RizoSchoolPlant.explainIndicator(RizoSimEngine.state,indicator.id):indicator.explanation;
     if(indicator.id==='water'){
-      openExplanation(indicator.label,indicator.explanation+' Escolha uma condição para alterar a umidade real do simulador.','Como está o feijão?',waterActions());
+      openExplanation(indicator.label,detail+' Escolha uma condição para alterar a umidade real do simulador.','Como está o feijão?',waterActions());
       return;
     }
-    if(indicator)openExplanation(indicator.label,indicator.explanation,'Como está o feijão?');
+    if(indicator)openExplanation(indicator.label,detail||indicator.explanation,'Como está o feijão?');
   });
 
   explainActions?.addEventListener('click',event=>{
@@ -100,7 +111,9 @@
     RizoSimEngine.configure({moist});
     renderIndicators();
     renderExplainActions(waterActions());
-    explainText.textContent='A umidade do solo foi ajustada para '+moist+'%. Observe a água, o movimento dos organismos, o oxigênio do solo e o estresse do feijão.';
+    const state=RizoSimEngine.state;
+    const comfort=RizoSchoolPlant.waterComfort?Math.round(RizoSchoolPlant.waterComfort(state.env.moist)):moist;
+    explainText.textContent='A umidade do solo foi ajustada para '+moist+'%. O conforto hídrico agora é '+comfort+'%. Observe o tom do solo, o oxigênio, o movimento dos organismos e o estresse do feijão nos próximos passos da simulação.';
     addChildEvent({
       priority:4,
       key:'water-control-'+moist,
@@ -296,11 +309,13 @@
     const nearbyBacteria=nearby.filter(other=>GUILDS[other.g.guild].type==='bact').length;
     const nearbyPathogens=nearby.filter(other=>other.g.guild===6).length;
     const nearbyNematodes=nearby.filter(other=>other.g.guild===9).length;
+    const state=RizoSimEngine.state;
 
     if(gid===5){
-      if(org.nodulated)return 'Este rizóbio já está ligado à raiz e participa da formação de um nódulo.';
-      if(nearRoot)return 'Este rizóbio está perto da raiz, mas ainda não formou um nódulo.';
-      return 'Este rizóbio está se movendo pelo solo em busca de sinais da raiz.';
+      if(org.nodulated)return 'Este rizóbio já está ligado à raiz em um nódulo e pode ajudar na fixação de nitrogênio.';
+      if(nearRoot&&state.plant.n<45)return 'Este rizóbio está perto da raiz. Como o nitrogênio está baixo, ele tem mais chance de formar nódulo e ajudar na fixação de N.';
+      if(nearRoot)return 'Este rizóbio está perto da raiz, mas ainda não formou nódulo. Sua função importante é a parceria ligada ao nitrogênio.';
+      return 'Este rizóbio está se movendo pelo solo em busca de sinais da raiz para uma parceria de nitrogênio.';
     }
     if(gid===11){
       if(nearRoot)return 'Esta micorriza está perto da raiz e pode ampliar a região explorada para fósforo.';
@@ -331,8 +346,10 @@
       return 'Este Bacillus está consumindo recursos e pode atuar quando encontra a rizosfera.';
     }
     if(gid===0){
-      if(nearRoot&&local.Fe3>local.Fe2)return 'Esta Pseudomonas está perto da raiz e pode tornar ferro mais disponível.';
-      return 'Esta Pseudomonas está se movendo e competindo por recursos no solo.';
+      if(state.plant.fe<35||state.plant.limitFactor==='Fe')return 'Esta Pseudomonas é importante agora: o ferro está limitando a planta, e ela pode transformar Fe3+ em Fe2+ perto da raiz.';
+      if(nearbyPathogens>0||((state.guildCounts[6]||0)>0&&state.soil.Fe2<8))return 'Esta Pseudomonas está em uma disputa por ferro. Isso pode mudar como patógenos afetam a raiz.';
+      if(nearRoot&&local.Fe3>local.Fe2)return 'Esta Pseudomonas está perto da raiz e pode tornar parte do ferro mais disponível.';
+      return 'Esta Pseudomonas está se movendo e competindo por recursos; ela aparece mais quando ferro ou patógenos viram parte do problema.';
     }
     if(gid===10)return 'Este saprófito está ajudando a reciclar matéria orgânica no solo.';
     if(gid===7)return 'Esta cianobactéria usa luz perto da superfície e pode contribuir com nitrogênio.';

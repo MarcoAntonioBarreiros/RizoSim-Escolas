@@ -38,6 +38,9 @@ Foi criado um novo repositório independente em `outputs/RizoSim-Escolas`.
 - O cenário **Ataque às raízes** foi suavizado: continua iniciando patógenos e nematoides, mas com pressão inicial menor para permitir intervenção.
 - A adição infantil de Trichoderma e Arthrobotrys passou a posicionar esses organismos perto de patógenos/nematoides quando esses alvos já existem.
 - No motor, o sinal de defesa da planta também responde a nematoides; captura por Arthrobotrys e biocontrole por Trichoderma foram levemente ajustados para ter efeito observável sem remover a interação emergente.
+- O indicador **Água** passou a mostrar conforto hídrico, não volume bruto: água equilibrada aparece como boa, enquanto excesso aparece como excesso.
+- Os indicadores infantis ganharam explicações dinâmicas baseadas no estado real: crescimento, nitrogênio, fósforo, água e saúde da raiz indicam causas positivas e negativas.
+- Os textos de Rizóbio e Pseudomonas foram refinados para explicitar fixação de nitrogênio, ferro disponível e interação com patógenos.
 
 ## Mudanças somente de interface
 

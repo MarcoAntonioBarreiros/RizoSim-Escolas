@@ -35,4 +35,5 @@ O log técnico do motor continua existindo internamente, mas a criança vê o pa
 - Ajuda.
 - Escolha/adição de organismo.
 - Ajuste simples de água pelo indicador **Água**.
+- Explicações dinâmicas nos indicadores, mostrando causas reais do estado do feijão.
 - Modo professor discreto.

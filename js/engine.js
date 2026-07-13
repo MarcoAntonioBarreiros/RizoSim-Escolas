@@ -942,6 +942,7 @@ for(const bp of babyPlants){bp.age++;
     }
   }
 }
+plant.stress=cl(plant.stress||0,0,100);plant.bio=cl(plant.bio||20,20,150);plant.n=cl(plant.n,0,100);plant.p=cl(plant.p,0,100);plant.fe=cl(plant.fe,0,100);plant.aia=cl(plant.aia,0,100);
 syncSoilFromGrid();
 fx=fx.filter(p=>{
   if(p.type === 'part') {

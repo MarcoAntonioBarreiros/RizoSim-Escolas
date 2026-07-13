@@ -18,6 +18,7 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 
 - Pseudomonas continua útil quando ferro limita a planta.
 - Trichoderma e Arthrobotrys continuam reduzindo patógenos ou nematoides quando encontram seus alvos.
+- Indicador de água mede conforto hídrico: água equilibrada aparece como boa e excesso não aparece como bom.
 
 ## Verificações manuais recomendadas
 
@@ -25,6 +26,7 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 - Adicionar Bacillus em cenário de pouco fósforo e observar painel/indicadores.
 - Adicionar rizóbio em cenário de pouco nitrogênio e observar eventual nodulação.
 - Clicar no indicador Água e alternar pouca água, água equilibrada e muita água.
+- Clicar em Crescimento e Saúde da raiz durante cenários de estresse e confirmar que a explicação cita causas reais.
 - Usar o cenário de pouco ferro disponível e observar a utilidade de Pseudomonas.
 - Usar o cenário de ataque às raízes e adicionar Trichoderma/Arthrobotrys cedo.
 - Ativar mapa de nutrientes no modo professor.

@@ -116,6 +116,16 @@
       'Patógenos: '+pathogensBefore+' -> '+pathogensAfter+'; nematoides: '+nematodesBefore+' -> '+nematodesAfter
     ));
 
+    engine.configure({moist:60});
+    const waterBalanced=target.RizoSchoolPlant.indicators(engine.state).find(item=>item.id==='water');
+    engine.configure({moist:88});
+    const waterExcess=target.RizoSchoolPlant.indicators(engine.state).find(item=>item.id==='water');
+    results.push(result(
+      'Indicador de água mede conforto hídrico, não volume bruto',
+      waterBalanced.state==='bom'&&waterBalanced.status==='bom'&&waterExcess.state!=='bom'&&waterExcess.status==='excesso',
+      '60%: '+waterBalanced.status+'/'+waterBalanced.state+'; 88%: '+waterExcess.status+'/'+waterExcess.state
+    ));
+
     engine.configure({moist:22,temp:31,ph:6.1,tox:5});
     results.push(result(
       'Controles técnicos continuam funcionando',
