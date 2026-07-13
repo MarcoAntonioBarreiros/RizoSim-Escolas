@@ -17,6 +17,7 @@
   const explainTitle=document.getElementById('explainTitle');
   const explainText=document.getElementById('explainText');
   const explainEyebrow=document.getElementById('explainEyebrow');
+  const explainActions=document.getElementById('explainActions');
 
   let activeCategory=RizoSchoolOrganisms.categories[0].id;
   let currentIndicators=[];
@@ -30,12 +31,37 @@
     return kind==='bom'?'bom':kind==='medio'?'médio':'baixo';
   }
 
-  function openExplanation(title,text,eyebrow){
+  function renderExplainActions(actions){
+    if(!explainActions)return;
+    if(!actions||!actions.length){
+      explainActions.hidden=true;
+      explainActions.innerHTML='';
+      return;
+    }
+    explainActions.hidden=false;
+    explainActions.innerHTML=actions.map(action=>`
+      <button type="button" data-action="${action.action}" data-value="${action.value}" aria-pressed="${action.pressed?'true':'false'}">
+        ${action.label}
+      </button>
+    `).join('');
+  }
+
+  function openExplanation(title,text,eyebrow,actions){
     explainTitle.textContent=title;
     explainText.textContent=text;
     explainEyebrow.textContent=eyebrow||'Entenda';
+    renderExplainActions(actions);
     if(typeof explainDialog.showModal==='function')explainDialog.showModal();
     else explainDialog.setAttribute('open','');
+  }
+
+  function waterActions(){
+    const current=Math.round(RizoSimEngine.state.env.moist);
+    return [
+      {action:'water',value:22,label:'Pouca água',pressed:current<35},
+      {action:'water',value:60,label:'Água equilibrada',pressed:current>=35&&current<78},
+      {action:'water',value:88,label:'Muita água',pressed:current>=78}
+    ];
   }
 
   function renderIndicators(){
@@ -58,7 +84,30 @@
     const button=event.target.closest('[data-indicator]');
     if(!button)return;
     const indicator=currentIndicators.find(item=>item.id===button.dataset.indicator);
+    if(!indicator)return;
+    if(indicator.id==='water'){
+      openExplanation(indicator.label,indicator.explanation+' Escolha uma condição para alterar a umidade real do simulador.','Como está o feijão?',waterActions());
+      return;
+    }
     if(indicator)openExplanation(indicator.label,indicator.explanation,'Como está o feijão?');
+  });
+
+  explainActions?.addEventListener('click',event=>{
+    const button=event.target.closest('[data-action="water"]');
+    if(!button)return;
+    const moist=Number(button.dataset.value);
+    const label=button.textContent.trim();
+    RizoSimEngine.configure({moist});
+    renderIndicators();
+    renderExplainActions(waterActions());
+    explainText.textContent='A umidade do solo foi ajustada para '+moist+'%. Observe a água, o movimento dos organismos, o oxigênio do solo e o estresse do feijão.';
+    addChildEvent({
+      priority:4,
+      key:'water-control-'+moist,
+      message:'A água do solo mudou para: '+label+'.',
+      title:'Água do solo',
+      detail:'A criança alterou a umidade real do ambiente. O motor recalcula viscosidade, oxigênio e estresse usando esse novo valor.'
+    });
   });
 
   function renderCategories(){
@@ -95,6 +144,30 @@
     renderCards();
   });
 
+  function findBiocontrolTarget(guildId){
+    const preyGuild=guildId===4?6:guildId===12?9:null;
+    if(preyGuild===null)return null;
+    const geo=RizoSimEngine.geometry;
+    const options=RizoSimEngine.raw.sw.filter(item=>item.alive&&item.g.guild===preyGuild);
+    options.sort((a,b)=>{
+      const ar=Math.abs(a.x-geo.wCx)+(a.y>geo.gY&&a.y<geo.gY+geo.rootDepth+32?0:200);
+      const br=Math.abs(b.x-geo.wCx)+(b.y>geo.gY&&b.y<geo.gY+geo.rootDepth+32?0:200);
+      return ar-br;
+    });
+    return options[0]||null;
+  }
+
+  function inoculateFromCard(guildId){
+    const target=findBiocontrolTarget(guildId);
+    const count=(guildId===4||guildId===12)?5:3;
+    if(target){
+      const x=target.x+(Math.random()*18-9);
+      const y=target.y+(Math.random()*18-9);
+      return {made:RizoSimEngine.inoculateAt(guildId,x,y,count),target};
+    }
+    return {made:RizoSimEngine.inoculateNearRoot(guildId,count),target:null};
+  }
+
   organismCards.addEventListener('click',event=>{
     const observe=event.target.closest('[data-observe]');
     const add=event.target.closest('[data-add]');
@@ -105,7 +178,8 @@
     }
     if(add){
       const guildId=Number(add.dataset.add);
-      const made=RizoSimEngine.inoculateNearRoot(guildId,3);
+      const placement=inoculateFromCard(guildId);
+      const made=placement.made;
       RizoSimEngine.selectMode();
       RizoSimEngine.setPaused(false);
       if(made[0])selectOrganism(made[0]);
@@ -115,7 +189,7 @@
         key:'card-add-'+guildId,
         message:data.name+' foi adicionado perto da raiz.',
         title:data.name,
-        detail:data.science
+        detail:data.science+(placement.target?' Nesta versão escolar, a adição foi posicionada perto do desafio observado para que a interação ecológica possa acontecer na simulação.':'')
       });
     }
   });
@@ -405,8 +479,10 @@
     const state=RizoSimEngine.state;
     if(state.plant.n<24)addChildEvent({priority:2,key:'low-n',message:'A planta está com pouco nitrogênio.',title:'Nitrogênio baixo',detail:'No motor, o crescimento fica limitado quando o nitrogênio interno da planta cai.'});
     if(state.plant.p<24)addChildEvent({priority:2,key:'low-p',message:'A planta está com pouco fósforo.',title:'Fósforo baixo',detail:'O fósforo livre no solo é pouco móvel. Alguns organismos podem aumentar sua disponibilidade quando estão perto da raiz.'});
+    if(state.plant.fe<24||state.plant.limitFactor==='Fe')addChildEvent({priority:2,key:'low-fe',message:'A planta está com pouco ferro disponível.',title:'Ferro baixo',detail:'Quando o ferro é o fator limitante, Pseudomonas pode ajudar perto da raiz ao transformar Fe3+ em Fe2+, forma que o motor trata como mais disponível.'});
     if(state.env.moist<30)addChildEvent({priority:2,key:'dry-soil',message:'O solo ficou mais seco.',title:'Período seco',detail:'Menos água aumenta a viscosidade do solo e pode elevar o estresse da planta.'});
     if(state.plant.stress>36)addChildEvent({priority:2,key:'stress-high',message:'A raiz está sob estresse.',title:'Estresse',detail:'O estresse resume efeitos de ambiente, nutrição e interações com organismos como patógenos e nematoides.'});
+    if((state.guildCounts[6]||0)>0&&state.soil.Fe2<8)addChildEvent({priority:2,key:'pseudo-pathogen-help',message:'Pseudomonas pode ajudar na disputa por ferro.',title:'Pseudomonas e patógenos',detail:'No motor, patógenos próximos da raiz causam mais dano quando há pouco Fe2 local. Pseudomonas pode aumentar Fe2 perto da raiz e mudar essa interação.'});
     if(previousState){
       if(previousState.plant.nodules===0&&state.plant.nodules>0)addChildEvent({priority:4,key:'new-nodule',message:'A raiz começou a formar um nódulo.',title:'Nodulação',detail:'Rizóbios nodulados podem transferir nitrogênio para a planta quando há carbono disponível.'});
       if(previousState.plant.stress-state.plant.stress>8)addChildEvent({priority:3,key:'recovering',message:'A planta começou a se recuperar.',title:'Recuperação gradual',detail:'Quando nutrientes e ambiente melhoram, o motor reduz o estresse por homeostase.'});

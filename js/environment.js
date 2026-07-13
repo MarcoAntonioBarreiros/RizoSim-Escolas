@@ -40,6 +40,16 @@
       values:{...defaults,PO4free:3,PO4bound:120,ph:6.7}
     },
     {
+      id:'baixo-fe',
+      name:'Pouco ferro disponível',
+      phrase:'Há ferro no solo, mas pouco está em forma fácil para a raiz.',
+      observe:'Observe quando Pseudomonas pode ajudar a transformar o ferro perto da raiz.',
+      values:{...defaults,Fe2:1,Fe3:130,PO4free:24,NH4:42,NO3:34},
+      afterReset(){
+        RizoSimEngine.raw.plant.fe=8;
+      }
+    },
+    {
       id:'seco',
       name:'Período seco',
       phrase:'O solo está com pouca água.',
@@ -50,11 +60,11 @@
       id:'ataque-raiz',
       name:'Ataque às raízes',
       phrase:'Alguns organismos que podem causar dano começam perto da raiz.',
-      observe:'Observe se a raiz sofre dano e como a comunidade responde.',
-      values:{...defaults,microbeMult:.45,organicC:900,NH4:30,NO3:25,PO4free:18},
+      observe:'Observe se a raiz sofre dano e quais organismos conseguem reduzir a pressão.',
+      values:{...defaults,microbeMult:.35,organicC:900,NH4:34,NO3:28,PO4free:20,Fe2:4,Fe3:95},
       afterReset(){
-        RizoSimEngine.inoculateNearRoot(6,10);
-        RizoSimEngine.inoculateNearRoot(9,8);
+        RizoSimEngine.inoculateNearRoot(6,6);
+        RizoSimEngine.inoculateNearRoot(9,5);
       }
     },
     {

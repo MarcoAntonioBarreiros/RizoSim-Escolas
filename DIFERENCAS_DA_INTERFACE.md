@@ -34,5 +34,5 @@ O log técnico do motor continua existindo internamente, mas a criança vê o pa
 - Cenários.
 - Ajuda.
 - Escolha/adição de organismo.
+- Ajuste simples de água pelo indicador **Água**.
 - Modo professor discreto.
-

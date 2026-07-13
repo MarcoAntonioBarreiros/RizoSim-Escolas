@@ -31,6 +31,14 @@ Foi criado um novo repositório independente em `outputs/RizoSim-Escolas`.
 - `js/ui-teacher.js`: abertura do modo professor e sincronização de sliders.
 - `js/tutorial.js`: tutorial guiado opcional.
 
+## Ajustes pedagógicos posteriores de equilíbrio
+
+- A tela infantil passou a permitir ajustar água pelo indicador **Água**, chamando o controle real de umidade do motor.
+- Foi criado o cenário **Pouco ferro disponível** para tornar a função de Pseudomonas observável.
+- O cenário **Ataque às raízes** foi suavizado: continua iniciando patógenos e nematoides, mas com pressão inicial menor para permitir intervenção.
+- A adição infantil de Trichoderma e Arthrobotrys passou a posicionar esses organismos perto de patógenos/nematoides quando esses alvos já existem.
+- No motor, o sinal de defesa da planta também responde a nematoides; captura por Arthrobotrys e biocontrole por Trichoderma foram levemente ajustados para ter efeito observável sem remover a interação emergente.
+
 ## Mudanças somente de interface
 
 - Reorganização visual.

@@ -35,8 +35,8 @@
       morph:'bact',
       color:'#20b2aa',
       pattern:'pontos',
-      simple:'Pode transformar ferro pouco disponível em uma forma mais fácil para a planta usar.',
-      science:'Pseudomonas representa PGPBs produtoras de sideróforos. No motor preservado, perto da raiz ela converte Fe3+ em Fe2+ e pode melhorar o ferro da planta.'
+      simple:'Ajuda quando falta ferro ou há patógenos competindo.',
+      science:'Pseudomonas representa PGPBs produtoras de sideróforos. No motor preservado, perto da raiz ela converte Fe3+ em Fe2+, pode melhorar o ferro da planta e também dificultar o ataque de patógenos dependentes de ferro.'
     },
     1:{
       name:'Bacillus',

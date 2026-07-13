@@ -89,6 +89,33 @@
       'População antes/depois: '+popBefore+' -> '+engine.state.population+'; mortes: '+engine.state.deaths
     ));
 
+    engine.resetWith({...defaults,microbeMult:0,Fe2:1,Fe3:130,NH4:45,NO3:35,PO4free:25});
+    engine.raw.plant.fe=8;
+    const feBefore=engine.state.plant.fe;
+    closeToRoot(0,14);
+    engine.step(900);
+    results.push(result(
+      'Pseudomonas continua útil quando ferro limita',
+      engine.state.plant.fe>feBefore||engine.state.soil.Fe2>1.2,
+      'Fe planta: '+feBefore.toFixed(2)+' -> '+engine.state.plant.fe.toFixed(2)+'; Fe2 solo: '+engine.state.soil.Fe2.toFixed(2)
+    ));
+
+    engine.resetWith({...defaults,microbeMult:0,organicC:900,Fe2:4,Fe3:95});
+    closeToRoot(6,8);
+    closeToRoot(9,6);
+    const pathogensBefore=engine.state.guildCounts[6]||0;
+    const nematodesBefore=engine.state.guildCounts[9]||0;
+    closeToRoot(4,14);
+    closeToRoot(12,14);
+    engine.step(1100);
+    const pathogensAfter=engine.state.guildCounts[6]||0;
+    const nematodesAfter=engine.state.guildCounts[9]||0;
+    results.push(result(
+      'Biocontrole continua reduzindo patógenos ou nematoides quando encontra o alvo',
+      pathogensAfter<pathogensBefore||nematodesAfter<nematodesBefore,
+      'Patógenos: '+pathogensBefore+' -> '+pathogensAfter+'; nematoides: '+nematodesBefore+' -> '+nematodesAfter
+    ));
+
     engine.configure({moist:22,temp:31,ph:6.1,tox:5});
     results.push(result(
       'Controles técnicos continuam funcionando',

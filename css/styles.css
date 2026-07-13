@@ -634,6 +634,29 @@ input:focus-visible,
   margin-bottom:0;
   line-height:1.5;
 }
+.explain-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:16px;
+}
+.explain-actions[hidden]{
+  display:none;
+}
+.explain-actions button{
+  min-height:38px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:#fff;
+  color:var(--ink);
+  padding:0 12px;
+  cursor:pointer;
+}
+.explain-actions button[aria-pressed="true"]{
+  background:var(--teal);
+  border-color:var(--teal);
+  color:#fff;
+}
 
 .tutorial-overlay{
   position:fixed;

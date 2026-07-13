@@ -663,11 +663,11 @@ plant.stress=cl(plant.stress||0,0,100);plant.bio=cl(plant.bio||20,20,150);plant.
 const growPct=cl((plant.bio-20)/130,0,1);rootDepth=20+growPct*Math.min(280,worldDepth*0.7);
 
 /* ═══ Sinais da planta — FEEDBACK PROPORCIONAL À SAÚDE ═══ */
-var _nA=sw.filter(function(o){return o.alive}).length||1;var _pR2=sw.filter(function(o){return o.alive&&o.g.guild===6}).length/_nA;
+var _nA=sw.filter(function(o){return o.alive}).length||1;var _pR2=sw.filter(function(o){return o.alive&&o.g.guild===6}).length/_nA;var _nemaR=sw.filter(function(o){return o.alive&&o.g.guild===9}).length/_nA;
 /* Sinais específicos proporcionais à deficiência */
 plant.sig.flav=cl(plant.n<50?(50-plant.n)/50:0,0,1);     /* Flavonoides: N baixo → atrai Rhizobium */
 plant.sig.orgA=cl(plant.p<50?(50-plant.p)/50:0,0,1);      /* Ác. Orgânicos: P baixo → atrai Bacillus */
-plant.sig.SA=cl(_pR2>0.03?_pR2*10:plant.stress>30?0.3:0,0,1); /* Ác. Salicílico: patógenos ou estresse → Trichoderma */
+plant.sig.SA=cl(Math.max(_pR2*10,_nemaR*8,plant.stress>30?0.3:0),0,1); /* Ác. Salicílico: patógenos/nematóides ou estresse → biocontrole */
 
 /* ═══ Exsudatos — planta saudável produz MAIS e MELHOR exsudato ═══ */
 /* Conceito: plantas com boa biomassa investem mais C no recrutamento microbiano */
@@ -744,7 +744,7 @@ const fi=s.g.fi;const exConc=exudateConc(hd.x,hd.y);const localLight=lightAt(hd.
 }
 
 if(gid===4){/* Trichoderma biocontrole */
-  if(s.age-s.lastAte>=C.DIGEST_TICKS){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.g.guild!==6)continue;if(dst(hd,prey.ref.core)<C.PRED_R){s.e+=1800*fi.bioctl;s.lastAte=s.age;prey.ref.alive=false;nD++;fx.push({x:prey.ref.x,y:prey.ref.y,life:25,type:'pred'});addEv('eP','🛡 Trichoderma→Patógeno');break}}}
+  if(s.age-s.lastAte>=C.DIGEST_TICKS){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.g.guild!==6)continue;if(dst(hd,prey.ref.core)<C.PRED_R+4){s.e+=1900*fi.bioctl;s.lastAte=s.age;prey.ref.alive=false;nD++;plant.stress=Math.max(0,plant.stress-0.8);fx.push({x:prey.ref.x,y:prey.ref.y,life:25,type:'pred'});addEv('eP','🛡 Trichoderma→Patógeno');break}}}
   if(Math.random()<0.04){s.e+=mm(0.5,lc.organicC,50)*fi.bioctl*15;lc.organicC-=0.5}}
 
 else if(gid===6){/* Patógeno */
@@ -787,7 +787,7 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
   else if(s.age-s.lastAte>=C.DIGEST_TICKS*2){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R+5){s.e+=300;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}}
 
 else if(gid===9){/* Nematóide herbívoro — dano às raízes + bacterívoro/predador oportunista */
-  if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.08;plant.bio-=herbRate*0.003;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
+  if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.055;plant.bio-=herbRate*0.002;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
   /* Bacterívoro oportunista — come bactérias e fungos no caminho */
   if(s.age-s.lastAte>=C.DIGEST_TICKS*3){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive)continue;
   const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&preyGd.type!=='fungi')continue;
@@ -835,11 +835,12 @@ else if(gid===12){/* Arthrobotrys — fungo nematófago com armadilhas adesivas 
       const foodEff=f.det?0.3:1.0;s.e+=C.EXU_ENERGY*s.g.eff*Math.max(0.15,exConc)*foodEff;s.lastAte=s.age;
       const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}
   /* Função principal: captura nematóides com rede adesiva */
-  if(s.age-s.lastAte>=C.DIGEST_TICKS){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){
+  if(s.age-s.lastAte>=C.DIGEST_TICKS*0.5){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){
     if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.g.guild!==9)continue;
-    if(dst(hd,prey.ref.core)<C.PRED_R+3){
+    if(dst(hd,prey.ref.core)<C.PRED_R+8){
       const trapRate=mm(GUILDS[12].Vmax_trap,1,GUILDS[12].Km_nema)*fi.bioctl;
       s.e+=trapRate*2200;s.lastAte=s.age;prey.ref.alive=false;nD++;
+      plant.stress=Math.max(0,plant.stress-1.0);
       lc.NH4+=0.8;lc.PO4free+=0.3; /* nematóide digerido libera nutrientes */
       fx.push({x:prey.ref.x,y:prey.ref.y,life:30,type:'pred'});
       addEv('eP','🪤 Arthrobotrys→Nematóide');break}}}

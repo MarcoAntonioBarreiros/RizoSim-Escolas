@@ -16,11 +16,17 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 - Populações continuam interagindo por predação/competição.
 - Controles técnicos continuam alterando ambiente.
 
+- Pseudomonas continua útil quando ferro limita a planta.
+- Trichoderma e Arthrobotrys continuam reduzindo patógenos ou nematoides quando encontram seus alvos.
+
 ## Verificações manuais recomendadas
 
 - Selecionar cada categoria de organismos e confirmar que nem todos os cartões aparecem ao mesmo tempo.
 - Adicionar Bacillus em cenário de pouco fósforo e observar painel/indicadores.
 - Adicionar rizóbio em cenário de pouco nitrogênio e observar eventual nodulação.
+- Clicar no indicador Água e alternar pouca água, água equilibrada e muita água.
+- Usar o cenário de pouco ferro disponível e observar a utilidade de Pseudomonas.
+- Usar o cenário de ataque às raízes e adicionar Trichoderma/Arthrobotrys cedo.
 - Ativar mapa de nutrientes no modo professor.
 - Testar zoom e pan por mouse, toque e teclado.
 - Confirmar que o botão de gargalo populacional não aparece na tela infantil.
@@ -28,4 +34,3 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 ## Regra de preservação
 
 Os testes não substituem revisão científica. Eles são guardrails para detectar que o motor preservado ainda apresenta os comportamentos centrais esperados após mudanças de interface.
-
