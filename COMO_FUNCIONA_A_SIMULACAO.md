@@ -21,7 +21,7 @@ Este documento resume as regras preservadas do motor original.
 | 5 | Rhizobium | Nodulação e N |
 | 6 | Patógeno | Estresse e dano oportunista |
 | 7 | Cianobactéria | Luz, O2, carbono e N |
-| 8 | Protozoário | Predação de bactérias/fungos |
+| 8 | Protozoário (ameba) | Predação de bactérias/fungos por fagocitose — ver `AMEBAS.md` |
 | 9 | Nematoide | Herbivoria radicular e predação oportunista |
 | 10 | Saprófito | Decomposição de carbono orgânico |
 | 11 | Micorriza | Hifas e fósforo |

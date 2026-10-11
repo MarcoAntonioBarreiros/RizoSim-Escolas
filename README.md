@@ -28,12 +28,14 @@ Para executar as verificações de regressão no navegador, abra `tests/regressi
 - Eventos técnicos são traduzidos para mensagens curtas.
 - Há tutorial guiado, cenários didáticos e explicações ao selecionar organismos.
 - O modo professor mantém sliders, estoques químicos, estatísticas e mapas.
+- O protozoário agora é uma ameba com pseudópodes, fagocitose e três morfotipos do solo, sem mudar as regras ecológicas (ver `AMEBAS.md`).
 
 ## Estrutura
 
 ```text
 index.html
 css/styles.css
+js/ameba-lite.js
 js/engine.js
 js/organisms.js
 js/environment.js

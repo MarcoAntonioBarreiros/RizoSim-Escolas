@@ -114,9 +114,9 @@
       initial:'Pr',
       morph:'proto',
       color:'#fbbf24',
-      pattern:'olhos',
-      simple:'Pode controlar populações ao se alimentar de microrganismos.',
-      science:'Protozoários mantêm predação frequência-dependente, preferindo presas abundantes e reciclando parte dos nutrientes para o solo.'
+      pattern:'ameboide',
+      simple:'É uma ameba: estica pseudópodes, envolve bactérias e fungos e os digere dentro da célula.',
+      science:'Amebas do solo se movem por pseudópodes (citoplasma em gel e sol) e capturam presas por fagocitose, formando vacúolos digestivos. No simulador aparecem três formas comuns no solo: limax (um lobo só, como Vahlkampfia e Naegleria), lobosa (pseudópodes que se ramificam) e com acantopódios (espículas finas, como Acanthamoeba). A predação é frequência-dependente: elas preferem a presa mais abundante e devolvem parte do N e do P ao solo.'
     },
     9:{
       name:'Nematoide',

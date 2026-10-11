@@ -14,6 +14,7 @@ Os testes carregam `index.html` em um iframe e usam a API `RizoSimEngine` para c
 - Decompositores continuam reciclando nutrientes.
 - Patógenos e nematoides continuam afetando raízes.
 - Populações continuam interagindo por predação/competição.
+- O protozoário ameboide continua predando bactérias, com pseudópodes (alongamento > 1,4) e vacúolos digestivos.
 - Controles técnicos continuam alterando ambiente.
 - Pseudomonas continua útil quando ferro limita a planta.
 - Trichoderma e Arthrobotrys continuam reduzindo patógenos ou nematoides quando encontram seus alvos.

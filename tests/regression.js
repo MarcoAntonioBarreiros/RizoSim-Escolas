@@ -121,6 +121,27 @@
       'População antes/depois: '+popBefore+' -> '+engine.state.population+'; mortes: '+engine.state.deaths
     ));
 
+    engine.resetWith({...defaults,microbeMult:0});
+    const amoebae=closeToRoot(8,8);
+    closeToRoot(1,30);
+    const bacteriaBefore=engine.state.guildCounts[1]||0;
+    let phagocytosis=false,maxShape=0;
+    for(let k=0;k<9;k++){
+      engine.step(100);
+      for(const org of engine.raw.sw){
+        if(!org.alive||!org.body)continue;
+        if(org.body.food.length>0)phagocytosis=true;
+        const r=org.body.r;maxShape=Math.max(maxShape,Math.max(...r)/Math.min(...r));
+      }
+    }
+    const bacteriaAfter=engine.state.guildCounts[1]||0;
+    const withBody=amoebae.filter(org=>org.body&&org.g.mt===6).length;
+    results.push(result(
+      'Protozoário ameboide continua predando bactérias, com pseudópodes e fagocitose',
+      withBody===amoebae.length&&bacteriaAfter<bacteriaBefore&&phagocytosis&&maxShape>1.4,
+      'Corpos ameboides: '+withBody+'/'+amoebae.length+'; Bacillus: '+bacteriaBefore+' -> '+bacteriaAfter+'; vacúolos digestivos: '+(phagocytosis?'sim':'não')+'; maior alongamento: '+maxShape.toFixed(2)
+    ));
+
     engine.resetWith({...defaults,microbeMult:0,Fe2:1,Fe3:130,NH4:45,NO3:35,PO4free:25});
     engine.raw.plant.fe=8;
     const feBefore=engine.state.plant.fe;

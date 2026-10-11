@@ -353,8 +353,11 @@
       return 'Esta micorriza está estendendo hifas pelo solo, procurando regiões úteis para a planta.';
     }
     if(gid===8){
-      if(nearbyBacteria>0)return 'Este protozoário está perto de bactérias e pode se alimentar delas.';
-      return 'Este protozoário está procurando microrganismos para se alimentar.';
+      const b=org.body;
+      if(b&&b.food.some(f=>f.t<=f.catchT+f.pullT))return 'Esta ameba esticou um pseudópode, envolveu uma presa e está levando-a para dentro da célula (fagocitose).';
+      if(b&&b.food.length)return 'Esta ameba está digerindo uma presa dentro de um vacúolo digestivo. Parte dos nutrientes volta para o solo.';
+      if(nearbyBacteria>0)return 'Esta ameba está perto de bactérias: os pseudópodes crescem na direção delas para capturá-las.';
+      return 'Esta ameba está explorando o solo com pseudópodes, procurando microrganismos para se alimentar.';
     }
     if(gid===9){
       if(nearRoot)return 'Este nematoide está perto da raiz e pode estar causando dano.';
