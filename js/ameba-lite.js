@@ -7,10 +7,11 @@
    vacúolo contrátil e fagocitose (o pseudópode alcança a presa e a leva para um vacúolo
    digestivo).
    O que NÃO faz: decidir para onde o organismo vai, o que come e quanta energia ganha.
-   Isso continua sendo do motor original (Sw.behave / predação frequência-dependente);
-   o corpo apenas acompanha o ponto central (core) e devolve um fator de impulso
-   (drive) com média ~1, para que o avanço aconteça aos pulsos, quando um pseudópode
-   se estende, sem mudar a velocidade média.
+   É só a camada visual: o corpo original do motor (ossos Verlet) continua existindo e se
+   movendo invisível, e a ameba é desenhada em volta dele. O centro visual da ameba segue
+   o centro do motor aos pulsos — avança quando um pseudópode alinhado cresce e fica
+   parado enquanto ele se forma — com atraso máximo de ~0,8 raio. Nada aqui consome
+   números do Math.random do motor, então a simulação é idêntica à original.
 
    Morfotipos (derivados do gene nd, que já existe no genoma e muta ±1):
      nd ≤ 3  → limax       (monopodial, tipo Vahlkampfia/Naegleria: um lobo frontal largo)
@@ -44,8 +45,8 @@
   }
 
   class AmoebaBody{
-    constructor(x,y,g){
-      this.rand=prng(Math.floor(Math.random()*4294967296));
+    constructor(x,y,g,seed){
+      this.rand=prng(seed);
       const R=this.rand;
       this.v=variantFor(g.nd|0);
       this.R0=2.2+(g.cs||1.4)*1.5;          // raio de repouso (px do mundo)
@@ -60,7 +61,7 @@
       this.heading=R()*TAU;this.aim=this.heading;
       this.pods=[];this.spikes=[];
       for(let k=0;k<this.v.spikes;k++)this.spikes.push(this._spike(R()*TAU,R()));
-      this.drive=1;this._ema=0.5;
+      this.pulse=0;
       this.t=Math.floor(R()*1000);
       this.gran=[];
       for(let k=0;k<12;k++)this.gran.push({a:R()*TAU,f:0.25+0.55*R(),ph:R()*TAU,s:0.18+0.12*R()});
@@ -77,12 +78,22 @@
     update(core,aim,hunting){
       const R=this.rand,v=this.v,P=this.pods,N=this.N;
       this.t++;
-      let dx=core.x-this.cx,dy=core.y-this.cy;
-      this.cx=core.x;this.cy=core.y;
+      // centro visual segue o centro do motor aos pulsos
+      let ex=core.x-this.cx,ey=core.y-this.cy;const off=Math.hypot(ex,ey);
+      let dx,dy;
+      if(off>this.R0*6){dx=dy=0;this.cx=core.x;this.cy=core.y;this.r.fill(this.Rb);ex=ey=0}  // inoculação
+      else{
+        const k=0.012+0.17*this.pulse;
+        dx=ex*k;dy=ey*k;
+        const lim=this.R0*0.8,rem=off*(1-k);
+        if(rem>lim){const f=(rem-lim)/off;dx+=ex*f;dy+=ey*f}
+        this.cx+=dx;this.cy+=dy;
+      }
       const sp=Math.hypot(dx,dy);
-      if(sp>this.R0*3){dx=dy=0;this.r.fill(this.Rb)}            // teletransporte (inoculação)
       if(sp>1e-4)this.heading+=wrap(Math.atan2(dy,dx)-this.heading)*0.08;
-      if(Number.isFinite(aim))this.aim+=wrap(aim-this.aim)*0.15;
+      // alvo dos pseudópodes: para onde o corpo do motor está indo (ele está à frente)
+      const goal=off>0.4?Math.atan2(ey,ex):(Number.isFinite(aim)?aim:this.aim);
+      this.aim+=wrap(goal-this.aim)*0.1;
 
       /* ── pseudópodes: nascem na direção do alvo, competem, ramificam, recolhem ── */
       let active=0;for(const p of P)if(p.phase!=='retract'&&!p.cup)active++;
@@ -160,12 +171,10 @@
       // conservação de área: o citoplasma que entra nos braços sai do corpo
       this.Rb=clamp(this.Rb*(1+(Math.sqrt(this.A0/area)-1)*0.25),this.R0*0.55,this.R0*1.15);
 
-      /* ── impulso aos pulsos: avança quando um pseudópode alinhado ao alvo está crescendo ── */
-      let raw=0.15;
-      for(const p of P)if(p.phase==='grow'&&!p.cup)raw+=Math.max(0,Math.cos(p.a-this.aim))*(1-p.amp)*1.4;
-      raw=Math.min(raw,1.6);
-      this._ema+=(raw-this._ema)*0.004;
-      this.drive=clamp(raw/Math.max(0.12,this._ema),0.25,1.9);
+      /* ── avanço aos pulsos: o corpo flui para dentro do pseudópode que cresce alinhado ── */
+      let raw=0;
+      for(const p of P)if(p.phase==='grow'&&!p.cup)raw+=Math.max(0,Math.cos(p.a-this.aim))*(1-p.amp)*1.6;
+      this.pulse+=(clamp(raw,0,1)-this.pulse)*0.2;
 
       /* ── endoplasma: grânulos escorrem para o pseudópode que cresce (fluxo em fonte) ── */
       let lead=null,best=0;for(const p of P)if(p.phase!=='retract'&&p.amp>best){best=p.amp;lead=p}
@@ -211,6 +220,7 @@
     }
 
     get morphName(){return this.v.name}
+    get label(){return 'Ameba '+this.v.name}
 
     _path(ctx){
       const N=this.N,r=this.r,cx=this.cx,cy=this.cy;

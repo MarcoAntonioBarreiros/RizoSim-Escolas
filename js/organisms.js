@@ -75,8 +75,8 @@
       morph:'fungi',
       color:'#9b59b6',
       pattern:'ramos',
-      simple:'Pode ajudar no equilíbrio ao atacar patógenos.',
-      science:'Trichoderma conserva a regra de biocontrole: procura patógenos, ganha energia ao predá-los e reduz uma pressão biótica sobre a raiz.'
+      simple:'É um fungo: cresce em fios (hifas), forma esporos verdes e se enrola em patógenos para atacá-los.',
+      science:'Trichoderma é um fungo filamentoso septado. As hifas crescem pela ponta e se ramificam; o micélio maduro forma conidióforos com conídios verdes. No biocontrole, a hifa alcança o patógeno e se enrola nele (micoparasitismo), além de competir por espaço e nutrientes. O motor conserva a regra: procura patógenos, ganha energia ao predá-los e reduz uma pressão biótica sobre a raiz.'
     },
     5:{
       name:'Rizóbio',
@@ -135,8 +135,8 @@
       morph:'fungi',
       color:'#a78bfa',
       pattern:'ramos',
-      simple:'É um decompositor: transforma restos em nutrientes disponíveis.',
-      science:'Saprófitos decompõem carbono orgânico em qualquer parte do solo, liberando NH4+ e PO4 livre conforme a cinética original.'
+      simple:'É um fungo decompositor: suas hifas crescem sobre restos e os transformam em nutrientes.',
+      science:'O saprófito é representado como um fungo de hifas sem septos (tipo Mucor), com esporângios escuros no micélio maduro. Ele decompõe carbono orgânico em qualquer parte do solo, liberando NH4+ e PO4 livre conforme a cinética original.'
     },
     11:{
       name:'Micorriza',
@@ -145,8 +145,8 @@
       morph:'fungi',
       color:'#d4d4d8',
       pattern:'hifas',
-      simple:'Amplia a região explorada pela raiz, especialmente para fósforo.',
-      science:'Micorriza preserva a regra de rede hifal: consome carbono da planta/exsudatos e mobiliza fósforo em células vizinhas da grade.'
+      simple:'É um fungo parceiro: suas hifas entram na raiz e exploram o solo buscando fósforo para a planta.',
+      science:'Fungos micorrízicos arbusculares (Glomeromycota) têm hifas grossas sem septos e esporos grandes no solo. Dentro da raiz formam arbúsculos (onde trocam fósforo por carbono) e vesículas. O motor preserva a regra de rede hifal: consome carbono da planta/exsudatos e mobiliza fósforo em células vizinhas da grade.'
     },
     12:{
       name:'Arthrobotrys',
@@ -155,8 +155,8 @@
       morph:'fungi',
       color:'#2dd4bf',
       pattern:'rede',
-      simple:'Pode capturar nematoides com armadilhas.',
-      science:'Arthrobotrys conserva a função de fungo nematófago. Ao capturar nematoides, recicla N e P para o solo.'
+      simple:'É um fungo caçador: forma alças pegajosas nas hifas que prendem nematoides.',
+      science:'Arthrobotrys é um fungo nematófago: forma redes adesivas (alças) nas hifas, que prendem o nematoide; depois as hifas invadem e digerem o corpo. O motor conserva a função: ao capturar nematoides, recicla N e P para o solo.'
     }
   };
 

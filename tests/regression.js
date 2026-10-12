@@ -129,17 +129,30 @@
     for(let k=0;k<9;k++){
       engine.step(100);
       for(const org of engine.raw.sw){
-        if(!org.alive||!org.body)continue;
-        if(org.body.food.length>0)phagocytosis=true;
-        const r=org.body.r;maxShape=Math.max(maxShape,Math.max(...r)/Math.min(...r));
+        if(!org.alive||!org.skin||!org.skin.food)continue;
+        if(org.skin.food.length>0)phagocytosis=true;
+        const r=org.skin.r;maxShape=Math.max(maxShape,Math.max(...r)/Math.min(...r));
       }
     }
     const bacteriaAfter=engine.state.guildCounts[1]||0;
-    const withBody=amoebae.filter(org=>org.body&&org.g.mt===6).length;
+    const withBody=amoebae.filter(org=>org.skin&&org.skin.food).length;
     results.push(result(
-      'Protozoário ameboide continua predando bactérias, com pseudópodes e fagocitose',
+      'Protozoário aparece como ameba e continua predando bactérias, com pseudópodes e fagocitose',
       withBody===amoebae.length&&bacteriaAfter<bacteriaBefore&&phagocytosis&&maxShape>1.4,
-      'Corpos ameboides: '+withBody+'/'+amoebae.length+'; Bacillus: '+bacteriaBefore+' -> '+bacteriaAfter+'; vacúolos digestivos: '+(phagocytosis?'sim':'não')+'; maior alongamento: '+maxShape.toFixed(2)
+      'Amebas: '+withBody+'/'+amoebae.length+'; Bacillus: '+bacteriaBefore+' -> '+bacteriaAfter+'; vacúolos digestivos: '+(phagocytosis?'sim':'não')+'; maior alongamento: '+maxShape.toFixed(2)
+    ));
+
+    engine.resetWith({...defaults,microbeMult:0,organicC:1000});
+    const fungiMade=[4,10,11,12].flatMap(id=>closeToRoot(id,3));
+    engine.step(500);
+    const fungiAlive=fungiMade.filter(org=>org.alive);
+    const withMycelium=fungiAlive.filter(org=>org.skin&&org.skin.segs);
+    const hyphae=withMycelium.map(org=>org.skin.segs.length);
+    const growingTips=withMycelium.reduce((n,org)=>n+org.skin.tips.length,0);
+    results.push(result(
+      'Fungos aparecem como micélio que cresce pela ponta',
+      fungiAlive.length>0&&withMycelium.length===fungiAlive.length&&Math.min(...hyphae)>=10&&growingTips>0,
+      'Fungos vivos com micélio: '+withMycelium.length+'/'+fungiAlive.length+'; segmentos de hifa por colônia: '+(hyphae.length?Math.min(...hyphae)+'–'+Math.max(...hyphae):'-')+'; pontas: '+growingTips
     ));
 
     engine.resetWith({...defaults,microbeMult:0,Fe2:1,Fe3:130,NH4:45,NO3:35,PO4free:25});

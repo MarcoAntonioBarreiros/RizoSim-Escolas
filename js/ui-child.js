@@ -349,11 +349,12 @@
       return 'Este rizóbio está se movendo pelo solo em busca de sinais da raiz para uma parceria de nitrogênio.';
     }
     if(gid===11){
+      if(org.skin&&org.skin.arbs&&org.skin.arbs.length)return 'Esta micorriza já entrou na raiz e formou arbúsculos, onde troca fósforo do solo por carbono do feijão.';
       if(nearRoot)return 'Esta micorriza está perto da raiz e pode ampliar a região explorada para fósforo.';
       return 'Esta micorriza está estendendo hifas pelo solo, procurando regiões úteis para a planta.';
     }
     if(gid===8){
-      const b=org.body;
+      const b=org.skin;
       if(b&&b.food.some(f=>f.t<=f.catchT+f.pullT))return 'Esta ameba esticou um pseudópode, envolveu uma presa e está levando-a para dentro da célula (fagocitose).';
       if(b&&b.food.length)return 'Esta ameba está digerindo uma presa dentro de um vacúolo digestivo. Parte dos nutrientes volta para o solo.';
       if(nearbyBacteria>0)return 'Esta ameba está perto de bactérias: os pseudópodes crescem na direção delas para capturá-las.';
@@ -364,10 +365,12 @@
       return 'Este nematoide está se movendo pelo solo e procurando alimento.';
     }
     if(gid===4){
+      if(org.skin&&org.skin.events&&org.skin.events.length)return 'Este Trichoderma alcançou um patógeno e está se enrolando nele (micoparasitismo).';
       if(nearbyPathogens>0)return 'Este Trichoderma está perto de patógenos e pode competir ou predar.';
       return 'Este Trichoderma está explorando o solo e pode ajudar no equilíbrio da comunidade.';
     }
     if(gid===12){
+      if(org.skin&&org.skin.events&&org.skin.events.length)return 'Este Arthrobotrys acabou de prender um nematoide numa alça pegajosa das hifas.';
       if(nearbyNematodes>0)return 'Este Arthrobotrys está perto de nematoides e pode capturá-los.';
       return 'Este Arthrobotrys está formando uma rede que pode funcionar como armadilha.';
     }
