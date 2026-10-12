@@ -1,8 +1,8 @@
 /* ═══ NEMATOIDE — camada visual ═══
-   O corpo original do motor continua fazendo a física; dele se usa só a posição da cabeça e
-   a direção do corpo. O desenho é uma onda senoidal que corre ao longo do corpo com fase
-   dada pela distância percorrida — como na locomoção ondulatória real, em que o corpo
-   passa pelos mesmos pontos por onde a cabeça passou.
+   O corpo original do motor continua fazendo a física; dele se usa só a posição da cabeça.
+   O corpo desenhado desliza pelo caminho percorrido pela cabeça, e a ondulação está presa
+   ao caminho (onda parada no solo) — como na locomoção ondulatória real: quando o verme
+   ondula, ele avança; quando para, para.
    Nada aqui consome o Math.random do motor.
 
    Anatomia simplificada de um nematoide fitoparasita:
@@ -25,34 +25,74 @@
       this.rand=prng(seed);const R=this.rand;
       this.Lb=clamp(((g.nd||6)-1)*(g.sl||2.5)*1.25,14,28);
       this.W=clamp(0.55+(g.th||1)*0.35,0.7,1.15);
-      this.c={x,y};this.dir=R()*TAU;this.s=R()*10;this.feed=0;this.ph=R()*TAU;
+      this.lam=this.Lb*0.55;this.A=this.Lb*0.065;
+      this.dir=R()*TAU;this.feed=0;this.ph=R()*TAU;this.S0=R()*20;
+      this.trail=null;
     }
     get label(){return this.feed>0.3?'Nematoide se alimentando (estilete)':'Nematoide (ondulação)'}
+    _reset(x,y){
+      // rastro inicial reto atrás da cabeça; S = coordenada ao longo do caminho
+      this.trail=[];const L=this.Lb+3;
+      for(let d=L;d>=0;d-=0.5)this.trail.push({x:x-Math.cos(this.dir)*d,y:y-Math.sin(this.dir)*d,S:this.S0-d});
+      this.Sh=this.S0;this.gx=x;this.gy=y;
+    }
+    /* Translocação: a cabeça segue (suavizada) a cabeça do corpo do motor e deixa um rastro.
+       O corpo ocupa o último trecho do rastro e o desvio lateral depende da posição NO CAMINHO
+       (onda parada no solo): ao avançar, o corpo desliza pela própria trilha sinuosa, como
+       um nematoide de verdade. Se o motor manda recuar, o verme anda de ré pela trilha. */
     update(core,aim,hunting,rootX,rootTop,rootBottom,org){
       const S=org&&org.pts&&org.pts.length>=2?org.pts:null;
-      const h=S?S[0]:core,t=S?S[S.length-1]:{x:core.x-Math.cos(this.dir)*2,y:core.y-Math.sin(this.dir)*2};
-      if(this.hx===undefined||Math.hypot(h.x-this.hx,h.y-this.hy)>30){this.hx=h.x;this.hy=h.y;this.dir=Math.atan2(h.y-t.y,h.x-t.x)}
-      const ox=this.hx,oy=this.hy;
-      this.hx+=(h.x-this.hx)*0.5;this.hy+=(h.y-this.hy)*0.5;
-      const want=Math.atan2(h.y-t.y,h.x-t.x),d=Math.atan2(Math.sin(want-this.dir),Math.cos(want-this.dir));
-      this.dir+=d*0.12;
-      const mv=(this.hx-ox)*Math.cos(this.dir)+(this.hy-oy)*Math.sin(this.dir);
-      this.s+=Math.abs(mv)+0.02;                 // a onda corre pelo corpo enquanto ele avança
+      const h=S?S[0]:core;
+      if(!this.trail||Math.hypot(h.x-this.gx,h.y-this.gy)>30){if(S)this.dir=Math.atan2(S[0].y-S[S.length-1].y,S[0].x-S[S.length-1].x);this._reset(h.x,h.y);return}
+      // alvo = cabeça do motor sem o tremor dos "músculos"
+      this.gx+=(h.x-this.gx)*0.1;this.gy+=(h.y-this.gy)*0.1;
+      // A cabeça desenhada é um "piloto" com raio de curva mínimo: o motor às vezes faz o
+      // verme rodar em volta do alimento; aqui ele só vira enquanto avança, avança só se o
+      // alvo estiver à frente, e recua pela trilha se o alvo ficar para trás. O desvio em
+      // relação ao corpo do motor fica limitado a poucos px.
+      const T=this.trail,H0=this._at(this.Sh);
+      const dx=this.gx-H0.x,dy=this.gy-H0.y,dist=Math.hypot(dx,dy);
+      const d=Math.atan2(Math.sin(Math.atan2(dy,dx)-this.dir),Math.cos(Math.atan2(dy,dx)-this.dir));
+      const fwd=dist*Math.cos(d);
+      if(fwd>0.05){
+        const sp=Math.min(0.7,fwd*0.08+Math.max(0,dist-8)*0.05);
+        const rate=sp*(0.08+0.025*Math.max(0,dist-7));           // curvatura máx. ~1/12 px (raio de curva mínimo)
+        this.dir+=clamp(d,-rate,rate);
+        const last=T[T.length-1];
+        if(this.Sh<last.S-1e-6)T.length=this._idx(this.Sh)+1;      // retoma depois de recuar
+        const L2=T[T.length-1],nx=H0.x+Math.cos(this.dir)*sp,ny=H0.y+Math.sin(this.dir)*sp;
+        if(Math.hypot(nx-L2.x,ny-L2.y)>=0.25)T.push({x:nx,y:ny,S:L2.S+Math.hypot(nx-L2.x,ny-L2.y)});
+        else{L2.x=nx;L2.y=ny}
+        this.Sh=T[T.length-1].S;
+      }else if(dist>5){                                             // alvo atrás: anda de ré
+        this.Sh-=Math.min(0.5,(dist-5)*0.06);
+        const first=T[0],sec=T[1]||first,a=Math.atan2(first.y-sec.y,first.x-sec.x);
+        while(T[0].S>this.Sh-this.Lb-2){const f=T[0];T.unshift({x:f.x+Math.cos(a)*0.5,y:f.y+Math.sin(a)*0.5,S:f.S-0.5})}
+        this.dir=this._at(this.Sh).a;
+      }
+      while(T.length>2&&T[1].S<this.Sh-this.Lb-3)T.shift();
+      const H=this._at(this.Sh);this.hx=H.x;this.hy=H.y;
       const atRoot=rootX!==undefined&&Math.abs(this.hx-rootX)<4&&this.hy>rootTop&&this.hy<rootBottom+5;
       this.feed+=((atRoot?1:0)-this.feed)*0.05;
       this.ph+=0.25;
     }
-    /* corpo: senoide ao longo do eixo cabeça→cauda do corpo do motor, com a fase dada pela
-       distância percorrida (a onda fica parada no espaço enquanto o verme avança por ela) */
+    _idx(Sv){const T=this.trail;let lo=0,hi=T.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(T[m].S<=Sv)lo=m;else hi=m}return lo}
+    _at(Sv){                             // ponto e direção do rastro na coordenada Sv
+      const T=this.trail;
+      if(Sv<=T[0].S){const a=Math.atan2(T[1].y-T[0].y,T[1].x-T[0].x),k=Sv-T[0].S;return {x:T[0].x+Math.cos(a)*k,y:T[0].y+Math.sin(a)*k,a}}
+      if(Sv>=T[T.length-1].S){const n=T.length,a=Math.atan2(T[n-1].y-T[n-2].y,T[n-1].x-T[n-2].x);return {x:T[n-1].x,y:T[n-1].y,a}}
+      const i=this._idx(Sv),p=T[i],q=T[i+1],f=(Sv-p.S)/Math.max(1e-6,q.S-p.S);
+      return {x:p.x+(q.x-p.x)*f,y:p.y+(q.y-p.y)*f,a:Math.atan2(q.y-p.y,q.x-p.x)};
+    }
     _pts(){
-      const Lb=this.Lb,lam=Lb*0.55,A=Lb*0.065,cx=Math.cos(this.dir),cy=Math.sin(this.dir),nx=-cy,ny=cx,out=[];
-      for(let k=0;k<NP;k++){const u=k/(NP-1),env=0.35+0.65*Math.min(1,u*2.5);
-        const o=Math.sin((u*Lb-this.s)/lam*TAU)*A*env;
-        out.push({x:this.hx-cx*u*Lb+nx*o,y:this.hy-cy*u*Lb+ny*o})}
+      const Lb=this.Lb,out=[];
+      for(let k=0;k<NP;k++){const u=k/(NP-1),Sv=this.Sh-u*Lb,P=this._at(Sv),env=0.35+0.65*Math.min(1,u*2.5);
+        const o=Math.sin(Sv/this.lam*TAU)*this.A*env;          // onda presa ao caminho
+        out.push({x:P.x-Math.sin(P.a)*o,y:P.y+Math.cos(P.a)*o})}
       this.len=Lb;return out;
     }
     draw(ctx,g,al,gc,org){
-      if(org)this.org=org;
+      if(!this.trail)return;
       const P=this._pts(),W=clamp(this.Lb*0.055,0.7,1.3),zoom=zoomOf(ctx);
       const hue=(g.hue||25),body=`hsla(${hue},18%,84%,${0.55*al+0.15})`,edge=`hsla(${hue},22%,55%,${0.9*al})`;
       // largura: afina na cabeça e na cauda

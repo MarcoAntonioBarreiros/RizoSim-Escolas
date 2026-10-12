@@ -47,17 +47,22 @@
     get label(){return this.nod?'Bacteroide (dentro do nódulo)':this.K.label}
 
     update(core,aim,hunting,rootX,rootTop,rootBottom,org){
-      let dx=core.x-this.c.x,dy=core.y-this.c.y;
-      if(dx*dx+dy*dy>400){this.c.x=core.x;this.c.y=core.y;dx=dy=0}
+      // centro = média dos pontos do corpo do motor (a cabeça tremia com os "músculos" e
+      // fazia o bacilo girar em torno de um ponto); direção = velocidade média suavizada
+      let tx=core.x,ty=core.y;
+      if(org&&org.pts&&org.pts.length>1){tx=0;ty=0;for(const p of org.pts){tx+=p.x;ty+=p.y}tx/=org.pts.length;ty/=org.pts.length}
+      let dx=tx-this.c.x,dy=ty-this.c.y;
+      if(dx*dx+dy*dy>400){this.c.x=tx;this.c.y=ty;dx=dy=0;this.vx=this.vy=0}
       const ox=this.c.x,oy=this.c.y;
-      this.c.x+=dx*0.3;this.c.y+=dy*0.3;
-      const vx=this.c.x-ox,vy=this.c.y-oy,sp=Math.hypot(vx,vy);
+      this.c.x+=dx*0.15;this.c.y+=dy*0.15;
+      const vx=this.c.x-ox,vy=this.c.y-oy;
+      this.vx=(this.vx||0)+(vx-(this.vx||0))*0.06;this.vy=(this.vy||0)+(vy-(this.vy||0))*0.06;
+      const sp=Math.hypot(this.vx,this.vy);
       this.sp+=(sp-this.sp)*0.2;
-      if(sp>0.015){
-        const d=wrap(Math.atan2(vy,vx)-this.heading);
-        this.turn+=(Math.abs(d)-this.turn)*0.3;
-        this.heading+=d*0.22;
-        if(Math.abs(d)>1.2&&this.tumble<=0)this.tumble=14;          // mudança brusca = cambalhota
+      if(sp>0.02){
+        const d=wrap(Math.atan2(this.vy,this.vx)-this.heading);
+        this.heading+=d*0.12;
+        if(Math.abs(d)>1.3&&this.tumble<=0)this.tumble=18;          // mudança brusca = cambalhota
       }
       if(this.tumble>0)this.tumble--;
       this.ph+=0.55+this.sp*2;
