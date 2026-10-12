@@ -31,12 +31,12 @@ Os morfotipos vêm do gene `nd`, que já existe e muta:
 
 ## Flagelados e ciliados (`js/protista-lite.js`)
 
-O grupo Protozoário tem três tipos, definidos pelo genoma (`protoKind` no motor: gene `mt` 3 = flagelado; `mt` 5 com `nd` par = ciliado; o resto, ameba). O tipo é herdado e muda raramente por mutação.
+O grupo Protozoário tem três tipos, definidos pelo genoma (`protoKind` no motor: gene `mt` 4 = ameba; `mt` 5 com `nd` par = ciliado; o resto, flagelado — cerca de metade, porque no solo os flagelados são os mais numerosos). O tipo é herdado e muda raramente por mutação.
 
 | Tipo | Corpo | Nado | Ecologia no motor |
 |---|---|---|---|
 | Ameba | pseudópodes (acima) | rasteja | pasta no biofilme da raiz (bactérias ali escapam de 75% dos ataques), come também fungos, encista abaixo de 30% de umidade |
-| Flagelado (tipo *Bodo*/*Cercomonas*) | feijão pequeno, flagelo curto à frente e longo arrastado atrás | aos trancos, vira de repente | só bactérias soltas (no biofilme escapam de 95%), digere em 60% do tempo e aproveita 60% da energia, encista abaixo de 35% |
+| Flagelado euglenoide (tipo *Peranema*) | fuso flexível (metabolia), flagelo grosso para a frente batendo só a ponta, reservatório e vacúolo contrátil, grãos de paramido | desliza devagar, curvas largas | só bactérias soltas (no biofilme escapam de 95%), digere em 60% do tempo e aproveita 75% da energia, encista abaixo de 35% |
 | Ciliado (tipo *Colpoda*) | rim com sulco oral, cílios em onda metacrônica, macronúcleo, vacúolo contrátil, vacúolos digestivos em ciclose | rápido, girando no eixo; recua e muda de rumo ao "esbarrar" (reação de evitação) | só bactérias soltas (95% no biofilme), digestão em 80% do tempo, encista abaixo de 45% |
 
 Todos viram cisto de parede grossa na seca ou com fome prolongada, gastam 10% da energia e voltam quando a umidade sobe.

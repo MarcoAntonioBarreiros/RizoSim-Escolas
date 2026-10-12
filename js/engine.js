@@ -157,12 +157,12 @@ const MORPH_GUILD={
 
 /* Protozoários do solo: três tipos, definidos pelo genoma (herdável; muda raramente por mutação).
    ameba: pasta no biofilme da raiz (alcança mais bactérias coladas), também come fungos, aguenta a seca;
-   flagelado (tipo Bodo/Cercomonas): pequeno, come bactérias soltas, ciclo rápido, precisa de filme d'água;
+   flagelado (euglenoide tipo Peranema): come bactérias soltas, ciclo rápido, precisa de filme d'água;
    ciliado (tipo Colpoda): maior, come bactérias soltas, precisa de mais água e encista logo na seca. */
-function protoKind(g){return g.mt===3?'flag':(g.mt===5&&g.nd%2===0)?'cil':'ameba'}
+function protoKind(g){return g.mt===4?'ameba':(g.mt===5&&g.nd%2===0)?'cil':'flag'}   /* ~1/2 flagelados, 1/3 amebas, 1/6 ciliados: no solo os flagelados são os mais numerosos */
 const PROTO_KIND={
   ameba:{cyst:30,dig:1.0,gain:1.0,refuge:0.75,fungi:true, name:'Ameba'},
-  flag: {cyst:35,dig:0.6,gain:0.6,refuge:0.95,fungi:false,name:'Flagelado'},
+  flag: {cyst:35,dig:0.6,gain:0.75,refuge:0.95,fungi:false,name:'Flagelado'},
   cil:  {cyst:45,dig:0.8,gain:0.9,refuge:0.95,fungi:false,name:'Ciliado'}
 };
 let env={soil:'loam',temp:25,ph:6.5,moist:60,tox:0,light:70,uv:15,visc:1.0,nutRet:1.0};

@@ -4,9 +4,10 @@
    o que come; aqui só se desenha o organismo e o seu jeito de nadar. Nada aqui consome o
    Math.random do motor.
 
-   Flagelado (tipo Bodo / Cercomonas): célula pequena em forma de feijão, com dois flagelos —
-   um curto à frente, que bate rápido, e um longo arrastado atrás. Nada aos trancos e muda de
-   direção de repente.
+   Flagelado euglenoide (tipo Peranema, parente heterotrófico da Euglena, que come bactérias):
+   célula alongada e flexível — muda de forma enquanto anda (metabolia) —, com um flagelo
+   grosso apontado para a frente cuja ponta bate, reservatório e vacúolo contrátil na frente,
+   núcleo e grãos de paramido. Desliza devagar e faz curvas largas.
    Ciliado (tipo Colpoda, o ciliado típico do solo; o paramécio é parente de água doce): célula
    maior em forma de rim, coberta de cílios que batem em onda (onda metacrônica), sulco oral
    do lado, macronúcleo grande, vacúolo contrátil e vacúolos digestivos que circulam (ciclose).
@@ -26,17 +27,17 @@
       this.rand=prng(seed);const R=this.rand;
       this.kind=kind;const cs=g.cs||1.6;
       if(kind==='cil'){this.L=clamp(5.6+cs*1.1,6,8.5);this.W=this.L*0.6;this.v0=0.3+0.12*R();this.leash=14}
-      else{this.L=clamp(2.6+cs*0.5,2.8,4);this.W=this.L*0.55;this.v0=0.17+0.1*R();this.leash=10}
+      else{this.L=clamp(5.4+cs*1.0,6,8.5);this.W=this.L*0.3;this.v0=0.14+0.07*R();this.leash=12}
       this.c={x,y};this.heading=R()*TAU;this.dh=this.heading;this.o={x:0,y:0};this.vx=0;this.vy=0;
       this.A=null;this.aS=0;this.run=this._runLen();this.turnT=0;this.dTurn=0;this.back=0;
       this.ph=R()*TAU;this.spin=R()*TAU;this.food=[];this.cystT=0;this.t=0;
     }
     get label(){
       if(this.cystT>0.5)return this.kind==='cil'?'Cisto de ciliado (espera a umidade voltar)':'Cisto de flagelado (espera a umidade voltar)';
-      return this.kind==='cil'?'Ciliado (tipo Colpoda)':'Flagelado (tipo Bodo/Cercomonas)';
+      return this.kind==='cil'?'Ciliado (tipo Colpoda)':'Flagelado euglenoide (tipo Peranema)';
     }
     viewPos(){return this.c}
-    _runLen(){return this.kind==='cil'?150+this.rand()*180:30+this.rand()*70}
+    _runLen(){return this.kind==='cil'?150+this.rand()*180:120+this.rand()*160}
 
     update(core,aim,hunting,rootX,rootTop,rootBottom,org){
       const R=this.rand;this.t++;
@@ -51,10 +52,10 @@
       if(this.cystT<0.6){                                  // nado próprio, preso à posição do motor
         const o=this.o,d=Math.hypot(o.x,o.y),toA=Math.atan2(-o.y,-o.x),Rl=this.leash;
         let v=this.v0*(1-this.cystT);
-        if(this.turnT>0){this.turnT--;this.heading+=this.dTurn;v*=this.kind==='cil'?0.5:0.4}
+        if(this.turnT>0){this.turnT--;this.heading+=this.dTurn;v*=this.kind==='cil'?0.5:0.6}
         else if(this.back>0){this.back--;v*=-0.6;if(this.back===0){const s=R()<0.5?-1:1;this.turnT=12;this.dTurn=s*(1.2+R()*0.6)/12}}
         else{
-          this.heading+=(R()-0.5)*(this.kind==='cil'?0.03:0.08)+(this.kind==='cil'?0.012:0);   // ciliado: trajetória em curva suave
+          this.heading+=(R()-0.5)*(this.kind==='cil'?0.03:0.02)+(this.kind==='cil'?0.012:0);   // ciliado: curva suave; euglenoide: desliza quase reto
           const mv=this.heading;
           if(d>Rl*1.2)this.heading+=clamp(wrap(toA-mv),-1,1)*0.07*Math.min(2,d/Rl-1);
           const cosA=d>Rl*0.5?Math.cos(wrap(toA-mv))*Math.min(1,d/Rl):0;
@@ -62,7 +63,7 @@
           if(this.run<=0&&!(d>Rl*1.2&&cosA>0.5)){
             this.run=this._runLen();
             if(this.kind==='cil')this.back=10+Math.floor(R()*8);               // reação de evitação: recua e vira
-            else{const s=(d>Rl*0.6&&R()<0.7)?(wrap(toA-mv)<0?-1:1):(R()<0.5?-1:1);this.turnT=5;this.dTurn=s*(0.9+R()*1.2)/5}  // tranco
+            else{const s=(d>Rl*0.6&&R()<0.7)?(wrap(toA-mv)<0?-1:1):(R()<0.5?-1:1);this.turnT=40;this.dTurn=s*(0.8+R()*0.9)/40;this.meta=1}  // curva larga, com metabolia
           }
         }
         o.x+=Math.cos(this.heading)*v;o.y+=Math.sin(this.heading)*v;
@@ -76,7 +77,8 @@
         const rate=this.turnT>0?0.35:spd/(0.45*this.L);
         this.dh+=clamp(wrap(tgt-this.dh),-rate,rate);
       }
-      this.ph+=this.kind==='cil'?0.35:0.6+spd*3;this.spin+=0.12;
+      this.ph+=this.kind==='cil'?0.35:0.45;this.spin+=0.12;
+      this.meta=Math.max(0,(this.meta||0)-0.004);              // metabolia: mais forte nas curvas, some aos poucos
     }
 
     /* o motor registrou a predação: a presa vira um vacúolo digestivo */
@@ -88,7 +90,7 @@
     }
 
     _cyst(ctx,g,al,f){
-      const r=this.kind==='cil'?this.L*0.42:this.L*0.4,c=this.c,hs=(h,s,l,a)=>`hsla(${h},${s}%,${l}%,${a})`;
+      const r=this.kind==='cil'?this.L*0.42:this.L*0.3,c=this.c,hs=(h,s,l,a)=>`hsla(${h},${s}%,${l}%,${a})`;
       ctx.save();ctx.globalAlpha=f;
       ctx.beginPath();ctx.arc(c.x,c.y,r,0,TAU);ctx.fillStyle=hs(g.hue,g.sat*0.35,Math.max(25,g.lit-15),0.85*al+0.1);ctx.fill();
       ctx.strokeStyle=hs(g.hue,g.sat*0.4,Math.max(15,g.lit-35),0.95);ctx.lineWidth=Math.max(0.25,r*0.18);ctx.stroke();
@@ -109,24 +111,30 @@
 
     _drawFlag(ctx,g,al){
       const {hx,hy,nx,ny}=this._local(),c=this.c,L=this.L,W=this.W,zoom=zoomOf(ctx);
-      const hs=(h,s,l,a)=>`hsla(${h},${s}%,${l}%,${a})`,hue=g.hue;
+      const hs=(h,s,l,a)=>`hsla(${h},${s}%,${l}%,${a})`,hue=g.hue,sat=Math.min(30,g.sat*0.35);
       const P=(u,w)=>({x:c.x+hx*u*L/2+nx*w*W/2,y:c.y+hy*u*L/2+ny*w*W/2});
-      // corpo em feijão: um lado levemente côncavo (bolso flagelar à frente)
-      ctx.beginPath();
-      for(let i=0;i<=24;i++){const a=i/24*TAU,u=Math.cos(a),w=Math.sin(a)*(1-0.18*Math.max(0,Math.sin(a))*(u>0?1:0.3));const p=P(u,w);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)}
-      ctx.closePath();ctx.fillStyle=hs(hue,g.sat*0.45,Math.min(82,g.lit+14),0.7*al+0.15);ctx.fill();
-      ctx.strokeStyle=hs(hue,g.sat*0.5,Math.max(20,g.lit-20),0.9*al);ctx.lineWidth=0.14;ctx.stroke();
-      // flagelos: curto à frente (bate rápido) e longo arrastado atrás
-      const base=P(0.75,0.35);
-      const wave=(x0,y0,a,len,amp,ph,n)=>{ctx.moveTo(x0,y0);const ca=Math.cos(a),sa=Math.sin(a);for(let i=1;i<=n;i++){const u=i/n,o=Math.sin(u*TAU*1.3-ph)*amp*Math.min(1,u*3);ctx.lineTo(x0+ca*len*u-sa*o,y0+sa*len*u+ca*o)}};
-      ctx.beginPath();
-      wave(base.x,base.y,this.dh+0.5*Math.sin(this.ph*1.7),L*0.9,0.35,this.ph*2.2,8);
-      wave(base.x,base.y,this.dh+Math.PI+0.25,L*1.7,0.22,this.ph,12);
-      ctx.strokeStyle=hs(hue,g.sat*0.4,Math.min(88,g.lit+25),0.7*al);ctx.lineWidth=0.11;ctx.stroke();
-      if(zoom>=3){
-        const n=P(0.3,0);ctx.beginPath();ctx.arc(n.x,n.y,W*0.17,0,TAU);ctx.fillStyle=hs(hue,g.sat*0.4,Math.max(25,g.lit-15),0.6*al);ctx.fill();
-        this._vacuoles(ctx,P,0.12*L,false);
-      }
+      // perfil em fuso, frente arredondada e cauda afilada; a metabolia passa uma "onda" de
+      // engrossamento da frente para trás
+      const m=0.25+0.45*(this.meta||0),wv=u=>{const base=u>0?Math.sqrt(Math.max(0,1-u*u))*1.0:Math.pow(Math.max(0,1+u),0.8)*Math.sqrt(Math.max(0,1-u*u));
+        return base*(1+m*Math.sin((1-u)*Math.PI*1.4-this.t*0.06))};
+      const top=[],bot=[];
+      for(let i=0;i<=20;i++){const u=1-i/10;const w=wv(u);top.push(P(u,w));bot.push(P(u,-w))}
+      ctx.beginPath();top.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));for(let i=bot.length-1;i>=0;i--)ctx.lineTo(bot[i].x,bot[i].y);ctx.closePath();
+      ctx.fillStyle=hs(hue,sat,Math.min(84,g.lit+20),0.55*al+0.15);ctx.fill();
+      ctx.strokeStyle=hs(hue,sat,Math.max(22,g.lit-15),0.9*al);ctx.lineWidth=0.16;ctx.stroke();
+      // flagelo grosso para a frente: firme na base, só a ponta bate
+      const b=P(1,0),fl=L*1.05;ctx.beginPath();ctx.moveTo(b.x,b.y);
+      for(let i=1;i<=14;i++){const u=i/14,amp=W*0.55*Math.pow(u,3),o=Math.sin(this.ph*1.6-u*5)*amp;
+        ctx.lineTo(b.x+hx*fl*u+nx*o,b.y+hy*fl*u+ny*o)}
+      ctx.strokeStyle=hs(hue,sat,Math.min(90,g.lit+28),0.85*al);ctx.lineWidth=0.2;ctx.stroke();
+      if(zoom<2.4)return;
+      // reservatório + vacúolo contrátil na frente, núcleo, grãos de paramido
+      const rv=P(0.72,0);ctx.beginPath();ctx.ellipse(rv.x,rv.y,W*0.22,W*0.15,this.dh,0,TAU);ctx.fillStyle=`rgba(225,240,255,${0.55*al})`;ctx.fill();
+      const cv=P(0.58,0.25),cr=W*0.12*(0.6+0.4*Math.max(0,Math.sin(this.t*0.05)));ctx.beginPath();ctx.arc(cv.x,cv.y,cr,0,TAU);ctx.fillStyle=`rgba(235,248,255,${0.6*al})`;ctx.fill();
+      const nu=P(-0.05,0);ctx.beginPath();ctx.ellipse(nu.x,nu.y,W*0.3,W*0.24,this.dh,0,TAU);ctx.fillStyle=hs(hue,sat+10,Math.max(25,g.lit-10),0.55*al);ctx.fill();
+      ctx.fillStyle=`rgba(255,253,240,${0.55*al})`;
+      for(const [u,w] of [[0.3,0.35],[-0.35,-0.3],[-0.55,0.25],[0.15,-0.4],[-0.2,0.45]]){const p=P(u,w*wv(u));ctx.beginPath();ctx.ellipse(p.x,p.y,W*0.12,W*0.07,this.dh+u,0,TAU);ctx.fill()}
+      this._vacuoles(ctx,P,0.07*L,false);
     }
 
     _drawCil(ctx,g,al){
@@ -161,7 +169,7 @@
 
     _vacuoles(ctx,P,r,cyclosis){
       for(const f of this.food){
-        const k=f.t/f.life;let u=f.u*(1-k*0.5),w=f.w*(1-k*0.5);
+        const k=f.t/f.life;let u=f.u*0.6*(1-k*0.5),w=f.w*0.3*(1-k*0.5);   // vacúolo migra para dentro da célula
         if(cyclosis){const a=f.s+f.t*0.02;u=0.55*Math.cos(a);w=0.5*Math.sin(a)}  // ciclose: vacúolos circulam
         const p=P(u,w);
         ctx.beginPath();ctx.arc(p.x,p.y,r*(1.2-0.6*k),0,TAU);ctx.fillStyle=`rgba(255,250,235,${0.35*(1-k)})`;ctx.fill();

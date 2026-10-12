@@ -393,8 +393,8 @@
       const b=org.skin;
       if(org.cyst)return 'Com o solo seco (ou sem presas por muito tempo), este protozoário virou cisto: uma parede grossa o protege, ele para de se mover e de comer e espera a umidade voltar.';
       if(b&&b.kind==='flag'){
-        if(b.food.length)return 'Este flagelado engoliu uma bactéria e a está digerindo num vacúolo. Flagelados são pequenos e se multiplicam rápido; comem as bactérias soltas na água entre os grãos de solo.';
-        return 'Este flagelado nada aos trancos com dois flagelos: um curto à frente e um longo arrastado atrás. Ele procura bactérias soltas no filme de água do solo.';
+        if(b.food.length)return 'Este flagelado engoliu uma bactéria e a está digerindo num vacúolo. Flagelados são os protozoários mais numerosos do solo e comem as bactérias soltas na água entre os grãos.';
+        return 'Este flagelado euglenoide (parente da Euglena que come bactérias) desliza com o flagelo apontado para a frente, batendo só a ponta, e muda de forma enquanto anda (metabolia).';
       }
       if(b&&b.kind==='cil'){
         if(b.food.length)return 'Os cílios levam as bactérias até o sulco oral deste ciliado; dentro da célula, os vacúolos digestivos circulam enquanto a presa é digerida.';
