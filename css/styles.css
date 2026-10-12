@@ -1040,3 +1040,6 @@ body[data-water="wet"] .canvas-shell::after{
 /* pipeta ativa: cursor de mira no solo e botão "Concluir" destacado */
 .canvas-shell.is-pipette #pond{cursor:copy}
 [data-add].is-active{background:var(--amber,#d97706);border-color:var(--amber,#d97706)}
+
+.check-row{display:flex;gap:8px;align-items:flex-start;line-height:1.35}
+.check-row input{margin-top:3px}

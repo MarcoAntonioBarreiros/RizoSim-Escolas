@@ -26,16 +26,18 @@
   const NP=26;
 
   class NematodeBody{
-    constructor(x,y,g,seed){
+    constructor(x,y,g,seed,born){
       this.rand=prng(seed);const R=this.rand;
       this.Lb=clamp(((g.nd||6)-1)*(g.sl||2.5)*1.25,14,28);
       this.W=clamp(0.55+(g.th||1)*0.35,0.7,1.15);
+      // recém-nascido ou recém-chegado: juvenil (J2), menor, que cresce até adulto em ~40 s (1x)
+      this.Lb0=this.Lb;this.grow=born?0.45:1;this.Lb=this.Lb0*this.grow;
       this.lam=this.Lb*0.55;this.A=this.Lb*0.065;
       this.dir=R()*TAU;this.feed=0;this.ph=R()*TAU;this.S0=R()*20;
       this.trail=null;this.turn=0;this.aS=0;this.leash=16;
       this.v0=0.09+0.06*clamp(((g.thr||0.55)-0.3)/0.5,0,1);     // px por passo (~5-9 px/s em 1x)
     }
-    get label(){return this.feed>0.3?'Nematoide se alimentando (estilete)':'Nematoide (ondulação)'}
+    get label(){return this.feed>0.3?'Nematoide se alimentando (estilete)':this.grow<0.8?'Nematoide juvenil (J2)':'Nematoide (ondulação)'}
     _reset(x,y){
       // rastro inicial reto atrás da cabeça; S = coordenada ao longo do caminho
       this.trail=[];const L=this.Lb+3;
@@ -73,6 +75,7 @@
       while(T.length>2&&T[1].S<this.Sh-this.Lb-3)T.shift();
       this.hx=T[T.length-1].x;this.hy=T[T.length-1].y;
       this.ph+=0.25;
+      if(this.grow<1){this.grow=Math.min(1,this.grow+0.00025);this.Lb=this.Lb0*this.grow;this.lam=this.Lb*0.55;this.A=this.Lb*0.065}
     }
     _idx(Sv){const T=this.trail;let lo=0,hi=T.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(T[m].S<=Sv)lo=m;else hi=m}return lo}
     _at(Sv){                             // ponto e direção do rastro na coordenada Sv

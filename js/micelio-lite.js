@@ -37,7 +37,7 @@
   };
 
   class MyceliumBody{
-    constructor(x,y,g,kind,seed){
+    constructor(x,y,g,kind,seed,born){
       this.rand=prng(seed);
       const R=this.rand;
       this.kind=kind;this.P=KINDS[kind];
@@ -48,7 +48,8 @@
       this.segLen=0.8+0.3*R();
       const n=this.P.tipsMin+1;
       for(let k=0;k<n;k++)this._tip(x,y,k/n*TAU+R()*0.6,0);
-      this.pre=true;                 // pré-crescimento na 1ª atualização (quando já se sabe onde é a superfície)
+      this.pre=!born;                // população inicial: pré-crescimento na 1ª atualização; recém-chegados germinam de um esporo
+      this.germ=born?1:0;this.o0={x,y};   // esporo visível no ponto de germinação enquanto a colônia é jovem
     }
     get label(){return this.P.label}
     _tip(x,y,a,gen){this.tips.push({x,y,lx:x,ly:y,a,acc:0,idle:0,gen,n:0,toRoot:false})}
@@ -68,6 +69,7 @@
       this.speed+=(sp-this.speed)*0.02;
       if(sp>2e-3)this.heading+=wrap(Math.atan2(vy,vx)-this.heading)*0.05;
       this._grow(core,this.c.x,this.c.y,rootX,rootTop,rootBottom,1);
+      if(this.germ>0)this.germ=Math.max(0,1-this.segs.length/25);
     }
 
     _grow(core,cx,cy,rootX,rootTop,rootBottom,live){
@@ -187,6 +189,11 @@
       const W=P.width*this.scale,life=P.life;
       const zoom=ctx.getTransform().a/(root.devicePixelRatio||1);
       ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=1;
+      if(this.germ>0.02){                // esporo germinando (some quando a colônia cresce)
+        ctx.beginPath();ctx.arc(this.o0.x,this.o0.y,0.75*this.scale,0,TAU);
+        ctx.fillStyle=hs(hue,sat,Math.max(30,lit-35),0.9*this.germ*al+0.1);ctx.fill();
+        ctx.strokeStyle=hs(hue,sat,lit,0.8*this.germ);ctx.lineWidth=0.15;ctx.stroke();
+      }
       if(zoom<3.2){this._drawFar(ctx,hs,hue,sat,lit,W,life,al);ctx.restore();return}
       // hifas em 3 faixas de opacidade (novas, maduras, em autólise)
       const buckets=[[],[],[]];

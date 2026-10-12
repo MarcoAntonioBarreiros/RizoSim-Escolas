@@ -21,13 +21,16 @@
     create(org,x,y){
       if(!enabled)return null;
       const g=org.g,gid=g.guild,seed=hash(gid,g.hue,g.sl,g.cs,g.th,x,y);
+      // organismos da população inicial já aparecem formados; os que nascem ou chegam depois
+      // começam pequenos (esporo germinando, nematoide juvenil) e crescem à vista
+      const born=typeof tk!=='undefined'&&tk>0;
       if(gid===8&&root.AmoebaBody)return new root.AmoebaBody(x,y,g,seed);
-      if(FUNGI[gid]&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,FUNGI[gid],seed);
+      if(FUNGI[gid]&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,FUNGI[gid],seed,born);
       // patógeno: indivíduos de morfologia ramificada/tentacular aparecem como Fusarium (só aparência)
-      if(gid===6&&(g.mt===2||g.mt===4)&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,'fusa',seed);
+      if(gid===6&&(g.mt===2||g.mt===4)&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,'fusa',seed,born);
       if(BACT[gid]&&root.BacteriumBody)return new root.BacteriumBody(x,y,g,BACT[gid],seed);
       if(gid===7&&root.CyanoBody)return new root.CyanoBody(x,y,g,seed);
-      if(gid===9&&root.NematodeBody)return new root.NematodeBody(x,y,g,seed);
+      if(gid===9&&root.NematodeBody)return new root.NematodeBody(x,y,g,seed,born);
       return null;
     }
   };

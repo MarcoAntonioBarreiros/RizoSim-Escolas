@@ -42,3 +42,25 @@ Este documento resume as regras preservadas do motor original.
 
 A versão escolar não substitui esse ciclo por resultados fixos. Ela apenas traduz estado e eventos para uma interface apropriada para crianças e mantém os detalhes no modo professor.
 
+
+## Regras ecológicas acrescentadas (branch `ecologia-v2`)
+
+Antes, a população tinha só um teto total (280) e quem se reproduzia mais rápido o ocupava, quase sempre os saprófitos. Agora:
+
+| Regra | Valor | Por quê |
+|---|---|---|
+| Capacidade por tipo | bactérias 45%, fungos 30%, protozoários 10%, nematoides 5% da população máxima | pirâmide trófica: muitos decompositores e bactérias, poucos predadores; a chance de nascer cai à medida que o tipo enche (logística) |
+| Espaço máx. de um grupo dentro do tipo | bactérias 30%, fungos 50% | vários grupos convivem |
+| Saprófitos | sem bônus de exsudato; perto da raiz perdem carbono para as bactérias vizinhas; colônia nova só com menos de 3 vizinhas | exsudato é recurso de bactérias; limita o número de colônias sem enfraquecer cada uma |
+| Bactérias benéficas | dividem-se com 55% da energia dos outros grupos | ciclo mais curto da rizosfera |
+| Protozoário | 150 passos de digestão entre presas | fagocitose e digestão no vacúolo |
+| Refúgio no rizoplano | bactérias a até 6 px da raiz escapam de 75% dos encontros com protozoários | biofilme protege da predação |
+| Nematoide | ciclo de reprodução 4× mais longo | gerações de dias, não de horas |
+| Trichoderma e Arthrobotrys | também decompõem matéria orgânica (40% e 20% do saprófito) | são saprófitos que usam o parasitismo como fonte extra |
+| Proteção contra o patógeno | cada bactéria benéfica vizinha reduz o ataque à raiz (competição por sítio); cada Bacillus vizinho tira energia do patógeno (antibiose por lipopeptídeos) | o patógeno ataca a planta saudável; a proteção depende da colonização da raiz |
+
+## Imprevistos naturais (`js/imprevistos.js`)
+
+- Ao escolher um cenário ou reiniciar, temperatura, pH, umidade, nutrientes, C orgânico, ferro e luz são sorteados em torno dos valores do cenário. O que caracteriza o cenário varia pouco.
+- Com a simulação rodando, a cada ~1–2,5 min (em 1x) pode acontecer: veranico, chuva forte (encharcamento), onda de calor, frente fria, chegada de patógenos ou de nematoides. O clima muda aos poucos e volta ao que era. Cada acontecimento aparece em "O que está acontecendo?".
+- O professor desliga em "Imprevistos naturais" no painel do modo professor.
