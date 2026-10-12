@@ -5,8 +5,9 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
      rizosfera, predadores são poucos (pirâmide trófica). A chance de nascer cai à medida que o
      tipo se aproxima do seu limite (logística) — limita o número, não o crescimento de cada um. */
   TYPE_K:{bact:0.45,fungi:0.30,proto:0.10,nema:0.05},
-  GUILD_SHARE:0.5,    /* dentro de bactérias e fungos, um grupo sozinho ocupa no máx. metade do espaço do tipo */
-  NEMA_COOL:4,        /* nematoide: ciclo de vida mais longo (dias) que o das bactérias (horas) */
+  GUILD_SHARE:{bact:0.3,fungi:0.5},   /* espaço máx. de um grupo sozinho dentro do seu tipo (bactérias: vários grupos convivem) */
+  NEMA_COOL:4,
+  BACT_REPRO:0.55,    /* bactérias benéficas se dividem com 55% da energia dos outros: o ciclo mais curto da rizosfera (o patógeno mantém o ritmo antigo) */        /* nematoide: ciclo de vida mais longo (dias) que o das bactérias (horas) */
   SAP_LOCAL:3,        /* colônia nova de saprófito só se instala com menos de 3 colônias vizinhas (substrato ocupado) */
   PROTO_DIGEST:150,   /* protozoário: fagocitose + digestão no vacúolo antes da próxima presa */
   REFUGE_R:6,         /* bactérias coladas na raiz (biofilme do rizoplano)... */
@@ -929,11 +930,11 @@ if(s.age>14000+Math.random()*6000){s.alive=false;nD++;
   lc.organicC+=0.5;lc.NH4+=0.1;
   if(fd.length<C.FOOD_MAX-2){fd.push({x:hd.x+rng(-8,8),y:hd.y+rng(-8,8),sz:0.3+Math.random()*0.2,hue:25+Math.random()*10,ph:Math.random()*Math.PI*2,age:0,det:true})}
   continue}
-let sapBlock=false;
-if(s.e>C.REPRO_E&&s.reproCool<=0&&!s.nodulated){const ty=gd.type,K=C.TYPE_K[ty]*C.MAX_POP;
-  sapBlock=(gid===10&&(_guildCounts[10]||0)>=C.SAP_LOCAL)||(ty==='bact'||ty==='fungi')&&nGuild[gid]>=K*C.GUILD_SHARE||Math.random()>1-nType[ty]/K;
+let sapBlock=false;const reproE=C.REPRO_E*(gd.type==='bact'&&gid!==6?C.BACT_REPRO:1);
+if(s.e>reproE&&s.reproCool<=0&&!s.nodulated){const ty=gd.type,K=C.TYPE_K[ty]*C.MAX_POP;
+  sapBlock=(gid===10&&(_guildCounts[10]||0)>=C.SAP_LOCAL)||(ty==='bact'||ty==='fungi')&&nGuild[gid]>=K*C.GUILD_SHARE[ty]||Math.random()>1-nType[ty]/K;
   if(sapBlock)s.reproCool=30}   /* espera um pouco antes de tentar de novo */
-if(s.e>C.REPRO_E&&sw.length+nb.length<C.MAX_POP&&!s.nodulated&&s.reproCool<=0&&!sapBlock){nGuild[gid]++;nType[gd.type]++;const cool=C.REPRO_COOL*(gd.type==='nema'?C.NEMA_COOL:1);s.e*=.4;s.reproCool=cool;const ch=new Sw(hd.x+rng(-18,18),hd.y+rng(-18,18),mutG(s.g),s.gen+1);ch.e=C.INIT_E*.5;ch.reproCool=cool;nb.push(ch);nB++;if(ch.gen>mG)mG=ch.gen;fx.push({x:hd.x,y:hd.y,life:20,type:'rep'})}
+if(s.e>reproE&&sw.length+nb.length<C.MAX_POP&&!s.nodulated&&s.reproCool<=0&&!sapBlock){nGuild[gid]++;nType[gd.type]++;const cool=C.REPRO_COOL*(gd.type==='nema'?C.NEMA_COOL:1);s.e*=.4;s.reproCool=cool;const ch=new Sw(hd.x+rng(-18,18),hd.y+rng(-18,18),mutG(s.g),s.gen+1);ch.e=C.INIT_E*.5;ch.reproCool=cool;nb.push(ch);nB++;if(ch.gen>mG)mG=ch.gen;fx.push({x:hd.x,y:hd.y,life:20,type:'rep'})}
 }/* end for */
 
 sw=sw.filter(s=>s.alive);for(const c of nb)sw.push(c);

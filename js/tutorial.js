@@ -72,6 +72,9 @@
   }
 
   function start(){
+    // o tutorial não divide espaço com outras janelas: fecha o quadro do organismo e o aviso
+    document.getElementById('closeSelectionBtn')?.click();
+    document.querySelector('.disclaimer')?.classList.add('is-faded');
     if(overlay.hidden)returnFocus=document.activeElement;
     index=0;
     overlay.hidden=false;
@@ -108,9 +111,6 @@
 
   window.RizoSchoolTutorial={start,close,restart:start};
 
-  window.addEventListener('load',()=>{
-    let seen=false;
-    try{seen=localStorage.getItem('rizosim-escolas-tutorial')==='seen'}catch(_err){}
-    if(!seen)setTimeout(start,600);
-  });
+  /* O tutorial não abre sozinho: só pelo botão "Ajuda". Abrir automaticamente atrapalhava
+     quem já conhece o simulador (e cada nova versão publicada abria de novo). */
 })();

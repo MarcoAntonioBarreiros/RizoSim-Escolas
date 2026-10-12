@@ -322,6 +322,7 @@ body[data-water="wet"] .canvas-shell::after{
   font-weight:700;
 }
 .disclaimer{
+  transition:opacity .8s ease;
   position:absolute;
   left:12px;
   right:12px;
@@ -683,7 +684,7 @@ body[data-water="wet"] .canvas-shell::after{
 .tutorial-overlay{
   position:fixed;
   inset:0;
-  z-index:70;
+  z-index:72;   /* acima do elemento destacado (z 71): o cartão nunca fica por baixo */
   pointer-events:none;
   background:transparent;
 }
@@ -1032,3 +1033,10 @@ body[data-water="wet"] .canvas-shell::after{
     transition-duration:.01ms!important;
   }
 }
+
+/* o aviso some sozinho depois de alguns segundos, sem precisar clicar */
+.disclaimer.is-faded{opacity:0;pointer-events:none}
+
+/* pipeta ativa: cursor de mira no solo e botão "Concluir" destacado */
+.canvas-shell.is-pipette #pond{cursor:copy}
+[data-add].is-active{background:var(--amber,#d97706);border-color:var(--amber,#d97706)}

@@ -132,6 +132,7 @@
   }
 
   function renderCards(){
+    setTimeout(markPipetteButtons,0);
     const category=RizoSchoolOrganisms.categories.find(item=>item.id===activeCategory);
     organismCards.setAttribute('role','tabpanel');
     organismCards.setAttribute('aria-labelledby','tab-'+category.id);
@@ -175,6 +176,35 @@
     event.preventDefault();
   });
 
+  /* ── Pipeta: "Adicionar" escolhe o organismo; cada toque no solo coloca 3 indivíduos ali,
+     como a inoculação por clique do RizoSim original. "Concluir" ou Esc encerra. ── */
+  let pipette=null;
+  function markPipetteButtons(){
+    organismCards.querySelectorAll('[data-add]').forEach(button=>{
+      const on=pipette!==null&&Number(button.dataset.add)===pipette;
+      button.classList.toggle('is-active',on);
+      button.setAttribute('aria-pressed',on?'true':'false');
+      button.textContent=on?'Concluir':'Adicionar';
+    });
+  }
+  function startPipette(guildId){
+    clearSelection();
+    pipette=guildId;
+    RizoSimEngine.addMode(guildId);
+    document.getElementById('cw')?.classList.add('is-pipette');
+    markPipetteButtons();
+    observeLabel.textContent='Toque no solo para colocar '+RizoSchoolOrganisms.get(guildId).name+'. Esc ou "Concluir" para terminar.';
+  }
+  function endPipette(){
+    if(pipette===null)return;
+    pipette=null;
+    RizoSimEngine.selectMode();
+    document.getElementById('cw')?.classList.remove('is-pipette');
+    markPipetteButtons();
+    observeLabel.textContent='Toque em um organismo para observar.';
+  }
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')endPipette()});
+
   function findBiocontrolTarget(guildId){
     const preyGuild=guildId===4?6:guildId===12?9:null;
     if(preyGuild===null)return null;
@@ -203,11 +233,17 @@
     const observe=event.target.closest('[data-observe]');
     const add=event.target.closest('[data-add]');
     if(observe){
+      endPipette();
       const guildId=Number(observe.dataset.observe);
       RizoSimEngine.selectMode();
       observeGuild(guildId);
     }
-    if(add){
+    if(add&&event.detail!==0){          // clique com mouse/toque: pipeta — toque no solo para colocar
+      const guildId=Number(add.dataset.add);
+      if(pipette===guildId)endPipette();else startPipette(guildId);
+      return;
+    }
+    if(add){                             // teclado: adiciona perto da raiz, como antes
       const guildId=Number(add.dataset.add);
       const placement=inoculateFromCard(guildId);
       const made=placement.made;
@@ -406,6 +442,7 @@
     if(!followedByCamera)RizoSimEngine.stopFollowing();
     observeLabel.textContent=(followedByCamera?'Acompanhando ':'Observando ')+GUILDS[org.g.guild].name+'.';
     selectedBubble.hidden=false;
+    document.querySelector('.disclaimer')?.classList.add('is-faded');
     focusShade.classList.add('is-active');
     selectionRing.classList.add('is-active');
     updateSelectedOrganism();
@@ -458,7 +495,14 @@
     if(performance.now()<suppressCanvasClickUntil)return;
     if(event.target.closest('.selected-bubble'))return;
     const sel=document.getElementById('selInoc');
-    if(sel&&Number(sel.value)>=0)return;
+    if(sel&&Number(sel.value)>=0){         // pipeta: o motor já colocou os organismos no ponto tocado
+      if(pipette!==null){
+        RizoSimEngine.setPaused(false);
+        const data=RizoSchoolOrganisms.get(pipette);
+        addChildEvent({priority:3,key:'pipette-'+pipette,message:data.name+' foi colocado onde você tocou.',title:data.name,detail:data.science});
+      }
+      return;
+    }
     const rect=document.getElementById('pond').getBoundingClientRect();
     const org=RizoSimEngine.findOrganismAtScreen(event.clientX-rect.left,event.clientY-rect.top,34);
     if(org)selectOrganism(org);
@@ -613,6 +657,7 @@
   renderCategories();
   renderCards();
   renderScenarios();
+  setTimeout(()=>document.querySelector('.disclaimer')?.classList.add('is-faded'),10000);
   renderIndicators();
   addChildEvent({
     priority:1,
