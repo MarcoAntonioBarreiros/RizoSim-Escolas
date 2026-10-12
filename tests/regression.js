@@ -155,6 +155,18 @@
       'Fungos vivos com micélio: '+withMycelium.length+'/'+fungiAlive.length+'; segmentos de hifa por colônia: '+(hyphae.length?Math.min(...hyphae)+'–'+Math.max(...hyphae):'-')+'; pontas: '+growingTips
     ));
 
+    engine.resetWith({...defaults,microbeMult:0});
+    const others=[0,1,2,3,5,7,9].flatMap(id=>closeToRoot(id,2));
+    engine.step(200);
+    const kinds={};
+    for(const org of others){if(org.alive&&org.skin)kinds[org.g.guild]=org.skin.label}
+    const missing=[0,1,2,3,5,7,9].filter(id=>others.some(org=>org.alive&&org.g.guild===id)&&!kinds[id]);
+    results.push(result(
+      'Bactérias, cianobactérias e nematoides aparecem com o corpo novo',
+      missing.length===0&&Object.keys(kinds).length>=5,
+      Object.entries(kinds).map(([k,v])=>k+': '+v).join(' | ')+(missing.length?' — sem corpo: '+missing.join(','):'')
+    ));
+
     engine.resetWith({...defaults,microbeMult:0,Fe2:1,Fe3:130,NH4:45,NO3:35,PO4free:25});
     engine.raw.plant.fe=8;
     const feBefore=engine.state.plant.fe;

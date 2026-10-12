@@ -29,11 +29,11 @@
   function prng(seed){let s=seed>>>0||1;return function(){s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
   const KINDS={
-    tricho:{label:'Hifas septadas',Rmax:7.0,tipsMin:3,tipsMax:6,branch:0.10,angle:0.75,septa:true, width:0.28,life:700, maxSegs:64,feat:'conid',featP:0.07},
-    sapro: {label:'Hifas cenocíticas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.65,septa:false,width:0.30,life:650, maxSegs:64,feat:'spor', featP:0.05},
-    myco:  {label:'Hifas de micorriza',Rmax:9.0,tipsMin:3,tipsMax:5,branch:0.07,angle:0.85,septa:false,width:0.42,life:900, maxSegs:64,feat:'spore',featP:0.025,rootTrop:90,branchRoot:2.5,contact:'arb'},
-    fusa:  {label:'Hifas de Fusarium',Rmax:7.5,tipsMin:3,tipsMax:6,branch:0.09,angle:0.70,septa:true, width:0.26,life:700, maxSegs:64,feat:'macro',featP:0.06,rootTrop:120,branchRoot:0.8,contact:'lesion'},
-    arthro:{label:'Hifas com armadilhas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.80,septa:true, width:0.28,life:750, maxSegs:64,feat:'trap', featP:0.08}
+    tricho:{label:'Hifas septadas',Rmax:7.0,tipsMin:3,tipsMax:6,branch:0.10,angle:0.75,septa:true, width:0.28,life:700, maxSegs:48,feat:'conid',featP:0.07},
+    sapro: {label:'Hifas cenocíticas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.65,septa:false,width:0.30,life:650, maxSegs:48,feat:'spor', featP:0.05},
+    myco:  {label:'Hifas de micorriza',Rmax:9.0,tipsMin:3,tipsMax:5,branch:0.07,angle:0.85,septa:false,width:0.42,life:900, maxSegs:48,feat:'spore',featP:0.025,rootTrop:90,branchRoot:2.5,contact:'arb'},
+    fusa:  {label:'Hifas de Fusarium',Rmax:7.5,tipsMin:3,tipsMax:6,branch:0.09,angle:0.70,septa:true, width:0.26,life:700, maxSegs:48,feat:'macro',featP:0.06,rootTrop:120,branchRoot:0.8,contact:'lesion'},
+    arthro:{label:'Hifas com armadilhas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.80,septa:true, width:0.28,life:750, maxSegs:48,feat:'trap', featP:0.08}
   };
 
   class MyceliumBody{
@@ -45,7 +45,7 @@
       this.Rmax=this.P.Rmax*this.scale;
       this.c={x,y};this.heading=R()*TAU;this.speed=0.1;
       this.t=0;this.segs=[];this.tips=[];this.events=[];this.arbs=[];
-      this.segLen=0.8+0.3*R();
+      this.segLen=1.3+0.3*R();
       const n=this.P.tipsMin+1;
       for(let k=0;k<n;k++)this._tip(x,y,k/n*TAU+R()*0.6,0);
       this.pre=true;                 // pré-crescimento na 1ª atualização (quando já se sabe onde é a superfície)
@@ -151,17 +151,32 @@
     trap(x,y,color){this.events.push({type:'trap',x,y,col:color||'#fb923c',t:0,life:160,fx:this._nearestEnd(x,y),a:this.rand()*TAU})}
     _nearestEnd(x,y){let b=null,bd=1e9;for(const s of this.segs){const d=(s.x2-x)**2+(s.y2-y)**2;if(d<bd){bd=d;b=s}}return b?{x:b.x2,y:b.y2}:{x:this.c.x,y:this.c.y}}
 
-    /* visão de longe: só as hifas e as estruturas coloridas, sem septos nem pontas */
+    /* visão de longe: só as hifas e as estruturas coloridas, sem septos nem pontas.
+       Em vez de desenhar colônia por colônia, junta os traços de mesma cor de todas as
+       colônias e desenha tudo de uma vez no fim do quadro (MyceliumBody.flush). */
     _drawFar(ctx,hs,hue,sat,lit,W,life,al){
-      ctx.beginPath();
-      for(const s of this.segs){if(s.age>life)continue;ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2)}
-      ctx.strokeStyle=hs(hue,sat,lit,0.7*(0.4+0.6*al));ctx.lineWidth=W;ctx.stroke();
-      let col=null;const k=this.kind;
-      if(k==='tricho')col=`rgba(80,175,80,${0.85*al})`;else if(k==='fusa')col=`rgba(250,235,245,${0.85*al})`;else if(k==='sapro')col=`rgba(30,24,22,${0.9*al})`;else if(k==='myco')col=`rgba(214,150,70,${0.85*al})`;else col=hs(hue,60,80,0.7*al);
-      ctx.beginPath();
-      for(const s of this.segs){if(!s.feat||s.age<60||s.age>life)continue;ctx.moveTo(s.x2+0.6,s.y2);ctx.arc(s.x2,s.y2,0.6*this.scale,0,TAU)}
-      if(k==='arthro'){ctx.strokeStyle=col;ctx.lineWidth=W*0.9;ctx.stroke()}else{ctx.fillStyle=col;ctx.fill()}
-      for(const A of this.arbs){if(A.type==='lesion'){ctx.fillStyle='rgba(70,35,20,0.55)';ctx.beginPath();ctx.ellipse(A.x-A.side*0.6,A.y,1.3,3.2,0,0,TAU);ctx.fill()}else{ctx.fillStyle='rgba(250,250,245,0.7)';ctx.beginPath();ctx.arc(A.x,A.y,0.7,0,TAU);ctx.fill()}}
+      const B=MyceliumBody._batch,q=v=>Math.round(v/15)*15,aq=Math.round((0.4+0.6*al)*4)/4;
+      const key='L|'+hs(q(hue),Math.round(sat),Math.round(lit),(0.7*aq).toFixed(2))+'|'+W.toFixed(2);
+      let arr=B.get(key);if(!arr){arr=[];B.set(key,arr)}
+      for(const s of this.segs){if(s.age>life)continue;arr.push(s.x1,s.y1,s.x2,s.y2)}
+      const k=this.kind;let col;
+      if(k==='tricho')col='rgba(80,175,80,0.8)';else if(k==='fusa')col='rgba(250,235,245,0.8)';else if(k==='sapro')col='rgba(30,24,22,0.85)';else if(k==='myco')col='rgba(214,150,70,0.8)';else col=hs(q(hue),60,80,0.7);
+      const fk=(k==='arthro'?'R|':'D|')+col+'|'+(0.6*this.scale).toFixed(2)+'|'+W.toFixed(2);
+      let fa=B.get(fk);if(!fa){fa=[];B.set(fk,fa)}
+      for(const s of this.segs){if(!s.feat||s.age<60||s.age>life)continue;fa.push(s.x2,s.y2)}
+      for(const A of this.arbs){const ak='D|'+(A.type==='lesion'?'rgba(70,35,20,0.55)':'rgba(250,250,245,0.7)')+'|0.70|0.3';let aa=B.get(ak);if(!aa){aa=[];B.set(ak,aa)}aa.push(A.x,A.y)}
+    }
+    static flush(ctx){
+      const B=MyceliumBody._batch;if(!B.size)return;
+      ctx.save();ctx.lineCap='butt';ctx.lineJoin='bevel';ctx.globalAlpha=1;   // pontas retas: muito mais barato com milhares de traços
+      for(const [key,a] of B){
+        if(!a.length)continue;const parts=key.split('|');
+        ctx.beginPath();
+        if(parts[0]==='L'){for(let i=0;i<a.length;i+=4){ctx.moveTo(a[i],a[i+1]);ctx.lineTo(a[i+2],a[i+3])}ctx.strokeStyle=parts[1];ctx.lineWidth=+parts[2];ctx.stroke()}
+        else{const r=+parts[2];for(let i=0;i<a.length;i+=2){ctx.moveTo(a[i]+r,a[i+1]);ctx.arc(a[i],a[i+1],r,0,TAU)}
+          if(parts[0]==='R'){ctx.strokeStyle=parts[1];ctx.lineWidth=+parts[3]*0.9;ctx.stroke()}else{ctx.fillStyle=parts[1];ctx.fill()}}
+      }
+      B.clear();ctx.restore();
     }
 
     draw(ctx,g,al,gc){
@@ -270,6 +285,7 @@
     }
   }
 
+  MyceliumBody._batch=new Map();
   MyceliumBody.KINDS=KINDS;
   root.MyceliumBody=MyceliumBody;
 })(typeof window!=='undefined'?window:globalThis);

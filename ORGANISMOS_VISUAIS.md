@@ -1,6 +1,6 @@
-# Organismos com corpo novo (amebas e fungos)
+# Organismos com corpo novo
 
-O protozoário e as quatro guildas de fungos ganharam um corpo desenhado mais fiel à biologia. O motor continua calculando tudo com o corpo original: os ossos Verlet seguem existindo, invisíveis, e fazem a física. O corpo novo é só uma **camada visual** (skin) atualizada depois de cada passo e desenhada no lugar do esqueleto.
+Todos os organismos da rizosfera ganharam um corpo desenhado mais fiel à biologia: ameba, fungos, bactérias, cianobactérias e nematoides. O motor continua calculando tudo com o corpo original: os ossos Verlet seguem existindo, invisíveis, e fazem a física. O corpo novo é só uma **camada visual** (skin) atualizada depois de cada passo e desenhada no lugar do esqueleto.
 
 ## Garantia de que a simulação não mudou
 
@@ -52,11 +52,34 @@ Regras comuns às quatro guildas:
 
 **Quais patógenos aparecem como *Fusarium*:** os de morfologia ramificada ou tentacular (genes `mt` 2 ou 4), cerca de um terço. É só aparência: a guilda continua a mesma do motor, com as mesmas regras.
 
-Com zoom pequeno, o desenho simplifica: some septos e pontas e ficam as hifas e as estruturas coloridas.
+Com zoom pequeno, o desenho simplifica: some septos e pontas e ficam as hifas e as estruturas coloridas. De longe, as hifas de todas as colônias são desenhadas juntas, num só traço por cor, para economizar processamento.
+
+## Bactérias (`js/bacteria-lite.js`)
+
+A bactéria é uma célula rígida, que **não ondula como um verme**: é empurrada pelos flagelos, que giram.
+
+- **Nado em "corre e cambalhota":** correndo, os flagelos ficam num feixe atrás da célula. Quando ela muda de direção de repente, eles se abrem (cambalhota).
+- **Divisão binária:** perto de se reproduzir, a célula alonga e estrangula no meio.
+
+| Guilda | Forma | Flagelos | Detalhe |
+|---|---|---|---|
+| Pseudomonas | bacilo reto | tufo polar | — |
+| Bacillus | bacilo grande | peritríquios | com pouca energia forma endósporo refringente |
+| Azospirillum | bastonete curvo (vibrioide) | um polar | — |
+| Methylobacterium | bacilo rosa | polar | grânulos de PHB |
+| Rizóbio | bacilo | peritríquios | dentro do nódulo vira bacteroide (forma em Y, sem flagelos) |
+| Patógeno | bacilo | peritríquios | os que não aparecem como *Fusarium* |
+| Cianobactéria | tricoma (fila de células, tipo *Anabaena*/*Nostoc*) que desliza pelo próprio caminho | — | heterocistos a cada ~9 células |
+
+## Nematoide (`js/nematoide-lite.js`)
+
+- **Corpo:** do corpo do motor só se usam a posição da cabeça e a direção. O desenho é uma onda senoidal que corre ao longo do corpo, com fase dada pela distância percorrida: o corpo passa pelos pontos por onde a cabeça passou, como na locomoção ondulatória real.
+- **Anatomia:** cutícula com anelação, esôfago com bulbo mediano, intestino granuloso e cauda afilada.
+- **Estilete:** fica na cabeça e se projeta, com o bulbo bombeando, quando o nematoide está se alimentando na raiz.
 
 ## Arquivos
 
-- `js/ameba-lite.js`, `js/micelio-lite.js`: os corpos.
+- `js/ameba-lite.js`, `js/micelio-lite.js`, `js/bacteria-lite.js`, `js/nematoide-lite.js`: os corpos.
 - `js/skins.js`: liga cada guilda ao seu corpo.
 - `js/engine.js`:
   - cria a skin no nascimento;
@@ -68,4 +91,4 @@ Com zoom pequeno, o desenho simplifica: some septos e pontas e ficam as hifas e 
 
 ## Custo
 
-Com a população máxima (280 organismos), as skins acrescentam cerca de 1 ms por passo e 2 ms por quadro em um computador comum.
+Com a população máxima (280 organismos, todos com corpo novo), as skins acrescentam cerca de 1 ms por passo e 2 ms por quadro em um computador comum. Para desligar, use `?skins=0`.

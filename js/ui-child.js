@@ -361,6 +361,7 @@
       return 'Esta ameba está explorando o solo com pseudópodes, procurando microrganismos para se alimentar.';
     }
     if(gid===9){
+      if(org.skin&&org.skin.feed>0.3)return 'Este nematoide encostou a cabeça na raiz e está perfurando as células com o estilete para se alimentar.';
       if(nearRoot)return 'Este nematoide está perto da raiz e pode estar causando dano.';
       return 'Este nematoide está se movendo pelo solo e procurando alimento.';
     }
@@ -380,6 +381,8 @@
       if(nearRoot)return 'Este patógeno está perto da raiz e pode aumentar o estresse do feijão.';
       return 'Este patógeno está no solo e ainda não está em contato forte com a raiz.';
     }
+    if(gid===1&&org.skin&&org.skin.spore>0.3)return 'Este Bacillus está com pouca energia e formou um endósporo, uma estrutura de resistência.';
+    if(org.skin&&org.skin.split>0.4)return 'Esta bactéria está se dividindo em duas (divisão binária).';
     if(gid===1){
       if(nearRoot&&local.PO4bound>local.PO4free)return 'Este Bacillus está perto da raiz, onde pode liberar fósforo preso no solo.';
       return 'Este Bacillus está consumindo recursos e pode atuar quando encontra a rizosfera.';

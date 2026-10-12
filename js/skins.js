@@ -10,9 +10,12 @@
   'use strict';
   function hash(){let h=2166136261>>>0;for(const v of arguments){const s=String(Math.round((+v||0)*1000));for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0}}return h||1}
   const FUNGI={4:'tricho',10:'sapro',11:'myco',12:'arthro'};
+  const BACT={0:'pseudo',1:'bacil',2:'azo',3:'methy',5:'rhizo',6:'pato'};
   let enabled=true;
   try{enabled=new URLSearchParams(location.search).get('skins')!=='0'}catch(_e){}
   root.RizoSkins={
+    /* chamado pelo motor depois de desenhar todos os organismos */
+    flush(ctx){if(root.MyceliumBody&&root.MyceliumBody.flush)root.MyceliumBody.flush(ctx)},
     get enabled(){return enabled},
     set enabled(v){enabled=!!v},
     create(org,x,y){
@@ -22,6 +25,9 @@
       if(FUNGI[gid]&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,FUNGI[gid],seed);
       // patógeno: indivíduos de morfologia ramificada/tentacular aparecem como Fusarium (só aparência)
       if(gid===6&&(g.mt===2||g.mt===4)&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,'fusa',seed);
+      if(BACT[gid]&&root.BacteriumBody)return new root.BacteriumBody(x,y,g,BACT[gid],seed);
+      if(gid===7&&root.CyanoBody)return new root.CyanoBody(x,y,g,seed);
+      if(gid===9&&root.NematodeBody)return new root.NematodeBody(x,y,g,seed);
       return null;
     }
   };

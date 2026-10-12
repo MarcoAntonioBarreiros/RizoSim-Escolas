@@ -28,7 +28,7 @@ Para executar as verificações de regressão no navegador, abra `tests/regressi
 - Eventos técnicos são traduzidos para mensagens curtas.
 - Há tutorial guiado, cenários didáticos e explicações ao selecionar organismos.
 - O modo professor mantém sliders, estoques químicos, estatísticas e mapas.
-- O protozoário agora é uma ameba (pseudópodes, fagocitose, três morfotipos do solo) e os fungos são micélios que crescem pela ponta, cada um com suas estruturas. É só a camada visual: a simulação continua idêntica, número a número (ver `ORGANISMOS_VISUAIS.md`).
+- Todos os organismos ganharam corpo mais fiel à biologia: a ameba (pseudópodes e fagocitose), os fungos (micélio que cresce pela ponta, tropismo pela raiz, *Fusarium*), as bactérias (células rígidas com flagelos, divisão, endósporo, bacteroides), as cianobactérias (tricomas com heterocistos) e os nematoides (ondulação, estilete). É só a camada visual: a simulação continua idêntica, número a número (ver `ORGANISMOS_VISUAIS.md`).
 
 ## Estrutura
 
@@ -37,6 +37,8 @@ index.html
 css/styles.css
 js/ameba-lite.js
 js/micelio-lite.js
+js/bacteria-lite.js
+js/nematoide-lite.js
 js/skins.js
 js/engine.js
 js/organisms.js

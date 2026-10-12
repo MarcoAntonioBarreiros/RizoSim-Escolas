@@ -36,7 +36,7 @@
       color:'#20b2aa',
       pattern:'pontos',
       simple:'Perto da raiz, pode ajudar o feijão a usar ferro e reduzir o dano de alguns patógenos.',
-      science:'Pseudomonas representa PGPBs produtoras de sideróforos. Como simplificação educativa, o motor representa essa ação convertendo Fe3+ em Fe2+ perto da raiz. Isso pode melhorar o ferro da planta e reduzir o dano de patógenos quando a interação depende do Fe2+ local; na natureza, sideróforos e disponibilidade de ferro envolvem mecanismos mais complexos.'
+      science:'Pseudomonas é um bacilo reto que nada com um tufo de flagelos num dos polos. Representa PGPBs produtoras de sideróforos. Como simplificação educativa, o motor representa essa ação convertendo Fe3+ em Fe2+ perto da raiz. Isso pode melhorar o ferro da planta e reduzir o dano de patógenos quando a interação depende do Fe2+ local; na natureza, sideróforos e disponibilidade de ferro envolvem mecanismos mais complexos.'
     },
     1:{
       name:'Bacillus',
@@ -46,7 +46,7 @@
       color:'#f97316',
       pattern:'listras',
       simple:'Pode soltar parte do fósforo que estava preso no solo.',
-      science:'Bacillus usa a função de solubilização de fosfato. A taxa depende de PO4 ligado, pH, proximidade da raiz e investimento funcional sorteado no genoma.'
+      science:'Bacillus é um bacilo grande com flagelos ao redor do corpo (peritríquios); quando falta energia forma endósporo, uma estrutura de resistência (aparece como um oval brilhante dentro da célula). Usa a função de solubilização de fosfato. A taxa depende de PO4 ligado, pH, proximidade da raiz e investimento funcional sorteado no genoma.'
     },
     2:{
       name:'Azospirillum',
@@ -56,7 +56,7 @@
       color:'#4dabf7',
       pattern:'ondas',
       simple:'Pode contribuir com nitrogênio e sinais de crescimento.',
-      science:'Azospirillum mantém as regras originais de fixação de N2 e produção de AIA perto da rizosfera, com custos energéticos e feedback do estado da planta.'
+      science:'Azospirillum é um bastonete curvo (vibrioide) que nada com um flagelo polar. Mantém as regras originais de fixação de N2 e produção de AIA perto da rizosfera, com custos energéticos e feedback do estado da planta.'
     },
     3:{
       name:'Methylobacterium',
@@ -66,7 +66,7 @@
       color:'#ff69b4',
       pattern:'pontos',
       simple:'Pode produzir um sinal químico que regula o crescimento.',
-      science:'Methylobacterium atua como guilda mixotrófica associada a AIA no motor original. A produção diminui quando o AIA da planta já está alto.'
+      science:'Methylobacterium é um bacilo de pigmento rosa, com grânulos de reserva (PHB). Atua como guilda mixotrófica associada a AIA no motor original. A produção diminui quando o AIA da planta já está alto.'
     },
     4:{
       name:'Trichoderma',
@@ -86,7 +86,7 @@
       color:'#eab308',
       pattern:'anel',
       simple:'Quando forma nódulos, pode transferir nitrogênio para a planta.',
-      science:'Rhizobium preserva a morfologia radial, a regra de nodulação e a fixação biológica de nitrogênio. A chance de nodular aumenta quando o nitrogênio da planta está baixo.'
+      science:'Rizóbio é um bacilo com flagelos; dentro do nódulo vira bacteroide (forma inchada, às vezes em Y, sem flagelos), que é a forma que fixa N2. O motor preserva a regra de nodulação e a fixação biológica de nitrogênio. A chance de nodular aumenta quando o nitrogênio da planta está baixo.'
     },
     6:{
       name:'Patógeno',
@@ -106,7 +106,7 @@
       color:'#84cc16',
       pattern:'luz',
       simple:'Usa luz perto da superfície e pode contribuir com nitrogênio.',
-      science:'Cianobactéria preserva fotossíntese, produção de O2/carbono e fixação de N em função da luz local e do investimento funcional.'
+      science:'A cianobactéria aparece como tricoma (fila de células, tipo Anabaena/Nostoc) que desliza; as células maiores e claras são heterocistos, onde o N2 é fixado longe do O2 da fotossíntese. Preserva fotossíntese, produção de O2/carbono e fixação de N em função da luz local e do investimento funcional.'
     },
     8:{
       name:'Protozoário',
@@ -126,7 +126,7 @@
       color:'#fb923c',
       pattern:'ondas',
       simple:'Pode machucar raízes quando se aproxima delas.',
-      science:'Nematoides mantêm herbivoria radicular, predação oportunista e efeitos sobre estresse e biomassa da planta.'
+      science:'O nematoide se move ondulando: o corpo segue o caminho aberto pela cabeça. Na cabeça há um estilete, uma agulha que perfura as células da raiz para sugar o conteúdo, bombeado pelo bulbo do esôfago. Mantém herbivoria radicular, predação oportunista e efeitos sobre estresse e biomassa da planta.'
     },
     10:{
       name:'Saprófito',
