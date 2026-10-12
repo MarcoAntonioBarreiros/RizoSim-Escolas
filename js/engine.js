@@ -1,6 +1,10 @@
 const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VIT:4,FRIC:0.92,DRAG:0.75,EAT_R:10,PRED_R:12,
   DIGEST_TICKS:60,    /* ticks mínimos entre refeições */
   REPRO_COOL:300,     /* ticks de exaustão pós-reprodução */
+  GUILD_MAX:84,       /* nenhum grupo passa de 30% da população: limita o número de indivíduos novos, não o crescimento */
+  SAP_LOCAL:3,        /* colônia nova de saprófito só se instala com menos de 3 colônias vizinhas (substrato ocupado) */
+  PROTO_DIGEST:150,   /* protozoário: fagocitose + digestão no vacúolo antes da próxima presa */
+  REFUGE_R:6,         /* bactérias coladas na raiz (biofilme do rizoplano) ficam protegidas da predação */
   EXU_ENERGY:550      /* energia por partícula de exsudato */
 };
 /* Velocidade máxima rígida por tipo biológico (pixels/tick) */
@@ -18,6 +22,11 @@ const PGPB_HUE={0:174,1:25,2:210,3:330,4:280,5:48,12:165};
 const rng=(a,b)=>Math.random()*(b-a)+a,rI=(a,b)=>Math.floor(rng(a,b+1)),cl=(v,a,b)=>{var r=Math.max(a,Math.min(b,v));return r===r?r:a};
 const hs=(h,s,l,a)=>`hsla(${h},${s}%,${l}%,${a})`,dst=(a,b)=>Math.hypot(b.x-a.x,b.y-a.y);
 function mm(Vmax,S,Km){return(Vmax*S)/(Km+S)}
+/* Trichoderma e Arthrobotrys também são saprófitos: vivem da matéria orgânica do solo e
+   usam o parasitismo (patógeno / nematoide) como fonte extra. Decompõem com menos eficiência
+   que o saprófito especialista e também perdem para as bactérias perto da raiz. */
+function saproBase(lc,isNearRoot,gc){const dec=mm(GUILDS[10].Vmax_dec,lc.organicC,GUILDS[10].Km_Corg)*0.7;lc.organicC-=dec*0.005;
+  let b=0;if(isNearRoot){for(const k of [0,1,2,3,5,6])b+=(gc[k]||0)}return dec*8*0.4/(1+0.25*b)}   /* 40% do saprófito especialista */
 
 let soil={organicC:800,NH4:45,NO3:35,PO4free:25,PO4bound:60,Fe3:60,Fe2:15,O2:75};
 function resetSoil(){soil={organicC:800,NH4:45,NO3:35,PO4free:25,PO4bound:60,Fe3:60,Fe2:15,O2:75}}
@@ -729,6 +738,7 @@ const exuMaxAge = 1200; /* ~40s de vida */
 fd = fd.filter(f => f.age < exuMaxAge && f.sz > 0.15 && f.y < gY + worldDepth);
 
 fH.clear();sHh.clear();for(const f of fd)fH.ins(f);for(const s of sw)if(s.alive)sHh.ins({x:s.x,y:s.y,ref:s});plant.nodules=[];const nb=[];
+const nGuild=new Array(GUILDS.length).fill(0);for(const s of sw)if(s.alive)nGuild[s.g.guild]++;
 
 for(const s of sw){if(!s.alive)continue;s.behave(fH,sHh);s.physics();const hd=s.core,gid=s.g.guild,gd=GUILDS[gid];
 const lc=hd.y>gY?gcAt(hd.x,hd.y):gcAt(hd.x,gY); /* célula local do micróbio */
@@ -772,7 +782,8 @@ const fi=s.g.fi;const exConc=exudateConc(hd.x,hd.y);const localLight=lightAt(hd.
 
 if(gid===4){/* Trichoderma biocontrole */
   if(s.age-s.lastAte>=C.DIGEST_TICKS){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.g.guild!==6)continue;if(dst(hd,prey.ref.core)<C.PRED_R+4){s.e+=1900*fi.bioctl;s.lastAte=s.age;prey.ref.alive=false;nD++;if(s.skin&&s.skin.attack)s.skin.attack(prey.ref.vpos().x,prey.ref.vpos().y,GUILDS[6].color);plant.stress=Math.max(0,plant.stress-0.8);fx.push({x:prey.ref.x,y:prey.ref.y,life:25,type:'pred'});addEv('eP','🛡 Trichoderma→Patógeno');break}}}
-  if(Math.random()<0.04){s.e+=mm(0.5,lc.organicC,50)*fi.bioctl*15;lc.organicC-=0.5}}
+  if(Math.random()<0.04){s.e+=mm(0.5,lc.organicC,50)*fi.bioctl*15;lc.organicC-=0.5}
+  s.e+=saproBase(lc,isNearRoot,_guildCounts)}
 
 else if(gid===6){/* Patógeno */
   if(isNearRoot&&dRootX<15){const atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog;if(lc.Fe2>6){s.e-=60*exConc;fx.push({x:hd.x,y:hd.y,life:12,type:'shield'})}else{plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;s.e+=atkRate*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}}
@@ -789,7 +800,7 @@ else if(gid===7){/* Cianobactéria — fotossíntese + N₂ */
   if(tk%400===0&&photoRate>0.5)addEv('eG','🟢 Ciano: fotossíntese v='+photoRate.toFixed(1))}
 
 else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE */
-  if(s.age-s.lastAte>=C.DIGEST_TICKS){const nS=sHh.qry(hd.x,hd.y);
+  if(s.age-s.lastAte>=C.PROTO_DIGEST){const nS=sHh.qry(hd.x,hd.y);
   /* Contar presas por guilda para predação frequência-dependente */
   var preyByGuild={},totalPrey=0;
   for(const p of nS){if(!p.ref||p.ref===s||!p.ref.alive)continue;
@@ -802,6 +813,8 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
   for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive)continue;
   const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&preyGd.type!=='fungi')continue;
   if(dst(hd,prey.ref.core)<C.PRED_R+2){
+    /* refúgio: bactéria no biofilme colado à raiz não é alcançada pelo protozoário */
+    if(preyGd.type==='bact'&&Math.abs(prey.ref.core.x-wCx)<C.REFUGE_R&&prey.ref.core.y>gY&&prey.ref.core.y<gY+rootDepth+5)continue;
     /* Bônus de captura se for a presa mais abundante (frequência-dependente) */
     var captureBonus = (prey.ref.g.guild===mostAbundant && totalPrey>4) ? 1.5 : 1.0;
     const localPrey=totalPrey;const predRate=mm(GUILDS[8].Vmax_pred,localPrey,GUILDS[8].Km_prey)*fi.pred*captureBonus;
@@ -828,10 +841,13 @@ else if(gid===9){/* Nematóide herbívoro — dano às raízes + bacterívoro/pr
 
 else if(gid===10){/* Saprófito — decompõe C orgânico EM QUALQUER LUGAR DO SOLO */
   /* Saprófitos não dependem de exsudatos — usam matéria orgânica do solo */
-  const soilOMFactor = isNearRoot ? 1.0 + exConc * 0.5 : 0.7; /* ligeiramente melhor na rizosfera */
+  /* exsudato (açúcares e ácidos simples) é recurso das bactérias: o saprófito não ganha bônus na rizosfera */
+  const soilOMFactor = 0.7;
   const decRate=mm(GUILDS[10].Vmax_dec,lc.organicC,GUILDS[10].Km_Corg)*fi.sapro*soilOMFactor;
   lc.organicC-=decRate*0.01;lc.NH4+=decRate*0.004;lc.PO4free+=decRate*0.002;
-  s.e+=decRate*8; /* energia adequada de decomposição */if(tk%400===0&&decRate>0.5)addEv('eK','🟣 Saprófito: C→NH₄⁺')}
+  /* perto da raiz, bactérias vizinhas competem pelo carbono lábil */
+  let bactNear=0;if(isNearRoot){for(const k of [0,1,2,3,5,6])bactNear+=(_guildCounts[k]||0)}
+  s.e+=decRate*8/(1+0.25*bactNear); /* energia adequada de decomposição */if(tk%400===0&&decRate>0.5)addEv('eK','🟣 Saprófito: C→NH₄⁺')}
 
 else if(gid===11){/* Micorriza — rede hifal que absorve P de área estendida e transfere à planta */
   /* Micorrizas se alimentam de exsudatos radiculares (C da planta) */
@@ -874,7 +890,8 @@ else if(gid===12){/* Arthrobotrys — fungo nematófago com armadilhas adesivas 
       fx.push({x:prey.ref.x,y:prey.ref.y,life:30,type:'pred'});
       addEv('eP','🪤 Arthrobotrys→Nematóide');break}}}
   /* Saprófito secundário */
-  if(Math.random()<0.03){s.e+=mm(0.3,lc.organicC,50)*fi.bioctl*10;lc.organicC-=0.3}}
+  if(Math.random()<0.03){s.e+=mm(0.3,lc.organicC,50)*fi.bioctl*10;lc.organicC-=0.3}
+  s.e+=saproBase(lc,isNearRoot,_guildCounts)}
 
 else{/* PGPBs restantes: comem exsudato e detritos */
   /* ═══ FIX #4: Digestão — só come se cooldown permitir ═══ */
@@ -906,7 +923,8 @@ if(s.age>14000+Math.random()*6000){s.alive=false;nD++;
   lc.organicC+=0.5;lc.NH4+=0.1;
   if(fd.length<C.FOOD_MAX-2){fd.push({x:hd.x+rng(-8,8),y:hd.y+rng(-8,8),sz:0.3+Math.random()*0.2,hue:25+Math.random()*10,ph:Math.random()*Math.PI*2,age:0,det:true})}
   continue}
-if(s.e>C.REPRO_E&&sw.length+nb.length<C.MAX_POP&&!s.nodulated&&s.reproCool<=0){s.e*=.4;s.reproCool=C.REPRO_COOL;const ch=new Sw(hd.x+rng(-18,18),hd.y+rng(-18,18),mutG(s.g),s.gen+1);ch.e=C.INIT_E*.5;ch.reproCool=C.REPRO_COOL;nb.push(ch);nB++;if(ch.gen>mG)mG=ch.gen;fx.push({x:hd.x,y:hd.y,life:20,type:'rep'})}
+const sapBlock=nGuild[gid]>=C.GUILD_MAX||(gid===10&&(_guildCounts[10]||0)>=C.SAP_LOCAL); /* limita indivíduos novos, não o crescimento */
+if(s.e>C.REPRO_E&&sw.length+nb.length<C.MAX_POP&&!s.nodulated&&s.reproCool<=0&&!sapBlock){nGuild[gid]++;s.e*=.4;s.reproCool=C.REPRO_COOL;const ch=new Sw(hd.x+rng(-18,18),hd.y+rng(-18,18),mutG(s.g),s.gen+1);ch.e=C.INIT_E*.5;ch.reproCool=C.REPRO_COOL;nb.push(ch);nB++;if(ch.gen>mG)mG=ch.gen;fx.push({x:hd.x,y:hd.y,life:20,type:'rep'})}
 }/* end for */
 
 sw=sw.filter(s=>s.alive);for(const c of nb)sw.push(c);

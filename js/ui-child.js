@@ -238,7 +238,7 @@
     const found=candidates[0];
     const data=RizoSchoolOrganisms.get(guildId);
     if(found){
-      const zoom=Math.max(3.2,Math.min(geo.zoom,5));
+      const zoom=Math.max(6,Math.min(geo.zoom,10));   // aproxima o suficiente para ver o corpo do organismo
       RizoSimEngine.followOrganism(found,zoom,.58,.48);
       selectOrganism(found,true);
       addChildEvent({
