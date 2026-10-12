@@ -9,6 +9,8 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
   NEMA_COOL:4,
   NICHE_EXCL:0.35,    /* cada bactéria benéfica vizinha reduz o ataque do patógeno à raiz (competição por sítio) */
   BACILLUS_ANTIB:2.0, /* energia/passo que cada Bacillus vizinho tira do patógeno (antibiose) */
+  CYST_MOIST:30,      /* abaixo desta umidade a ameba encista (seca); também encista com fome prolongada */
+  PSEUDO_DEFENSE:0.6, /* Pseudomonas: metabólitos tóxicos a protozoários (HCN, lipopeptídeos) — escapa de 60% dos ataques */
   BACT_REPRO:0.55,    /* bactérias benéficas se dividem com 55% da energia dos outros: o ciclo mais curto da rizosfera (o patógeno mantém o ritmo antigo) */        /* nematoide: ciclo de vida mais longo (dias) que o das bactérias (horas) */
   SAP_LOCAL:3,        /* colônia nova de saprófito só se instala com menos de 3 colônias vizinhas (substrato ocupado) */
   PROTO_DIGEST:150,   /* protozoário: fagocitose + digestão no vacúolo antes da próxima presa */
@@ -236,6 +238,7 @@ hdg(){if(this.pts.length<2)return 0;if(this.g.mt===1||this.g.mt===4){const t=thi
 behave(fH, sH) {
   if (this.nodulated) return;
   if (this.reproCool > 0) this.reproCool--;
+  if (this.cyst) return; /* cisto: não se move */
   const g = this.g, h = this.core;
   const gd = GUILDS[g.guild];
 
@@ -397,7 +400,7 @@ physics() {
   const baseCost = 0.25 + (this.pts.length * 0.012) + (this.g.spd * 1.2) + (this.age * 0.0001);
   const localDens = sHh.cnt(this.core.x, this.core.y);
   const compPen = localDens > 10 ? 1 + (localDens - 10) * 0.012 : 1;
-  this.e -= (baseCost * gd.cost * envMult * fiPen * compPen);
+  this.e -= (baseCost * gd.cost * envMult * fiPen * compPen) * (this.cyst ? 0.1 : 1); /* cisto: metabolismo quase parado */
 }
 
 draw(ctx,t){const g=this.g,gd=GUILDS[g.guild];const al=cl(this.e/1500,.2,.95);
@@ -814,7 +817,13 @@ else if(gid===7){/* Cianobactéria — fotossíntese + N₂ */
   if(tk%400===0&&photoRate>0.5)addEv('eG','🟢 Ciano: fotossíntese v='+photoRate.toFixed(1))}
 
 else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE */
-  if(s.age-s.lastAte>=C.PROTO_DIGEST){const nS=sHh.qry(hd.x,hd.y);
+  /* Encistamento: na seca (ou com fome prolongada) a ameba vira cisto de parede dupla, para de
+     comer e de se mover e gasta pouquíssima energia; desencista quando a umidade volta */
+  if(s.cyst){s.cystAge++;s.reproCool=Math.max(s.reproCool,60);
+    const wet=env.moist>=C.CYST_MOIST+5;
+    if(wet&&((s.cystDry&&s.cystAge>300)||(!s.cystDry&&s.cystAge>900&&s.cystAge%300===0&&Math.random()<0.5))){s.cyst=false;s.lastAte=s.age-C.PROTO_DIGEST}}
+  else if(env.moist<C.CYST_MOIST||(s.e<900&&s.age-s.lastAte>1500)){s.cyst=true;s.cystAge=0;s.cystDry=env.moist<C.CYST_MOIST;if(tk%120===0)addEv('eK','🔶 Ameba encistou')}
+  if(!s.cyst&&s.age-s.lastAte>=C.PROTO_DIGEST){const nS=sHh.qry(hd.x,hd.y);
   /* Contar presas por guilda para predação frequência-dependente */
   var preyByGuild={},totalPrey=0;
   for(const p of nS){if(!p.ref||p.ref===s||!p.ref.alive)continue;
@@ -829,17 +838,19 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
   if(dst(hd,prey.ref.core)<C.PRED_R+2){
     /* refúgio: bactéria no biofilme colado à raiz não é alcançada pelo protozoário */
     if(preyGd.type==='bact'&&Math.abs(prey.ref.core.x-wCx)<C.REFUGE_R&&prey.ref.core.y>gY&&prey.ref.core.y<gY+rootDepth+5&&Math.random()<C.REFUGE_P)continue;
+    /* Pseudomonas se defende quimicamente: a ameba recua na maioria das vezes e, quando come, aproveita pouco */
+    const toxic=prey.ref.g.guild===0;if(toxic&&Math.random()<C.PSEUDO_DEFENSE)continue;
     /* Bônus de captura se for a presa mais abundante (frequência-dependente) */
     var captureBonus = (prey.ref.g.guild===mostAbundant && totalPrey>4) ? 1.5 : 1.0;
     const localPrey=totalPrey;const predRate=mm(GUILDS[8].Vmax_pred,localPrey,GUILDS[8].Km_prey)*fi.pred*captureBonus;
-    s.e+=predRate*900;prey.ref.alive=false;nD++;
+    s.e+=predRate*900*(toxic?0.4:1);prey.ref.alive=false;nD++;
     if(s.skin&&s.skin.engulf)s.skin.engulf(prey.ref.vpos().x,prey.ref.vpos().y,preyGd.color,preyGd.type==='fungi'?1.5:1.1);
   /* Nutrient loop: bactéria vira NH4 */
   lc.NH4+=0.5;lc.PO4free+=0.2;
   fx.push({x:prey.ref.x,y:prey.ref.y,life:20,type:'pred'});s.lastAte=s.age;
   if(tk%300===0){var preyName=GUILDS[prey.ref.g.guild].name;addEv('eK','🔶 Proto→'+preyName+' (freq-dep)');}break}}}
   /* Protozoário pode pinocitar exsudato como fonte secundária */
-  else if(s.age-s.lastAte>=C.DIGEST_TICKS*2){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R+5){s.e+=300;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}}
+  else if(!s.cyst&&s.age-s.lastAte>=C.DIGEST_TICKS*2){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R+5){s.e+=300;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}}
 
 else if(gid===9){/* Nematóide herbívoro — dano às raízes + bacterívoro/predador oportunista */
   if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.055;plant.bio-=herbRate*0.002;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}

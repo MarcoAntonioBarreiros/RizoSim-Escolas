@@ -57,6 +57,8 @@ Antes, a população tinha só um teto total (280) e quem se reproduzia mais rá
 | Refúgio no rizoplano | bactérias a até 6 px da raiz escapam de 75% dos encontros com protozoários | biofilme protege da predação |
 | Nematoide | ciclo de reprodução 4× mais longo | gerações de dias, não de horas |
 | Trichoderma e Arthrobotrys | também decompõem matéria orgânica (40% e 20% do saprófito) | são saprófitos que usam o parasitismo como fonte extra |
+| Encistamento da ameba | umidade < 30% ou fome prolongada: vira cisto (parede dupla), não se move nem come, gasta 10% da energia; desencista quando a umidade volta | sobrevivência à seca |
+| Defesa da Pseudomonas | escapa de 60% dos ataques de protozoários; quando comida, rende 40% da energia | metabólitos tóxicos a protozoários (HCN, lipopeptídeos) |
 | Proteção contra o patógeno | cada bactéria benéfica vizinha reduz o ataque à raiz (competição por sítio); cada Bacillus vizinho tira energia do patógeno (antibiose por lipopeptídeos) | o patógeno ataca a planta saudável; a proteção depende da colonização da raiz |
 
 ## Imprevistos naturais (`js/imprevistos.js`)

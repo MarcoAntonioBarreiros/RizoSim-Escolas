@@ -46,7 +46,7 @@
 
   class AmoebaBody{
     constructor(x,y,g,seed){
-      this.rand=prng(seed);
+      this.rand=prng(seed);this.seed0=(seed%1000)/159;this.cystT=0;
       const R=this.rand;
       this.v=variantFor(g.nd|0);
       this.R0=2.2+(g.cs||1.4)*1.5;          // raio de repouso (px do mundo)
@@ -75,9 +75,10 @@
 
     /* chamado a cada passo, depois do motor mover o core.
        aim = ângulo para onde o motor está dirigindo (quimiotaxia); hunting = sente presa/sinal */
-    update(core,aim,hunting){
+    update(core,aim,hunting,rootX,rootTop,rootBottom,org){
       const R=this.rand,v=this.v,P=this.pods,N=this.N;
       this.t++;
+      this.cystT=(this.cystT||0)+(((org&&org.cyst)?1:0)-(this.cystT||0))*0.03;   // encistamento/desencistamento gradual
       // centro visual segue o centro do motor aos pulsos
       let ex=core.x-this.cx,ey=core.y-this.cy;const off=Math.hypot(ex,ey);
       let dx,dy;
@@ -221,7 +222,7 @@
     }
 
     get morphName(){return this.v.name}
-    get label(){return 'Ameba '+this.v.name}
+    get label(){return this.cystT>0.5?'Cisto de ameba (espera a umidade voltar)':'Ameba '+this.v.name}
 
     _path(ctx){
       const N=this.N,r=this.r,cx=this.cx,cy=this.cy;
@@ -233,11 +234,29 @@
     }
 
     /* desenha em coordenadas do mundo (o ctx já está transformado pela câmera) */
+    /* cisto: parede dupla (ectocisto enrugado por fora, endocisto liso por dentro), conteúdo granuloso */
+    _drawCyst(ctx,g,al,f){
+      const hue=g.hue,sat=g.sat,lit=g.lit,cx=this.cx,cy=this.cy,r=this.Rb*0.72;
+      const hs=(h,s,l,a)=>`hsla(${h},${s}%,${l}%,${a})`;
+      ctx.save();ctx.globalAlpha=f;
+      ctx.beginPath();
+      for(let i=0;i<=36;i++){const a=i/36*TAU,rr=r*(1+0.07*Math.sin(a*7+this.seed0));const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+      ctx.closePath();ctx.fillStyle=hs(hue,sat*0.35,Math.max(25,lit-18),0.85*al+0.1);ctx.fill();
+      ctx.strokeStyle=hs(hue,sat*0.4,Math.max(15,lit-35),0.95);ctx.lineWidth=0.35;ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,r*0.72,0,TAU);ctx.fillStyle=hs(hue,sat*0.5,Math.min(80,lit+8),0.7*al+0.1);ctx.fill();
+      ctx.strokeStyle=hs(hue,sat*0.5,Math.min(90,lit+30),0.9);ctx.lineWidth=0.22;ctx.stroke();
+      ctx.fillStyle=hs(hue,sat*0.3,Math.max(20,lit-25),0.6);
+      for(let k=0;k<6;k++){const a=k*2.4+this.seed0,d=r*0.4*((k*37%10)/10);ctx.beginPath();ctx.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d,r*0.07,0,TAU);ctx.fill()}
+      ctx.restore();
+    }
     draw(ctx,g,al,gc){
+      const cT=this.cystT||0;
+      if(cT>0.02)this._drawCyst(ctx,g,al,cT);
+      if(cT>0.97)return;
       const hue=g.hue,sat=g.sat,lit=g.lit,cx=this.cx,cy=this.cy,Rb=this.Rb;
       const hs=(h,s,l,a)=>`hsla(${h},${s}%,${l}%,${a})`;
       ctx.save();
-      ctx.globalAlpha=1;
+      ctx.globalAlpha=1-cT;
       // halo hialino (ectoplasma) e corpo
       this._path(ctx);
       ctx.fillStyle=hs(hue,sat*0.6,Math.min(80,lit+12),0.40*al+0.10);
@@ -261,9 +280,9 @@
           ctx.fillStyle=`rgba(255,250,235,${0.35*al*left+0.05})`;ctx.strokeStyle=hs(hue,sat*0.5,lit+20,0.6*al);ctx.lineWidth=0.18;
           ctx.beginPath();ctx.arc(x,y,f.sz*1.25,0,TAU);ctx.fill();ctx.stroke();
         }
-        ctx.globalAlpha=Math.max(0,left)*0.9;
+        ctx.globalAlpha=Math.max(0,left)*0.9*(1-cT);
         ctx.fillStyle=f.col;ctx.beginPath();ctx.arc(x,y,f.sz*(0.35+0.55*left),0,TAU);ctx.fill();
-        ctx.globalAlpha=1;
+        ctx.globalAlpha=1-cT;
       }
       // vacúolo contrátil no uroide (diástole lenta, sístole rápida)
       const ph=this.cvPh,cvR=Rb*(ph<0.85?0.08+0.26*ph/0.85:0.34*(1-(ph-0.85)/0.15));
@@ -277,7 +296,7 @@
       ctx.fillStyle=hs(hue,sat*0.7,Math.max(12,lit-25),0.9*al);ctx.beginPath();ctx.arc(nx,ny,nr*0.42,0,TAU);ctx.fill();
       ctx.restore();
       // presa ainda do lado de fora, sendo alcançada pelo pseudópode
-      for(const f of this.food){if(f.t>f.catchT)continue;ctx.fillStyle=f.col;ctx.globalAlpha=0.9;ctx.beginPath();ctx.arc(cx+f.lx,cy+f.ly,f.sz*0.9,0,TAU);ctx.fill();ctx.globalAlpha=1}
+      for(const f of this.food){if(f.t>f.catchT)continue;ctx.fillStyle=f.col;ctx.globalAlpha=0.9*(1-cT);ctx.beginPath();ctx.arc(cx+f.lx,cy+f.ly,f.sz*0.9,0,TAU);ctx.fill();ctx.globalAlpha=1-cT}
       // capuz hialino nas pontas em crescimento
       ctx.fillStyle=`rgba(255,255,255,${0.16*al})`;
       for(const p of this.pods){if(p.phase==='retract'||p.amp<0.3)continue;

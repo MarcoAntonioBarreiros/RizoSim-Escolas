@@ -122,8 +122,9 @@
     ));
 
     engine.resetWith({...defaults,microbeMult:0});
-    const amoebae=closeToRoot(8,8);
-    closeToRoot(1,30);
+    // um pouco afastado da superfície da raiz: no biofilme (até 6 px) as bactérias escapam da maioria dos ataques
+    const amoebae=engine.inoculateAt(8,engine.geometry.wCx+16,engine.geometry.gY+28,8);
+    engine.inoculateAt(1,engine.geometry.wCx+16,engine.geometry.gY+28,30);
     const bacteriaBefore=engine.state.guildCounts[1]||0;
     let phagocytosis=false,maxShape=0;
     for(let k=0;k<9;k++){
