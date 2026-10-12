@@ -208,6 +208,7 @@
 
     /* o motor decidiu que esta presa foi comida: o pseudópode vai buscá-la */
     engulf(x,y,color,size){
+      this.meals=(this.meals||0)+1;      // contador de presas (usado só nos testes)
       const dx=x-this.cx,dy=y-this.cy,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
       const p=this._pod(a,0.5,0,1);
       p.cup=true;p.rate=0.16;p.hold=10;

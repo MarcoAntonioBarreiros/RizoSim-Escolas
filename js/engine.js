@@ -7,6 +7,8 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
   TYPE_K:{bact:0.45,fungi:0.30,proto:0.10,nema:0.05},
   GUILD_SHARE:{bact:0.3,fungi:0.5},   /* espaço máx. de um grupo sozinho dentro do seu tipo (bactérias: vários grupos convivem) */
   NEMA_COOL:4,
+  NICHE_EXCL:0.35,    /* cada bactéria benéfica vizinha reduz o ataque do patógeno à raiz (competição por sítio) */
+  BACILLUS_ANTIB:2.0, /* energia/passo que cada Bacillus vizinho tira do patógeno (antibiose) */
   BACT_REPRO:0.55,    /* bactérias benéficas se dividem com 55% da energia dos outros: o ciclo mais curto da rizosfera (o patógeno mantém o ritmo antigo) */        /* nematoide: ciclo de vida mais longo (dias) que o das bactérias (horas) */
   SAP_LOCAL:3,        /* colônia nova de saprófito só se instala com menos de 3 colônias vizinhas (substrato ocupado) */
   PROTO_DIGEST:150,   /* protozoário: fagocitose + digestão no vacúolo antes da próxima presa */
@@ -793,7 +795,12 @@ if(gid===4){/* Trichoderma biocontrole */
   s.e+=saproBase(lc,isNearRoot,_guildCounts,0.4)}   /* Trichoderma: saprófito competente (40% do especialista) */
 
 else if(gid===6){/* Patógeno */
-  if(isNearRoot&&dRootX<15){const atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog;if(lc.Fe2>6){s.e-=60*exConc;fx.push({x:hd.x,y:hd.y,life:12,type:'shield'})}else{plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;s.e+=atkRate*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}}
+  /* proteção pelas benéficas: (1) competição por sítio na raiz — bactérias benéficas vizinhas ocupam
+     o espaço e os nutrientes que o patógeno usaria; (2) antibiose do Bacillus (lipopeptídeos: iturina,
+     fengicina, surfactina), que custa energia ao patógeno */
+  let benef=0;for(const k of [0,1,2,3,5])benef+=(_guildCounts[k]||0);
+  s.e-=(_guildCounts[1]||0)*C.BACILLUS_ANTIB;
+  if(isNearRoot&&dRootX<15){const atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog/(1+C.NICHE_EXCL*benef);if(lc.Fe2>6){s.e-=60*exConc;fx.push({x:hd.x,y:hd.y,life:12,type:'shield'})}else{plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;s.e+=atkRate*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}}
 
 else if(gid===5){/* Rhizobium */
   let nodProb=plant.n>80?0.05:plant.n>60?0.3:1.0;if(isNearRoot&&dRootX<8&&!s.nodulated&&Math.random()<nodProb){s.nodulated=true;s.nodOff={x:rng(-8,8),y:(hd.y-gY)/(plant.bio/100)};addEv('eN','🟡 Rhizobium nódulo')}

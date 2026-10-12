@@ -130,7 +130,7 @@
       engine.step(100);
       for(const org of engine.raw.sw){
         if(!org.alive||!org.skin||!org.skin.food)continue;
-        if(org.skin.food.length>0)phagocytosis=true;
+        if(org.skin.food.length>0||org.skin.meals>0)phagocytosis=true;
         const r=org.skin.r;maxShape=Math.max(maxShape,Math.max(...r)/Math.min(...r));
       }
     }
