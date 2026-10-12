@@ -60,7 +60,8 @@ Regras comuns às quatro guildas:
 **Tropismo pela raiz:**
 - **Micorriza:** perto da raiz, as hifas ramificam mais e se orientam para ela, como a resposta às estrigolactonas ([Akiyama et al. 2005](https://www.doi.org/10.1038/NATURE03608); [Sbrana & Giovannetti 2005](https://link.springer.com/doi/10.1007/s00572-005-0362-5)).
 - ***Fusarium*:** as hifas são atraídas de mais longe, como pelas peroxidases da raiz ([Turrà et al. 2015](https://doi.org/10.1038/nature15516)).
-- **Os dois:** quando a colônia chega a ~35 px da raiz, uma hifa vai até ela e entra.
+- ***Trichoderma*:** tropismo mais fraco; a hifa para na superfície e coloniza a epiderme e o córtex externo (endofítico), com enrolamentos na superfície.
+- **Os três:** quando a colônia chega a ~35 px da raiz, uma hifa vai até ela e entra.
 
 **Quais patógenos aparecem como *Fusarium*:** os de morfologia ramificada ou tentacular (genes `mt` 2 ou 4), cerca de um terço. É só aparência: a guilda continua a mesma do motor, com as mesmas regras.
 

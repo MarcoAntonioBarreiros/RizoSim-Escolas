@@ -381,7 +381,7 @@
     if(gid===5){
       if(org.nodulated)return 'Este rizóbio já está ligado à raiz em um nódulo e pode ajudar na fixação de nitrogênio.';
       if(nearRoot&&state.plant.n<45)return 'Este rizóbio está perto da raiz. Como o nitrogênio está baixo, ele tem mais chance de formar nódulo e ajudar na fixação de N.';
-      if(nearRoot)return 'Este rizóbio está perto da raiz, mas ainda não formou nódulo. Sua função importante é a parceria ligada ao nitrogênio.';
+      if(nearRoot)return 'Este rizóbio vive livre perto da raiz, comendo exsudatos. Formar nódulo leva tempo, e a planta limita quantos nódulos faz, conforme o tamanho e o nitrogênio que já tem.';
       return 'Este rizóbio está se movendo pelo solo em busca de sinais da raiz para uma parceria de nitrogênio.';
     }
     if(gid===11){
@@ -412,6 +412,7 @@
     }
     if(gid===4){
       if(org.skin&&org.skin.events&&org.skin.events.length)return 'Este Trichoderma alcançou um patógeno e está se enrolando nele (micoparasitismo).';
+      if(org.skin&&org.skin.arbs&&org.skin.arbs.some(a=>a.type==='endo'))return 'Este Trichoderma entrou na raiz e cresce entre as células da superfície (endofítico). Assim ele ocupa o espaço antes dos patógenos e estimula as defesas da planta.';
       if(nearbyPathogens>0)return 'Este Trichoderma está perto de patógenos e pode competir ou predar.';
       return 'Este Trichoderma está explorando o solo e pode ajudar no equilíbrio da comunidade.';
     }

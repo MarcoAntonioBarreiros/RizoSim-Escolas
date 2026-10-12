@@ -59,6 +59,8 @@ Antes, a população tinha só um teto total (280) e quem se reproduzia mais rá
 | Trichoderma e Arthrobotrys | também decompõem matéria orgânica (40% e 20% do saprófito) | são saprófitos que usam o parasitismo como fonte extra |
 | Encistamento da ameba | umidade < 30% ou fome prolongada: vira cisto (parede dupla), não se move nem come, gasta 10% da energia; desencista quando a umidade volta | sobrevivência à seca |
 | Defesa da Pseudomonas | escapa de 60% dos ataques de protozoários; quando comida, rende 40% da energia | metabólitos tóxicos a protozoários (HCN, lipopeptídeos) |
+| Rizóbio livre | come exsudatos e ganha o bônus da rizosfera como as outras bactérias; custo 1,4 (antes 2,8 e sem comida: sumia em ~30 s) | rizóbios vivem como saprófitos na rizosfera antes de nodular |
+| Nodulação | probabilidade por passo 0,3% (N baixo), 0,1% (N médio), 0,03% (N alto); máx. 3 a 12 nódulos conforme o tamanho da planta; bacteroides no nódulo não são predados | a infecção leva tempo e a planta autorregula a nodulação |
 | Proteção contra o patógeno | cada bactéria benéfica vizinha reduz o ataque à raiz (competição por sítio); cada Bacillus vizinho tira energia do patógeno (antibiose por lipopeptídeos) | o patógeno ataca a planta saudável; a proteção depende da colonização da raiz |
 
 ## Imprevistos naturais (`js/imprevistos.js`)

@@ -118,7 +118,7 @@ const GUILDS=[
 {id:2,name:"Azospirillum",fn:"Fixação N₂ + AIA",color:"#4dabf7",ph:[6.0,7.5],tOpt:28,res:0.6,cost:2.0,Vmax_nfix:5.0,Km_Corg:25,Vmax_aia:2.0,Km_aia:10,gram:'neg',type:'bact',trophic:'chemo'},
 {id:3,name:"Methylobact.",fn:"Fototrófico AIA",color:"#ff69b4",ph:[5.5,7.5],tOpt:30,res:1.5,cost:1.8,Vmax_aia:1.5,Km_aia:8,gram:'neg',type:'bact',trophic:'mixo'},
 {id:4,name:"Trichoderma",fn:"Biocontrole",color:"#9b59b6",ph:[4.5,7.0],tOpt:25,res:1.2,cost:1.4,gram:'fun',type:'fungi',trophic:'pred'},
-{id:5,name:"Rhizobium",fn:"Nódulo N₂",color:"#eab308",ph:[6.0,7.0],tOpt:26,res:0.4,cost:2.8,Vmax_nfix:8.0,Km_Corg:15,gram:'neg',type:'bact',trophic:'chemo'},
+{id:5,name:"Rhizobium",fn:"Nódulo N₂",color:"#eab308",ph:[6.0,7.0],tOpt:26,res:0.4,cost:1.4,/* vida livre no solo: não fixa N (só no nódulo), então custo de bactéria comum (antes 2,8: sumia em ~30 s) */Vmax_nfix:8.0,Km_Corg:15,gram:'neg',type:'bact',trophic:'chemo'},
 {id:6,name:"Patógeno",fn:"Oportunista",color:"#ef4444",ph:[4.0,9.0],tOpt:25,res:1.0,cost:0.9,Vmax_atk:3.0,Km_bio:30,gram:'neg',type:'bact',trophic:'para'},
 /* ═══ NOVOS ═══ */
 {id:7,name:"Cianobactéria",fn:"Fotossíntese + N₂",color:"#a3e635",ph:[6.5,8.5],tOpt:28,res:0.8,cost:1.6,gram:'neg',type:'bact',trophic:'photo',Vmax_photo:6.0,Km_light:30,Vmax_nfix:3.0,Km_Corg:35},
@@ -760,7 +760,7 @@ const exuMaxAge = 1200; /* ~40s de vida */
 fd = fd.filter(f => f.age < exuMaxAge && f.sz > 0.15 && f.y < gY + worldDepth);
 
 fH.clear();sHh.clear();for(const f of fd)fH.ins(f);for(const s of sw)if(s.alive)sHh.ins({x:s.x,y:s.y,ref:s});plant.nodules=[];const nb=[];
-const nGuild=new Array(GUILDS.length).fill(0),nType={bact:0,fungi:0,proto:0,nema:0};for(const s of sw)if(s.alive){nGuild[s.g.guild]++;nType[GUILDS[s.g.guild].type]++}
+const nGuild=new Array(GUILDS.length).fill(0),nType={bact:0,fungi:0,proto:0,nema:0};let nNod=0;for(const s of sw)if(s.alive){nGuild[s.g.guild]++;nType[GUILDS[s.g.guild].type]++;if(s.nodulated)nNod++}
 
 for(const s of sw){if(!s.alive)continue;s.behave(fH,sHh);s.physics();const hd=s.core,gid=s.g.guild,gd=GUILDS[gid];
 const lc=hd.y>gY?gcAt(hd.x,hd.y):gcAt(hd.x,gY); /* célula local do micróbio */
@@ -816,7 +816,17 @@ else if(gid===6){/* Patógeno */
   if(isNearRoot&&dRootX<15){const atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog/(1+C.NICHE_EXCL*benef);if(lc.Fe2>6){s.e-=60*exConc;fx.push({x:hd.x,y:hd.y,life:12,type:'shield'})}else{plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;s.e+=atkRate*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}}
 
 else if(gid===5){/* Rhizobium */
-  let nodProb=plant.n>80?0.05:plant.n>60?0.3:1.0;if(isNearRoot&&dRootX<8&&!s.nodulated&&Math.random()<nodProb){s.nodulated=true;s.nodOff={x:rng(-8,8),y:(hd.y-gY)/(plant.bio/100)};addEv('eN','🟡 Rhizobium nódulo')}
+  /* a infecção leva tempo (fio de infecção) e a planta limita o número de nódulos conforme o tamanho
+     e o N que já tem (autorregulação da nodulação); o resto dos rizóbios vive livre na rizosfera */
+  const maxNod=3+Math.round(cl((plant.bio-20)/130,0,1)*9);
+  let nodProb=plant.n>80?0.0003:plant.n>60?0.001:0.003;if(isNearRoot&&dRootX<8&&!s.nodulated&&nNod<maxNod&&Math.random()<nodProb){nNod++;s.nodulated=true;s.nodOff={x:rng(-8,8),y:(hd.y-gY)/(plant.bio/100)};addEv('eN','🟡 Rhizobium nódulo')}
+  /* rizóbio livre: vive na rizosfera como as outras bactérias, comendo exsudatos (antes não comia nada
+     e morria de fome em ~30 s, antes de conseguir nodular) */
+  if(!s.nodulated){
+    if(s.age-s.lastAte>=C.DIGEST_TICKS){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R){
+      s.e+=C.EXU_ENERGY*s.g.eff*Math.max(0.15,exConc)*(f.det?0.4:1.0);s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}
+    if(isNearRoot)s.e+=exConc*2.5;
+  }
   if(s.nodulated){plant.nodules.push(s);const nfR=mm(GUILDS[5].Vmax_nfix,lc.organicC,GUILDS[5].Km_Corg)*fi.nfix;lc.NH4+=nfR*0.012;plant.n+=nfR*0.02;lc.organicC-=nfR*0.003;s.e+=nfR*1.5}}
 
 else if(gid===7){/* Cianobactéria — fotossíntese + N₂ */
@@ -837,14 +847,14 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
   if(!s.cyst&&s.age-s.lastAte>=dig){const nS=sHh.qry(hd.x,hd.y);
   /* Contar presas por guilda para predação frequência-dependente */
   var preyByGuild={},totalPrey=0;
-  for(const p of nS){if(!p.ref||p.ref===s||!p.ref.alive)continue;
+  for(const p of nS){if(!p.ref||p.ref===s||!p.ref.alive||p.ref.nodulated)continue;   /* bacteroides dentro do nódulo: fora do alcance */
     const pg=GUILDS[p.ref.g.guild];if(pg.type!=='bact'&&!(pg.type==='fungi'&&PK.fungi))continue;
     var pgid=p.ref.g.guild;preyByGuild[pgid]=(preyByGuild[pgid]||0)+1;totalPrey++;}
   /* Encontrar a guilda mais abundante (alvo preferencial) */
   var mostAbundant=-1,maxCount=0;
   for(var pgk in preyByGuild){if(preyByGuild[pgk]>maxCount){maxCount=preyByGuild[pgk];mostAbundant=+pgk;}}
   /* Predação: prefere a presa mais abundante (controle top-down das populações dominantes) */
-  for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive)continue;
+  for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.nodulated)continue;
   const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&!(preyGd.type==='fungi'&&PK.fungi))continue;
   if(dst(hd,prey.ref.core)<C.PRED_R+2){
     /* refúgio: bactéria no biofilme colado à raiz não é alcançada pelo protozoário */
@@ -866,7 +876,7 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
 else if(gid===9){/* Nematóide herbívoro — dano às raízes + bacterívoro/predador oportunista */
   if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.055;plant.bio-=herbRate*0.002;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
   /* Bacterívoro oportunista — come bactérias e fungos no caminho */
-  if(s.age-s.lastAte>=C.DIGEST_TICKS*3){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive)continue;
+  if(s.age-s.lastAte>=C.DIGEST_TICKS*3){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.nodulated)continue;
   const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&preyGd.type!=='fungi')continue;
   if(dst(hd,prey.ref.core)<C.PRED_R+4){s.e+=400;prey.ref.alive=false;nD++;lc.NH4+=0.3;
   fx.push({x:prey.ref.x,y:prey.ref.y,life:20,type:'pred'});s.lastAte=s.age;if(tk%400===0)addEv('eH','🪱 Nematóide→bactéria');break}}}
@@ -1644,6 +1654,7 @@ function rootWidthAt(yTarget){
   }
   return 1;
 }
+if(typeof RizoSkins!=='undefined')RizoSkins.rootHalfWidth=rootWidthAt; /* camada visual: meia-largura da raiz desenhada */
 
 var _LA=[{y:18,s:-1,m:90},{y:35,s:1,m:85},{y:52,s:-1,m:78},{y:72,s:1,m:72},{y:95,s:-1,m:62},{y:120,s:1,m:55},{y:150,s:-1,m:45},{y:185,s:1,m:38},{y:225,s:-1,m:28},{y:260,s:1,m:20}];
 _LA.forEach(function(L){

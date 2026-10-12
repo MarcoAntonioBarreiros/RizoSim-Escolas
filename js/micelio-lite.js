@@ -29,7 +29,7 @@
   function prng(seed){let s=seed>>>0||1;return function(){s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
   const KINDS={
-    tricho:{label:'Hifas septadas',Rmax:7.0,tipsMin:3,tipsMax:6,branch:0.10,angle:0.75,septa:true, width:0.28,life:700, maxSegs:64,feat:'conid',featP:0.07},
+    tricho:{label:'Hifas septadas',Rmax:7.0,tipsMin:3,tipsMax:6,branch:0.10,angle:0.75,septa:true, width:0.28,life:700, maxSegs:64,feat:'conid',featP:0.07,rootTrop:70,branchRoot:1.2,contact:'endo'},
     sapro: {label:'Hifas cenocíticas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.65,septa:false,width:0.30,life:650, maxSegs:64,feat:'spor', featP:0.05},
     myco:  {label:'Hifas de micorriza',Rmax:9.0,tipsMin:3,tipsMax:5,branch:0.07,angle:0.85,septa:false,width:0.42,life:900, maxSegs:64,feat:'spore',featP:0.025,rootTrop:90,branchRoot:2.5,contact:'arb'},
     fusa:  {label:'Hifas de Fusarium',Rmax:7.5,tipsMin:3,tipsMax:6,branch:0.09,angle:0.70,septa:true, width:0.26,life:700, maxSegs:64,feat:'macro',featP:0.06,rootTrop:120,branchRoot:0.8,contact:'lesion'},
@@ -97,8 +97,11 @@
         if(gr<0.01){if(++p.idle>40){T.splice(k,1);continue}}else p.idle=0;
         p.x+=Math.cos(p.a)*gr;p.y+=Math.sin(p.a)*gr;p.acc+=gr;
         if(this.surf!==undefined&&p.y<this.surf+0.6){p.y=this.surf+0.6;p.a=Math.abs(p.a)}   // não sai do solo
-        if(p.toRoot&&Math.abs(p.x-rootX)<1.4){              // hifa entrou na raiz: arbúsculo (FMA) ou lesão (Fusarium)
-          this.arbs.push({x:rootX+(p.x<rootX?-0.6:0.6),y:p.y,t0:this.t,side:p.x<rootX?-1:1,seed:R(),type:P.contact});
+        // Trichoderma para na superfície (epiderme e córtex externo); micorriza e Fusarium vão até o centro
+        const hw=P.contact==='endo'&&root.RizoSkins&&root.RizoSkins.rootHalfWidth?root.RizoSkins.rootHalfWidth(p.y):0;
+        if(p.toRoot&&Math.abs(p.x-rootX)<hw+1.4){            // hifa entrou na raiz: arbúsculo (FMA), lesão (Fusarium) ou colonização (Trichoderma)
+          const sd0=p.x<rootX?-1:1;
+          this.arbs.push({x:rootX+sd0*(hw>0?Math.max(0.6,hw-0.4):0.6),y:p.y,t0:this.t,side:sd0,seed:R(),type:P.contact});
           if(this.arbs.length>3)this.arbs.shift();
           this._seg(p);T.splice(k,1);continue;
         }
@@ -258,6 +261,16 @@
           ctx.fillStyle=`rgba(60,28,16,${0.7*m})`;ctx.beginPath();ctx.ellipse(A.x-A.side*0.6,A.y,1.1*m,2.6*m,0,0,TAU);ctx.fill();
           ctx.strokeStyle=`rgba(90,40,25,${0.55*m})`;ctx.lineWidth=0.35;ctx.beginPath();ctx.moveTo(A.x-A.side*0.6,A.y-2*m);ctx.lineTo(A.x-A.side*0.6,A.y-7*m);ctx.moveTo(A.x-A.side*0.6,A.y+2*m);ctx.lineTo(A.x-A.side*0.6,A.y+7*m);ctx.stroke();   // escurecimento subindo pelo xilema
           ctx.strokeStyle=`rgba(245,225,240,${0.8*m})`;ctx.lineWidth=0.18;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(A.x-A.side*1.2,A.y+0.4);ctx.lineTo(A.x-A.side*1.4,A.y+2.2*m);ctx.stroke();
+          continue;
+        }
+        if(A.type==='endo'){           // Trichoderma: coloniza a epiderme e o córtex externo (endofítico)
+          const sd2=prng(Math.floor(A.seed*1e9)),xi=A.x-A.side*0.7,len=5*m;
+          ctx.strokeStyle=hs(hue,sat+10,Math.max(30,lit-8),0.85*m*al+0.1);ctx.lineWidth=W*0.8;ctx.beginPath();
+          ctx.moveTo(A.x,A.y);ctx.lineTo(xi,A.y);                       // entrada pela superfície
+          ctx.moveTo(xi,A.y-len);for(let k=0;k<=10;k++){const yy=A.y-len+k*len/5;ctx.lineTo(xi+Math.sin(k*1.3+A.seed*9)*0.25,yy)}   // hifa correndo entre as células
+          for(let k=0;k<3;k++){const yy=A.y+(sd2()-0.5)*len*1.6;ctx.moveTo(xi,yy);ctx.lineTo(xi-A.side*(0.6+sd2()*0.6),yy+(sd2()-0.5)*0.8)}
+          ctx.stroke();
+          ctx.lineWidth=W*0.6;for(let k=0;k<2;k++){const yy=A.y+(k?1:-1)*len*0.6;ctx.beginPath();ctx.arc(A.x+A.side*0.2,yy,0.45*m,0,TAU);ctx.stroke()}   // enrolamentos na superfície
           continue;
         }
         const sd=prng(Math.floor(A.seed*1e9));
