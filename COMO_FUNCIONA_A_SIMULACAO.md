@@ -61,7 +61,9 @@ Antes, a população tinha só um teto total (280) e quem se reproduzia mais rá
 | Defesa da Pseudomonas | escapa de 60% dos ataques de protozoários; quando comida, rende 40% da energia | metabólitos tóxicos a protozoários (HCN, lipopeptídeos) |
 | Rizóbio livre | come exsudatos e ganha o bônus da rizosfera como as outras bactérias; custo 1,4 (antes 2,8 e sem comida: sumia em ~30 s) | rizóbios vivem como saprófitos na rizosfera antes de nodular |
 | Nodulação | probabilidade por passo 0,3% (N baixo), 0,1% (N médio), 0,03% (N alto); máx. 3 a 12 nódulos conforme o tamanho da planta; bacteroides no nódulo não são predados | a infecção leva tempo e a planta autorregula a nodulação |
-| Proteção contra o patógeno | cada bactéria benéfica vizinha reduz o ataque à raiz (competição por sítio); cada Bacillus vizinho tira energia do patógeno (antibiose por lipopeptídeos) | o patógeno ataca a planta saudável; a proteção depende da colonização da raiz |
+| Proteção contra o patógeno | competição por sítio: cada benéfica vizinha reduz o ataque (fator 0,18); antibiose = Bacillus + 0,6×Pseudomonas vizinhos: a partir de 1 é bacteriostática (o patógeno não cresce nem se divide), a partir de 3 é bactericida (perde 12 de energia por passo) | o patógeno ataca a planta saudável; com benéficas a doença diminui, com muitas ela é eliminada |
+| Patógeno bacteriano | divide-se no ciclo rápido das bactérias e come exsudatos na rizosfera | patógenos de solo colonizam a rizosfera antes de atacar |
+| Triângulo da doença | umidade > 80% soma 0,6 e temperatura > 32 °C soma 0,4 ao fator ambiental, que aumenta o ataque e divide a antibiose | encharcamento e calor favorecem surtos |
 
 ## Imprevistos naturais (`js/imprevistos.js`)
 

@@ -515,7 +515,11 @@
     }
     const rect=document.getElementById('pond').getBoundingClientRect();
     const org=RizoSimEngine.findOrganismAtScreen(event.clientX-rect.left,event.clientY-rect.top,34);
-    if(org)selectOrganism(org);
+    if(org){                                // tocar num organismo: a câmera aproxima e passa a segui-lo, como o "Observar"
+      const geo=RizoSimEngine.geometry;
+      RizoSimEngine.followOrganism(org,Math.max(6,Math.min(geo.zoom,10)),.58,.48);
+      selectOrganism(org,true);
+    }
   });
 
   function renderScenarios(){

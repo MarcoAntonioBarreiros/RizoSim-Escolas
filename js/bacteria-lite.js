@@ -91,7 +91,7 @@
         this.nod=!!org.nodulated;
         // divisão binária: a célula alonga e estrangula perto do limiar de divisão do motor;
         // sem espaço para nascer (ou logo depois de dividir), volta ao normal
-        const RE=(typeof C!=='undefined'&&C.BACT_REPRO&&this.kind!=='pato')?C.REPRO_E*C.BACT_REPRO:REPRO_E;
+        const RE=(typeof C!=='undefined'&&C.BACT_REPRO)?C.REPRO_E*C.BACT_REPRO:REPRO_E;
         const tgt=org.reproCool>0?0:clamp((e/RE-0.82)/0.18,0,1);this.split+=(tgt-this.split)*0.08;
         if(this.K.spore)this.spore=clamp(this.spore+(e<900?0.006:-0.01),0,1);  // esporulação
       }

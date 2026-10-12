@@ -7,11 +7,13 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
   TYPE_K:{bact:0.45,fungi:0.30,proto:0.10,nema:0.05},
   GUILD_SHARE:{bact:0.3,fungi:0.5},   /* espaço máx. de um grupo sozinho dentro do seu tipo (bactérias: vários grupos convivem) */
   NEMA_COOL:4,
-  NICHE_EXCL:0.35,    /* cada bactéria benéfica vizinha reduz o ataque do patógeno à raiz (competição por sítio) */
-  BACILLUS_ANTIB:2.0, /* energia/passo que cada Bacillus vizinho tira do patógeno (antibiose) */
+  NICHE_EXCL:0.18,    /* cada bactéria benéfica vizinha reduz o ataque do patógeno à raiz (competição por sítio) */
+  ANTIB_STATIC:1,     /* antibiose (Bacillus + 0,6×Pseudomonas vizinhos): a partir de 1, bacteriostática — o patógeno não cresce nem se divide */
+  ANTIB_KILL:3,       /* a partir de 3, bactericida */
+  ANTIB_KILL_DMG:12,  /* energia/passo perdida sob dose bactericida */
   CYST_MOIST:30,      /* abaixo desta umidade a ameba encista (seca); também encista com fome prolongada */
   PSEUDO_DEFENSE:0.6, /* Pseudomonas: metabólitos tóxicos a protozoários (HCN, lipopeptídeos) — escapa de 60% dos ataques */
-  BACT_REPRO:0.55,    /* bactérias benéficas se dividem com 55% da energia dos outros: o ciclo mais curto da rizosfera (o patógeno mantém o ritmo antigo) */        /* nematoide: ciclo de vida mais longo (dias) que o das bactérias (horas) */
+  BACT_REPRO:0.55,    /* bactérias (inclusive o patógeno bacteriano) se dividem com 55% da energia dos outros grupos: o ciclo mais curto da rizosfera */        /* nematoide: ciclo de vida mais longo (dias) que o das bactérias (horas) */
   SAP_LOCAL:3,        /* colônia nova de saprófito só se instala com menos de 3 colônias vizinhas (substrato ocupado) */
   PROTO_DIGEST:150,   /* protozoário: fagocitose + digestão no vacúolo antes da próxima presa */
   REFUGE_R:6,         /* bactérias coladas na raiz (biofilme do rizoplano)... */
@@ -808,12 +810,26 @@ if(gid===4){/* Trichoderma biocontrole */
   s.e+=saproBase(lc,isNearRoot,_guildCounts,0.4)}   /* Trichoderma: saprófito competente (40% do especialista) */
 
 else if(gid===6){/* Patógeno */
-  /* proteção pelas benéficas: (1) competição por sítio na raiz — bactérias benéficas vizinhas ocupam
-     o espaço e os nutrientes que o patógeno usaria; (2) antibiose do Bacillus (lipopeptídeos: iturina,
-     fengicina, surfactina), que custa energia ao patógeno */
+  /* Triângulo da doença: solo encharcado e calor favorecem o patógeno e enfraquecem a proteção. */
+  const envP=1+(env.moist>80?0.6:0)+(env.temp>32?0.4:0);
+  /* Proteção pelas benéficas:
+     (1) competição por sítio na raiz — bactérias benéficas vizinhas ocupam o espaço e os nutrientes;
+     (2) antibiose — lipopeptídeos do Bacillus (iturina, fengicina, surfactina) e metabólitos/sideróforos
+         da Pseudomonas. Abaixo de um limiar é bacteriostática (o patógeno não cresce nem se divide);
+         acima dele é bactericida (o patógeno perde energia e morre). */
   let benef=0;for(const k of [0,1,2,3,5])benef+=(_guildCounts[k]||0);
-  s.e-=(_guildCounts[1]||0)*C.BACILLUS_ANTIB;
-  if(isNearRoot&&dRootX<15){const atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog/(1+C.NICHE_EXCL*benef);if(lc.Fe2>6){s.e-=60*exConc;fx.push({x:hd.x,y:hd.y,life:12,type:'shield'})}else{plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;s.e+=atkRate*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}}
+  const antib=((_guildCounts[1]||0)+0.6*(_guildCounts[0]||0))/envP;
+  const kill=antib>=C.ANTIB_KILL,stat=!kill&&antib>=C.ANTIB_STATIC;
+  if(kill){s.e-=C.ANTIB_KILL_DMG;if(tk%6===0)fx.push({x:hd.x,y:hd.y,life:12,type:'shield'})}
+  if(stat||kill)s.reproCool=Math.max(s.reproCool,30);
+  /* vive na rizosfera como as outras bactérias (exsudatos) antes de atacar */
+  if(!stat&&!kill){
+    if(s.age-s.lastAte>=C.DIGEST_TICKS){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R){
+      s.e+=C.EXU_ENERGY*s.g.eff*Math.max(0.15,exConc)*(f.det?0.4:1.0)*0.7;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}
+  }
+  if(isNearRoot&&dRootX<15){let atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog*envP/(1+C.NICHE_EXCL*benef);
+    if(stat||kill)atkRate*=0.3;
+    plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;if(!stat&&!kill)s.e+=atkRate*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}
 
 else if(gid===5){/* Rhizobium */
   /* a infecção leva tempo (fio de infecção) e a planta limita o número de nódulos conforme o tamanho
@@ -969,7 +985,7 @@ if(s.age>14000+Math.random()*6000){s.alive=false;nD++;
   lc.organicC+=0.5;lc.NH4+=0.1;
   if(fd.length<C.FOOD_MAX-2){fd.push({x:hd.x+rng(-8,8),y:hd.y+rng(-8,8),sz:0.3+Math.random()*0.2,hue:25+Math.random()*10,ph:Math.random()*Math.PI*2,age:0,det:true})}
   continue}
-let sapBlock=false;const reproE=C.REPRO_E*(gd.type==='bact'&&gid!==6?C.BACT_REPRO:1);
+let sapBlock=false;const reproE=C.REPRO_E*(gd.type==='bact'?C.BACT_REPRO:1);
 if(s.e>reproE&&s.reproCool<=0&&!s.nodulated){const ty=gd.type,K=C.TYPE_K[ty]*C.MAX_POP;
   sapBlock=(gid===10&&(_guildCounts[10]||0)>=C.SAP_LOCAL)||(ty==='bact'||ty==='fungi')&&nGuild[gid]>=K*C.GUILD_SHARE[ty]||Math.random()>1-nType[ty]/K;
   if(sapBlock)s.reproCool=30}   /* espera um pouco antes de tentar de novo */
