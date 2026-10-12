@@ -4,7 +4,18 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
   EXU_ENERGY:550      /* energia por partícula de exsudato */
 };
 /* Velocidade máxima rígida por tipo biológico (pixels/tick) */
-const MAX_SPEED={bact:0.8,fungi:0.5,proto:1.2,nema:0.6};
+/* ═══ AJUSTES ECOLÓGICOS (out/2026) — valor original entre parênteses ═══
+   Motivo: no motor original o saprófito chegava a ~87% da população (limite de 280),
+   ocupava as vagas e as bactérias e os demais grupos desapareciam; também se concentrava
+   na raiz. Ver AJUSTES_ECOLOGICOS.md. */
+const ECO={
+  BACT_VMAX:0.45,   /* (0.8) velocidade máxima das bactérias, px/passo */
+  SAP_DOC:0.2,      /* (0.5) bônus de carbono dissolvido do saprófito — o comentário original já dizia "bônus menor" que o dos outros (0.35) */
+  SAP_DEC_E:1.5,    /* (8)   energia por unidade de C orgânico decomposto */
+  SAP_DETRITO:true, /* (não) saprófito segue detritos no solo em vez de exsudatos e sinal da raiz */
+  NEMA_HERB_E:5     /* (15)  energia do nematoide por unidade de herbivoria na raiz (o dano à planta não mudou) */
+};
+const MAX_SPEED={bact:ECO.BACT_VMAX,fungi:0.5,proto:1.2,nema:0.6};
 
 /* Travas rígidas de tamanho baseadas no v17.2 */
 const SIZE_LIMITS = {
@@ -250,12 +261,15 @@ behave(fH, sH) {
     lSmell += rootPull / (Math.hypot(lx - wCx, ly - closestRY) + 1);
     rSmell += rootPull / (Math.hypot(rx - wCx, ry - closestRY) + 1);
   } else {
-    /* Quimiotaxia por exsudatos */
+    /* Quimiotaxia por exsudatos (saprófito: só por detritos — ECO.SAP_DETRITO) */
     const nf = fH.qry(h.x, h.y);
+    const sapDet = ECO.SAP_DETRITO && g.guild === 10;
     for (const f of nf) {
+        if (sapDet && !f.det) continue;
         lSmell += 3 / (Math.hypot(lx - f.x, ly - f.y) + 1);
         rSmell += 3 / (Math.hypot(rx - f.x, ry - f.y) + 1);
     }
+    if (!sapDet) {
     /* ═══ FIX #2: Sinal da planta PROPORCIONAL à deficiência — recrutamento específico de PGPBs ═══ */
     var _sb=0;
     if(g.guild===5)_sb=plant.sig.flav*14;        /* Rhizobium: N baixo → flavonoides */
@@ -270,6 +284,7 @@ behave(fH, sH) {
     const exG = exudateConc(h.x, h.y);
     lSmell += rootSignal * exG / (Math.hypot(lx - wCx, ly - closestRY) + 2);
     rSmell += rootSignal * exG / (Math.hypot(rx - wCx, ry - closestRY) + 2);
+    }
   }
 
   const viscMult = 1 / (env.visc || 1);
@@ -761,7 +776,7 @@ const fi=s.g.fi;const exConc=exudateConc(hd.x,hd.y);const localLight=lightAt(hd.
     const docEnergy = mm(0.3, lc.organicC, 120) * 1.8;
     /* Bulk soil: organismos obtêm energia basal do DOC */
     if(!isNearRoot) {
-      s.e += docEnergy * (gid === 10 ? 0.5 : 0.35); /* saprófitos já têm metabolismo próprio, bonus menor */
+      s.e += docEnergy * (gid === 10 ? ECO.SAP_DOC : 0.35); /* saprófitos já têm metabolismo próprio, bonus menor */
       lc.organicC -= docEnergy * 0.0004;
     }
   }
@@ -812,7 +827,7 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
   else if(s.age-s.lastAte>=C.DIGEST_TICKS*2){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R+5){s.e+=300;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}}
 
 else if(gid===9){/* Nematóide herbívoro — dano às raízes + bacterívoro/predador oportunista */
-  if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.055;plant.bio-=herbRate*0.002;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
+  if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.055;plant.bio-=herbRate*0.002;s.e+=herbRate*ECO.NEMA_HERB_E;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
   /* Bacterívoro oportunista — come bactérias e fungos no caminho */
   if(s.age-s.lastAte>=C.DIGEST_TICKS*3){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive)continue;
   const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&preyGd.type!=='fungi')continue;
@@ -828,7 +843,7 @@ else if(gid===10){/* Saprófito — decompõe C orgânico EM QUALQUER LUGAR DO S
   const soilOMFactor = isNearRoot ? 1.0 + exConc * 0.5 : 0.7; /* ligeiramente melhor na rizosfera */
   const decRate=mm(GUILDS[10].Vmax_dec,lc.organicC,GUILDS[10].Km_Corg)*fi.sapro*soilOMFactor;
   lc.organicC-=decRate*0.01;lc.NH4+=decRate*0.004;lc.PO4free+=decRate*0.002;
-  s.e+=decRate*8; /* energia adequada de decomposição */if(tk%400===0&&decRate>0.5)addEv('eK','🟣 Saprófito: C→NH₄⁺')}
+  s.e+=decRate*ECO.SAP_DEC_E; /* energia de decomposição (ECO.SAP_DEC_E) */if(tk%400===0&&decRate>0.5)addEv('eK','🟣 Saprófito: C→NH₄⁺')}
 
 else if(gid===11){/* Micorriza — rede hifal que absorve P de área estendida e transfere à planta */
   /* Micorrizas se alimentam de exsudatos radiculares (C da planta) */
