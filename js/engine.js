@@ -15,7 +15,7 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
   SAP_LOCAL:3,        /* colônia nova de saprófito só se instala com menos de 3 colônias vizinhas (substrato ocupado) */
   PROTO_DIGEST:150,   /* protozoário: fagocitose + digestão no vacúolo antes da próxima presa */
   REFUGE_R:6,         /* bactérias coladas na raiz (biofilme do rizoplano)... */
-  REFUGE_P:0.75,      /* ...escapam de 75% dos encontros com protozoários */
+  REFUGE_P:0.75,      /* ...escapam de 75% dos encontros com amebas (95% com flagelados e ciliados: ver PROTO_KIND) */
   EXU_ENERGY:550      /* energia por partícula de exsudato */
 };
 /* Velocidade máxima rígida por tipo biológico (pixels/tick) */
@@ -155,6 +155,16 @@ const MORPH_GUILD={
   12:[2]              /* Arthrobotrys: ramificado = rede de armadilhas */
 };
 
+/* Protozoários do solo: três tipos, definidos pelo genoma (herdável; muda raramente por mutação).
+   ameba: pasta no biofilme da raiz (alcança mais bactérias coladas), também come fungos, aguenta a seca;
+   flagelado (tipo Bodo/Cercomonas): pequeno, come bactérias soltas, ciclo rápido, precisa de filme d'água;
+   ciliado (tipo Colpoda): maior, come bactérias soltas, precisa de mais água e encista logo na seca. */
+function protoKind(g){return g.mt===3?'flag':(g.mt===5&&g.nd%2===0)?'cil':'ameba'}
+const PROTO_KIND={
+  ameba:{cyst:30,dig:1.0,gain:1.0,refuge:0.75,fungi:true, name:'Ameba'},
+  flag: {cyst:35,dig:0.6,gain:0.6,refuge:0.95,fungi:false,name:'Flagelado'},
+  cil:  {cyst:45,dig:0.8,gain:0.9,refuge:0.95,fungi:false,name:'Ciliado'}
+};
 let env={soil:'loam',temp:25,ph:6.5,moist:60,tox:0,light:70,uv:15,visc:1.0,nutRet:1.0};
 let plant={bio:50,n:35,p:30,fe:25,aia:10,stress:0,nodules:[],limitFactor:'—',sig:{flav:0,orgA:0,SA:0}};
 
@@ -819,31 +829,32 @@ else if(gid===7){/* Cianobactéria — fotossíntese + N₂ */
 else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE */
   /* Encistamento: na seca (ou com fome prolongada) a ameba vira cisto de parede dupla, para de
      comer e de se mover e gasta pouquíssima energia; desencista quando a umidade volta */
+  const PK=PROTO_KIND[protoKind(s.g)],dig=C.PROTO_DIGEST*PK.dig;
   if(s.cyst){s.cystAge++;s.reproCool=Math.max(s.reproCool,60);
-    const wet=env.moist>=C.CYST_MOIST+5;
-    if(wet&&((s.cystDry&&s.cystAge>300)||(!s.cystDry&&s.cystAge>900&&s.cystAge%300===0&&Math.random()<0.5))){s.cyst=false;s.lastAte=s.age-C.PROTO_DIGEST}}
-  else if(env.moist<C.CYST_MOIST||(s.e<900&&s.age-s.lastAte>1500)){s.cyst=true;s.cystAge=0;s.cystDry=env.moist<C.CYST_MOIST;if(tk%120===0)addEv('eK','🔶 Ameba encistou')}
-  if(!s.cyst&&s.age-s.lastAte>=C.PROTO_DIGEST){const nS=sHh.qry(hd.x,hd.y);
+    const wet=env.moist>=PK.cyst+5;
+    if(wet&&((s.cystDry&&s.cystAge>300)||(!s.cystDry&&s.cystAge>900&&s.cystAge%300===0&&Math.random()<0.5))){s.cyst=false;s.lastAte=s.age-dig}}
+  else if(env.moist<PK.cyst||(s.e<900&&s.age-s.lastAte>1500)){s.cyst=true;s.cystAge=0;s.cystDry=env.moist<PK.cyst;if(tk%120===0)addEv('eK','🔶 '+PK.name+' encistou')}
+  if(!s.cyst&&s.age-s.lastAte>=dig){const nS=sHh.qry(hd.x,hd.y);
   /* Contar presas por guilda para predação frequência-dependente */
   var preyByGuild={},totalPrey=0;
   for(const p of nS){if(!p.ref||p.ref===s||!p.ref.alive)continue;
-    const pg=GUILDS[p.ref.g.guild];if(pg.type!=='bact'&&pg.type!=='fungi')continue;
+    const pg=GUILDS[p.ref.g.guild];if(pg.type!=='bact'&&!(pg.type==='fungi'&&PK.fungi))continue;
     var pgid=p.ref.g.guild;preyByGuild[pgid]=(preyByGuild[pgid]||0)+1;totalPrey++;}
   /* Encontrar a guilda mais abundante (alvo preferencial) */
   var mostAbundant=-1,maxCount=0;
   for(var pgk in preyByGuild){if(preyByGuild[pgk]>maxCount){maxCount=preyByGuild[pgk];mostAbundant=+pgk;}}
   /* Predação: prefere a presa mais abundante (controle top-down das populações dominantes) */
   for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive)continue;
-  const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&preyGd.type!=='fungi')continue;
+  const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&!(preyGd.type==='fungi'&&PK.fungi))continue;
   if(dst(hd,prey.ref.core)<C.PRED_R+2){
     /* refúgio: bactéria no biofilme colado à raiz não é alcançada pelo protozoário */
-    if(preyGd.type==='bact'&&Math.abs(prey.ref.core.x-wCx)<C.REFUGE_R&&prey.ref.core.y>gY&&prey.ref.core.y<gY+rootDepth+5&&Math.random()<C.REFUGE_P)continue;
+    if(preyGd.type==='bact'&&Math.abs(prey.ref.core.x-wCx)<C.REFUGE_R&&prey.ref.core.y>gY&&prey.ref.core.y<gY+rootDepth+5&&Math.random()<PK.refuge)continue;
     /* Pseudomonas se defende quimicamente: a ameba recua na maioria das vezes e, quando come, aproveita pouco */
     const toxic=prey.ref.g.guild===0;if(toxic&&Math.random()<C.PSEUDO_DEFENSE)continue;
     /* Bônus de captura se for a presa mais abundante (frequência-dependente) */
     var captureBonus = (prey.ref.g.guild===mostAbundant && totalPrey>4) ? 1.5 : 1.0;
     const localPrey=totalPrey;const predRate=mm(GUILDS[8].Vmax_pred,localPrey,GUILDS[8].Km_prey)*fi.pred*captureBonus;
-    s.e+=predRate*900*(toxic?0.4:1);prey.ref.alive=false;nD++;
+    s.e+=predRate*900*(toxic?0.4:1)*PK.gain;prey.ref.alive=false;nD++;
     if(s.skin&&s.skin.engulf)s.skin.engulf(prey.ref.vpos().x,prey.ref.vpos().y,preyGd.color,preyGd.type==='fungi'?1.5:1.1);
   /* Nutrient loop: bactéria vira NH4 */
   lc.NH4+=0.5;lc.PO4free+=0.2;

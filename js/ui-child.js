@@ -391,6 +391,15 @@
     }
     if(gid===8){
       const b=org.skin;
+      if(org.cyst)return 'Com o solo seco (ou sem presas por muito tempo), este protozoário virou cisto: uma parede grossa o protege, ele para de se mover e de comer e espera a umidade voltar.';
+      if(b&&b.kind==='flag'){
+        if(b.food.length)return 'Este flagelado engoliu uma bactéria e a está digerindo num vacúolo. Flagelados são pequenos e se multiplicam rápido; comem as bactérias soltas na água entre os grãos de solo.';
+        return 'Este flagelado nada aos trancos com dois flagelos: um curto à frente e um longo arrastado atrás. Ele procura bactérias soltas no filme de água do solo.';
+      }
+      if(b&&b.kind==='cil'){
+        if(b.food.length)return 'Os cílios levam as bactérias até o sulco oral deste ciliado; dentro da célula, os vacúolos digestivos circulam enquanto a presa é digerida.';
+        return 'Este ciliado nada rápido girando em torno do próprio eixo, movido por milhares de cílios que batem em onda. Quando esbarra em algo, recua e muda de direção. Precisa de bastante água.';
+      }
       if(b&&b.food.some(f=>f.t<=f.catchT+f.pullT))return 'Esta ameba esticou um pseudópode, envolveu uma presa e está levando-a para dentro da célula (fagocitose).';
       if(b&&b.food.length)return 'Esta ameba está digerindo uma presa dentro de um vacúolo digestivo. Parte dos nutrientes volta para o solo.';
       if(nearbyBacteria>0)return 'Esta ameba está perto de bactérias: os pseudópodes crescem na direção delas para capturá-las.';

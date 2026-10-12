@@ -24,7 +24,11 @@
       // organismos da população inicial já aparecem formados; os que nascem ou chegam depois
       // começam pequenos (esporo germinando, nematoide juvenil) e crescem à vista
       const born=typeof tk!=='undefined'&&tk>0;
-      if(gid===8&&root.AmoebaBody)return new root.AmoebaBody(x,y,g,seed);
+      if(gid===8){                       // protozoário: ameba, flagelado ou ciliado (protoKind do motor)
+        const k=typeof protoKind==='function'?protoKind(g):'ameba';
+        if(k!=='ameba'&&root.ProtistBody)return new root.ProtistBody(x,y,g,k,seed);
+        if(root.AmoebaBody)return new root.AmoebaBody(x,y,g,seed);
+      }
       if(FUNGI[gid]&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,FUNGI[gid],seed,born);
       // patógeno: indivíduos de morfologia ramificada/tentacular aparecem como Fusarium (só aparência)
       if(gid===6&&(g.mt===2||g.mt===4)&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,'fusa',seed,born);

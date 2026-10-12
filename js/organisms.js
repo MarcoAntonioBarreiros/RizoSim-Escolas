@@ -115,8 +115,8 @@
       morph:'proto',
       color:'#fbbf24',
       pattern:'ameboide',
-      simple:'É uma ameba: estica pseudópodes, envolve bactérias e fungos e os digere dentro da célula.',
-      science:'Amebas do solo se movem por pseudópodes (citoplasma em gel e sol) e capturam presas por fagocitose, formando vacúolos digestivos. No simulador aparecem três formas comuns no solo: limax (um lobo só, como Vahlkampfia e Naegleria), lobosa (pseudópodes que se ramificam) e com acantopódios (espículas finas, como Acanthamoeba). A predação é frequência-dependente: elas preferem a presa mais abundante e devolvem parte do N e do P ao solo.'
+      simple:'Amebas, flagelados e ciliados: comem bactérias (as amebas também fungos) e devolvem nutrientes ao solo.',
+      science:'Amebas do solo se movem por pseudópodes (citoplasma em gel e sol) e capturam presas por fagocitose, formando vacúolos digestivos. No simulador aparecem três formas comuns no solo: limax (um lobo só, como Vahlkampfia e Naegleria), lobosa (pseudópodes que se ramificam) e com acantopódios (espículas finas, como Acanthamoeba). A predação é frequência-dependente: elas preferem a presa mais abundante e devolvem parte do N e do P ao solo. Também aparecem flagelados (tipo Bodo e Cercomonas: pequenos, dois flagelos, ciclo rápido) e ciliados (tipo Colpoda, o ciliado típico do solo; o paramécio é parente de água doce). Flagelados e ciliados comem bactérias soltas no filme de água; as amebas alcançam melhor o biofilme da raiz. Na seca, todos encistam.'
     },
     9:{
       name:'Nematoide',

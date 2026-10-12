@@ -29,6 +29,18 @@ Os morfotipos vêm do gene `nd`, que já existe e muta:
 | 4–7 | lobosa ramificada | Amoeba, Chaos |
 | ≥ 8 | acantopódios | Acanthamoeba |
 
+## Flagelados e ciliados (`js/protista-lite.js`)
+
+O grupo Protozoário tem três tipos, definidos pelo genoma (`protoKind` no motor: gene `mt` 3 = flagelado; `mt` 5 com `nd` par = ciliado; o resto, ameba). O tipo é herdado e muda raramente por mutação.
+
+| Tipo | Corpo | Nado | Ecologia no motor |
+|---|---|---|---|
+| Ameba | pseudópodes (acima) | rasteja | pasta no biofilme da raiz (bactérias ali escapam de 75% dos ataques), come também fungos, encista abaixo de 30% de umidade |
+| Flagelado (tipo *Bodo*/*Cercomonas*) | feijão pequeno, flagelo curto à frente e longo arrastado atrás | aos trancos, vira de repente | só bactérias soltas (no biofilme escapam de 95%), digere em 60% do tempo e aproveita 60% da energia, encista abaixo de 35% |
+| Ciliado (tipo *Colpoda*) | rim com sulco oral, cílios em onda metacrônica, macronúcleo, vacúolo contrátil, vacúolos digestivos em ciclose | rápido, girando no eixo; recua e muda de rumo ao "esbarrar" (reação de evitação) | só bactérias soltas (95% no biofilme), digestão em 80% do tempo, encista abaixo de 45% |
+
+Todos viram cisto de parede grossa na seca ou com fome prolongada, gastam 10% da energia e voltam quando a umidade sobe.
+
 ## Fungos → micélio (`js/micelio-lite.js`)
 
 Regras comuns às quatro guildas:

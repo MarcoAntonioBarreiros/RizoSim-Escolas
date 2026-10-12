@@ -123,7 +123,9 @@
 
     engine.resetWith({...defaults,microbeMult:0});
     // um pouco afastado da superfície da raiz: no biofilme (até 6 px) as bactérias escapam da maioria dos ataques
-    const amoebae=engine.inoculateAt(8,engine.geometry.wCx+16,engine.geometry.gY+28,8);
+    const protists=engine.inoculateAt(8,engine.geometry.wCx+16,engine.geometry.gY+28,40);
+    const amoebae=protists.filter(org=>org.skin&&org.skin.r);   // as amebas (os outros são flagelados e ciliados)
+    const protoKinds={flag:0,cil:0};for(const org of protists){if(org.skin&&org.skin.kind&&protoKinds[org.skin.kind]!==undefined)protoKinds[org.skin.kind]++}
     engine.inoculateAt(1,engine.geometry.wCx+16,engine.geometry.gY+28,30);
     const bacteriaBefore=engine.state.guildCounts[1]||0;
     let phagocytosis=false,maxShape=0;
@@ -131,7 +133,8 @@
       engine.step(100);
       for(const org of engine.raw.sw){
         if(!org.alive||!org.skin||!org.skin.food)continue;
-        if(org.skin.food.length>0||org.skin.meals>0)phagocytosis=true;
+        if(org.skin.food.length>0||org.skin.meals>0)phagocytosis=true;   // qualquer protozoário engoliu presa
+        if(!org.skin.r)continue;                                         // forma: só amebas
         const r=org.skin.r;maxShape=Math.max(maxShape,Math.max(...r)/Math.min(...r));
       }
     }
@@ -141,6 +144,11 @@
       'Protozoário aparece como ameba e continua predando bactérias, com pseudópodes e fagocitose',
       withBody===amoebae.length&&phagocytosis&&maxShape>1.4,   /* preda, mas o biofilme na raiz protege parte das bactérias: o número pode subir */
       'Amebas: '+withBody+'/'+amoebae.length+'; Bacillus: '+bacteriaBefore+' -> '+bacteriaAfter+'; vacúolos digestivos: '+(phagocytosis?'sim':'não')+'; maior alongamento: '+maxShape.toFixed(2)
+    ));
+    results.push(result(
+      'Protozoários incluem flagelados e ciliados com corpo próprio',
+      protoKinds.flag>0&&protoKinds.cil>0&&amoebae.length>0,
+      'Em 40 protozoários: amebas '+amoebae.length+', flagelados '+protoKinds.flag+', ciliados '+protoKinds.cil
     ));
 
     engine.resetWith({...defaults,microbeMult:0,organicC:1000});
