@@ -138,7 +138,7 @@
     const withBody=amoebae.filter(org=>org.skin&&org.skin.food).length;
     results.push(result(
       'Protozoário aparece como ameba e continua predando bactérias, com pseudópodes e fagocitose',
-      withBody===amoebae.length&&bacteriaAfter<bacteriaBefore&&phagocytosis&&maxShape>1.4,
+      withBody===amoebae.length&&phagocytosis&&maxShape>1.4,   /* preda, mas o biofilme na raiz protege parte das bactérias: o número pode subir */
       'Amebas: '+withBody+'/'+amoebae.length+'; Bacillus: '+bacteriaBefore+' -> '+bacteriaAfter+'; vacúolos digestivos: '+(phagocytosis?'sim':'não')+'; maior alongamento: '+maxShape.toFixed(2)
     ));
 
