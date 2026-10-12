@@ -211,6 +211,8 @@ else if(g.mt===3){const dN=g.sl*0.7;for(let i=0;i<g.nd;i++)this.pts.push(new VP(
 else if(g.mt===4){this.core=new VP(x,y);this.pts.push(this.core);const nA=Math.max(3,Math.floor(g.nd/2)),aS=Math.PI*2/nA;for(let i=0;i<nA;i++){const arm=[];let prev=this.core;const a=i*aS,aL=g.sl*rng(0.7,1.3);for(let j=0;j<3;j++){const pt=new VP(prev.x+Math.cos(a)*aL,prev.y+Math.sin(a)*aL);this.pts.push(pt);arm.push(pt);this.muscles.push({a:prev,b:pt,bl:aL,ph:i*g.ps+j*0.3});prev=pt}this.tentacles.push(arm)}for(let i=0;i<this.tentacles.length;i++){const b1=this.tentacles[i][0],b2=this.tentacles[(i+1)%this.tentacles.length][0];this.bones.push({a:b1,b:b2,l:dst(b1,b2)})}}
 else if(g.mt===5){this.spineCount=Math.max(3,Math.floor(g.nd/2));const sL=g.sl*0.8;for(let i=0;i<this.spineCount;i++)this.pts.push(new VP(x-i*sL,y));this.core=this.pts[0];for(let i=0;i<this.spineCount-1;i++)this.bones.push({a:this.pts[i],b:this.pts[i+1],l:sL});for(let i=0;i<this.spineCount-2;i++)this.muscles.push({a:this.pts[i],b:this.pts[i+2],bl:sL*1.9,ph:i*g.ps*0.3});const legL=g.sl*1.4;for(let i=0;i<this.spineCount-1;i++){const sp=this.pts[i],spN=this.pts[i+1];const dx=spN.x-sp.x,dy=spN.y-sp.y,a=Math.atan2(dy,dx);const pL=new VP(sp.x+Math.cos(a-Math.PI/2)*legL,sp.y+Math.sin(a-Math.PI/2)*legL);const pR=new VP(sp.x+Math.cos(a+Math.PI/2)*legL,sp.y+Math.sin(a+Math.PI/2)*legL);this.pts.push(pL,pR);this.bones.push({a:sp,b:pL,l:legL},{a:sp,b:pR,l:legL});this.muscles.push({a:pL,b:spN,bl:dst(pL,spN),ph:i*g.ps},{a:pR,b:spN,bl:dst(pR,spN),ph:i*g.ps+Math.PI})}}}
 get x(){return this.core?this.core.x:0}get y(){return this.core?this.core.y:0}
+/* posição desenhada (bactérias e nematoide nadam em volta da posição do motor) — só para câmera, clique e efeitos */
+vpos(){const v=this.skin&&this.skin.viewPos?this.skin.viewPos():null;return v||this.core||{x:0,y:0}}
 hdg(){if(this.pts.length<2)return 0;if(this.g.mt===1||this.g.mt===4){const t=this.pts[Math.min(Math.floor(this.pts.length/2),this.pts.length-1)];return Math.atan2(this.core.y-t.y,this.core.x-t.x)}return Math.atan2(this.pts[0].y-this.pts[1].y,this.pts[0].x-this.pts[1].x)}
 
 behave(fH, sH) {
@@ -383,7 +385,7 @@ physics() {
 draw(ctx,t){const g=this.g,gd=GUILDS[g.guild];const al=cl(this.e/1500,.2,.95);
 const gc=gd.color;const col=hs(g.hue,g.sat,g.lit,al),colB=hs(g.hue,g.sat,g.lit+15,al);
 ctx.lineCap="round";ctx.lineJoin="round";
-if(this.skin){this.skin.draw(ctx,g,al,gc,this);const nv=this.nodulated?this._nodVis:null;const eP=cl(this.e/C.REPRO_E,0,1),hd=nv||this.core,bY=hd.y-(g.cs+5);ctx.fillStyle="rgba(255,255,255,0.08)";ctx.globalAlpha=1;ctx.fillRect(hd.x-6,bY,2,0.2);ctx.fillStyle=hs(eP>.5?120:eP>.25?50:0,80,50,.55);ctx.fillRect(hd.x-6,bY,2*eP,0.2);if(this.nodulated&&!nv){ctx.beginPath();ctx.arc(this.core.x,this.core.y,4,0,Math.PI*2);ctx.fillStyle="rgba(200,60,70,0.22)";ctx.globalAlpha=1;ctx.fill();ctx.strokeStyle="rgba(160,30,40,0.55)";ctx.lineWidth=0.35;ctx.stroke()}ctx.globalAlpha=1;return}
+if(this.skin){this.skin.draw(ctx,g,al,gc,this);const nv=this.nodulated?this._nodVis:null;const eP=cl(this.e/C.REPRO_E,0,1),hd=nv||this.vpos(),bY=hd.y-(g.cs+5);ctx.fillStyle="rgba(255,255,255,0.08)";ctx.globalAlpha=1;ctx.fillRect(hd.x-6,bY,2,0.2);ctx.fillStyle=hs(eP>.5?120:eP>.25?50:0,80,50,.55);ctx.fillRect(hd.x-6,bY,2*eP,0.2);if(this.nodulated&&!nv){ctx.beginPath();ctx.arc(this.core.x,this.core.y,4,0,Math.PI*2);ctx.fillStyle="rgba(200,60,70,0.22)";ctx.globalAlpha=1;ctx.fill();ctx.strokeStyle="rgba(160,30,40,0.55)";ctx.lineWidth=0.35;ctx.stroke()}ctx.globalAlpha=1;return}
 if(g.mt===0){const P=this.pts;if(P.length<2)return;for(let pass=0;pass<2;pass++){ctx.beginPath();ctx.moveTo(P[0].x,P[0].y);for(let i=0;i<P.length-1;i++){const xc=(P[i].x+P[i+1].x)/2,yc=(P[i].y+P[i+1].y)/2;ctx.quadraticCurveTo(P[i].x,P[i].y,xc,yc)}ctx.lineTo(P[P.length-1].x,P[P.length-1].y);ctx.strokeStyle=pass===0?gc:colB;ctx.lineWidth=pass===0?g.th:g.th*.35;ctx.globalAlpha=al;ctx.stroke()}ctx.beginPath();ctx.arc(P[0].x,P[0].y,g.cs,0,Math.PI*2);ctx.fillStyle=colB;ctx.globalAlpha=al;ctx.fill();const ea=this.hdg();ctx.beginPath();ctx.arc(P[0].x+Math.cos(ea)*g.cs*.5,P[0].y+Math.sin(ea)*g.cs*.5,cl(g.cs*.3,.5,1.8),0,Math.PI*2);ctx.fillStyle=`rgba(10,10,10,${al*.9})`;ctx.fill()}
 else if(g.mt===1){const ring=this.pts.slice(1);if(ring.length<3)return;ctx.beginPath();ctx.moveTo(ring[0].x,ring[0].y);for(let i=0;i<ring.length;i++){const nx=ring[(i+1)%ring.length];ctx.quadraticCurveTo(ring[i].x,ring[i].y,(ring[i].x+nx.x)/2,(ring[i].y+nx.y)/2)}ctx.closePath();ctx.fillStyle=hs(g.hue,g.sat,g.lit,al*.3);ctx.globalAlpha=al;ctx.fill();ctx.strokeStyle=gc;ctx.lineWidth=g.th*.6;ctx.stroke();ctx.strokeStyle=hs(g.hue,g.sat,g.lit+10,al*.15);ctx.lineWidth=.5;for(const r of ring){ctx.beginPath();ctx.moveTo(this.core.x,this.core.y);ctx.lineTo(r.x,r.y);ctx.stroke()}const pulse=1+.2*Math.sin(t*.004+this.age*g.spd);ctx.beginPath();ctx.arc(this.core.x,this.core.y,g.cs*pulse,0,Math.PI*2);ctx.fillStyle=colB;ctx.fill();if(gd.trophic==='photo'){const gr=ctx.createRadialGradient(this.core.x,this.core.y,0,this.core.x,this.core.y,g.sl*2.5);gr.addColorStop(0,`hsla(120,80%,50%,${al*.1})`);gr.addColorStop(1,`hsla(120,80%,50%,0)`);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(this.core.x,this.core.y,g.sl*2.5,0,Math.PI*2);ctx.fill()}}
 else if(g.mt===2){for(const b of this.bones){const isC=b.a===this.core;ctx.beginPath();ctx.moveTo(b.a.x,b.a.y);ctx.lineTo(b.b.x,b.b.y);ctx.strokeStyle=isC?colB:gc;ctx.lineWidth=isC?g.th*1.2:g.th*.7;ctx.globalAlpha=al;ctx.stroke()}ctx.fillStyle=hs(g.hue,g.sat,g.lit+10,al*.6);for(const p of this.pts){if(p===this.core)continue;ctx.beginPath();ctx.arc(p.x,p.y,g.th*.35,0,Math.PI*2);ctx.fill()}ctx.beginPath();ctx.arc(this.core.x,this.core.y,g.cs*1.2,0,Math.PI*2);ctx.fillStyle=colB;ctx.globalAlpha=al;ctx.fill();if(gd.trophic==='pred'||g.guild===6){ctx.beginPath();ctx.arc(this.core.x,this.core.y,g.cs*.5,0,Math.PI*2);ctx.fillStyle=`hsla(0,70%,45%,${al*.7})`;ctx.fill()}}
@@ -558,8 +560,9 @@ function updateCameraFollow(){
   if(!cameraFollow)return false;
   const item=cameraFollow.item;
   if(!item||!item.alive){cameraFollow=null;return false}
-  px=cW*cameraFollow.anchorX-item.x*zm;
-  py=cH*cameraFollow.anchorY-item.y*zm;
+  const vp=item.vpos?item.vpos():item;
+  px=cW*cameraFollow.anchorX-vp.x*zm;
+  py=cH*cameraFollow.anchorY-vp.y*zm;
   return true;
 }
 function startCameraFollow(item,zoom,anchorX,anchorY){
@@ -768,7 +771,7 @@ const fi=s.g.fi;const exConc=exudateConc(hd.x,hd.y);const localLight=lightAt(hd.
 }
 
 if(gid===4){/* Trichoderma biocontrole */
-  if(s.age-s.lastAte>=C.DIGEST_TICKS){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.g.guild!==6)continue;if(dst(hd,prey.ref.core)<C.PRED_R+4){s.e+=1900*fi.bioctl;s.lastAte=s.age;prey.ref.alive=false;nD++;if(s.skin&&s.skin.attack)s.skin.attack(prey.ref.x,prey.ref.y,GUILDS[6].color);plant.stress=Math.max(0,plant.stress-0.8);fx.push({x:prey.ref.x,y:prey.ref.y,life:25,type:'pred'});addEv('eP','🛡 Trichoderma→Patógeno');break}}}
+  if(s.age-s.lastAte>=C.DIGEST_TICKS){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.g.guild!==6)continue;if(dst(hd,prey.ref.core)<C.PRED_R+4){s.e+=1900*fi.bioctl;s.lastAte=s.age;prey.ref.alive=false;nD++;if(s.skin&&s.skin.attack)s.skin.attack(prey.ref.vpos().x,prey.ref.vpos().y,GUILDS[6].color);plant.stress=Math.max(0,plant.stress-0.8);fx.push({x:prey.ref.x,y:prey.ref.y,life:25,type:'pred'});addEv('eP','🛡 Trichoderma→Patógeno');break}}}
   if(Math.random()<0.04){s.e+=mm(0.5,lc.organicC,50)*fi.bioctl*15;lc.organicC-=0.5}}
 
 else if(gid===6){/* Patógeno */
@@ -803,7 +806,7 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
     var captureBonus = (prey.ref.g.guild===mostAbundant && totalPrey>4) ? 1.5 : 1.0;
     const localPrey=totalPrey;const predRate=mm(GUILDS[8].Vmax_pred,localPrey,GUILDS[8].Km_prey)*fi.pred*captureBonus;
     s.e+=predRate*900;prey.ref.alive=false;nD++;
-    if(s.skin&&s.skin.engulf)s.skin.engulf(prey.ref.x,prey.ref.y,preyGd.color,preyGd.type==='fungi'?1.5:1.1);
+    if(s.skin&&s.skin.engulf)s.skin.engulf(prey.ref.vpos().x,prey.ref.vpos().y,preyGd.color,preyGd.type==='fungi'?1.5:1.1);
   /* Nutrient loop: bactéria vira NH4 */
   lc.NH4+=0.5;lc.PO4free+=0.2;
   fx.push({x:prey.ref.x,y:prey.ref.y,life:20,type:'pred'});s.lastAte=s.age;
@@ -865,7 +868,7 @@ else if(gid===12){/* Arthrobotrys — fungo nematófago com armadilhas adesivas 
     if(dst(hd,prey.ref.core)<C.PRED_R+8){
       const trapRate=mm(GUILDS[12].Vmax_trap,1,GUILDS[12].Km_nema)*fi.bioctl;
       s.e+=trapRate*2200;s.lastAte=s.age;prey.ref.alive=false;nD++;
-      if(s.skin&&s.skin.trap)s.skin.trap(prey.ref.x,prey.ref.y,GUILDS[9].color);
+      if(s.skin&&s.skin.trap)s.skin.trap(prey.ref.vpos().x,prey.ref.vpos().y,GUILDS[9].color);
       plant.stress=Math.max(0,plant.stress-1.0);
       lc.NH4+=0.8;lc.PO4free+=0.3; /* nematóide digerido libera nutrientes */
       fx.push({x:prey.ref.x,y:prey.ref.y,life:30,type:'pred'});
@@ -2041,7 +2044,7 @@ cv.addEventListener('touchend',e=>{
         addEv('eB',`💉 ${GUILDS[inocVal].name}`);
       }else{
         let best=null,bestD=20/zm;
-        for(const s of sw){const d=Math.hypot(w.x-s.x,w.y-s.y);if(d<bestD){bestD=d;best=s}}
+        for(const s of sw){const vp=s.vpos();const d=Math.hypot(w.x-vp.x,w.y-vp.y);if(d<bestD){bestD=d;best=s}}
         const panel=document.getElementById('selP'),grid=document.getElementById('selG');
         if(best){panel.style.display='block';
           const g=best.g,gd=GUILDS[g.guild],fi=g.fi;
@@ -2186,7 +2189,7 @@ cv.addEventListener('touchend',e=>{
     let best=null;
     let bestD=Number.isFinite(maxWorld)?maxWorld:22/Math.max(0.1,zm);
     for(const item of sw){
-      const d=Math.hypot(x-item.x,y-item.y);
+      const vp=item.vpos();const d=Math.hypot(x-vp.x,y-vp.y);
       if(d<bestD){bestD=d;best=item}
     }
     return best;

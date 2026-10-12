@@ -58,7 +58,12 @@ Com zoom pequeno, o desenho simplifica: some septos e pontas e ficam as hifas e 
 
 A bactéria é uma célula rígida, que **não ondula como um verme**: é empurrada pelos flagelos, que giram.
 
-- **Nado em "corre e cambalhota":** correndo, os flagelos ficam num feixe atrás da célula. Quando ela muda de direção de repente, eles se abrem (cambalhota).
+- **Nado próprio, preso ao motor:** como o micélio, o desenho tem movimento próprio, preso por uma "coleira" (~10 px) à posição que o motor calcula. A posição desenhada é a do motor somada ao nado da célula, então ela acompanha para onde o motor leva o organismo, nunca para e só muda de direção enquanto anda (não gira no lugar).
+- **Corre e cambalhota:** corridas quase retas de ~1–2 s. Correndo, os flagelos ficam num feixe atrás da célula.
+  - Peritríquias (Bacillus, rizóbio, patógeno): cambalhota curta, com os flagelos abertos, e novo rumo de ~70° ao acaso.
+  - Flagelo polar ou tufo (Pseudomonas, Azospirillum, Methylobacterium): freiam, dão ré sem virar o corpo e depois viram ~90° ("flick").
+  - Corridas de volta para a posição do motor duram mais, como na quimiotaxia.
+- **Velocidade:** vem do gene de propulsão (`thr`) e do grupo, então cada indivíduo nada num ritmo. Em média, o desenho anda o que o motor anda.
 - **Divisão binária:** perto de se reproduzir, a célula alonga e estrangula no meio.
 
 | Guilda | Forma | Flagelos | Detalhe |
@@ -73,9 +78,12 @@ A bactéria é uma célula rígida, que **não ondula como um verme**: é empurr
 
 ## Nematoide (`js/nematoide-lite.js`)
 
+- **Movimento:** a cabeça desenhada nada sozinha, sempre para frente, presa por uma "coleira" (~16 px) à cabeça do corpo do motor. Nunca para, nunca anda de ré e não gira no lugar: faz curvas enquanto avança, com raio mínimo proporcional ao corpo. Quando o motor o mantém no lugar, ele serpenteia por perto. Na raiz, desacelera e o estilete bombeia.
 - **Corpo:** do corpo do motor só se usam a posição da cabeça e a direção. O desenho é uma onda senoidal que corre ao longo do corpo, com fase dada pela distância percorrida: o corpo passa pelos pontos por onde a cabeça passou, como na locomoção ondulatória real.
 - **Anatomia:** cutícula com anelação, esôfago com bulbo mediano, intestino granuloso e cauda afilada.
 - **Estilete:** fica na cabeça e se projeta, com o bulbo bombeando, quando o nematoide está se alimentando na raiz.
+
+**Câmera, clique e efeitos:** como bactérias e nematoide nadam em volta da posição do motor, o "Observar", o clique para selecionar, o anel de seleção e os efeitos de predação, biocontrole e captura usam a posição desenhada.
 
 ## Arquivos
 

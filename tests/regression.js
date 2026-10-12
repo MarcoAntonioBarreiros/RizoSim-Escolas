@@ -233,7 +233,8 @@
     await wait(30);
     engine.step(12);
     const focusedGeo=engine.geometry;
-    const focusedPoint=engine.worldToScreen(observed.x,observed.y);
+    const observedView=observed.vpos?observed.vpos():observed;   // a câmera centraliza o que está desenhado
+    const focusedPoint=engine.worldToScreen(observedView.x,observedView.y);
     const ring=target.document.getElementById('selectionRing');
     const bubble=target.document.getElementById('selectedBubble');
     const focusedX=Number.parseFloat(ring.style.left);

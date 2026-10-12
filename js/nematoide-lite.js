@@ -2,7 +2,11 @@
    O corpo original do motor continua fazendo a física; dele se usa só a posição da cabeça.
    O corpo desenhado desliza pelo caminho percorrido pela cabeça, e a ondulação está presa
    ao caminho (onda parada no solo) — como na locomoção ondulatória real: quando o verme
-   ondula, ele avança; quando para, para.
+   ondula, ele avança.
+   A cabeça desenhada nada sozinha, sempre para frente, presa por uma "coleira" à cabeça do
+   corpo do motor (como o micélio): o motor decide para onde o nematoide vai; o desenho
+   nunca para, nunca anda de ré e não gira no lugar — só faz curvas enquanto avança, com
+   raio mínimo proporcional ao corpo. Na raiz, desacelera e o estilete bombeia.
    Nada aqui consome o Math.random do motor.
 
    Anatomia simplificada de um nematoide fitoparasita:
@@ -16,6 +20,7 @@
   'use strict';
   const TAU=Math.PI*2;
   const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+  const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
   function prng(seed){let s=seed>>>0||1;return function(){s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
   const zoomOf=ctx=>ctx.getTransform().a/(root.devicePixelRatio||1);
   const NP=26;
@@ -27,7 +32,8 @@
       this.W=clamp(0.55+(g.th||1)*0.35,0.7,1.15);
       this.lam=this.Lb*0.55;this.A=this.Lb*0.065;
       this.dir=R()*TAU;this.feed=0;this.ph=R()*TAU;this.S0=R()*20;
-      this.trail=null;
+      this.trail=null;this.turn=0;this.aS=0;this.leash=16;
+      this.v0=0.09+0.06*clamp(((g.thr||0.55)-0.3)/0.5,0,1);     // px por passo (~5-9 px/s em 1x)
     }
     get label(){return this.feed>0.3?'Nematoide se alimentando (estilete)':'Nematoide (ondulação)'}
     _reset(x,y){
@@ -36,44 +42,36 @@
       for(let d=L;d>=0;d-=0.5)this.trail.push({x:x-Math.cos(this.dir)*d,y:y-Math.sin(this.dir)*d,S:this.S0-d});
       this.Sh=this.S0;this.gx=x;this.gy=y;
     }
-    /* Translocação: a cabeça segue (suavizada) a cabeça do corpo do motor e deixa um rastro.
-       O corpo ocupa o último trecho do rastro e o desvio lateral depende da posição NO CAMINHO
-       (onda parada no solo): ao avançar, o corpo desliza pela própria trilha sinuosa, como
-       um nematoide de verdade. Se o motor manda recuar, o verme anda de ré pela trilha. */
+    viewPos(){return this.trail?this._at(this.Sh-this.Lb*0.5):null}   // meio do corpo desenhado
     update(core,aim,hunting,rootX,rootTop,rootBottom,org){
-      const S=org&&org.pts&&org.pts.length>=2?org.pts:null;
-      const h=S?S[0]:core;
-      if(!this.trail||Math.hypot(h.x-this.gx,h.y-this.gy)>30){if(S)this.dir=Math.atan2(S[0].y-S[S.length-1].y,S[0].x-S[S.length-1].x);this._reset(h.x,h.y);return}
-      // alvo = cabeça do motor sem o tremor dos "músculos"
+      const S=org&&org.pts&&org.pts.length>=2?org.pts:null,h=S?S[0]:core,R=this.rand;
+      if(!this.trail||Math.hypot(h.x-this.gx,h.y-this.gy)>40){         // nascimento ou inoculação
+        if(S)this.dir=Math.atan2(S[0].y-S[S.length-1].y,S[0].x-S[S.length-1].x);
+        this._reset(h.x,h.y);this.px=h.x;this.py=h.y;this.hist=[];this.aS=0;return}
+      // alvo = cabeça do motor sem o tremor dos "músculos"; aS = quanto ela anda de fato
       this.gx+=(h.x-this.gx)*0.1;this.gy+=(h.y-this.gy)*0.1;
-      // A cabeça desenhada é um "piloto" com raio de curva mínimo: o motor às vezes faz o
-      // verme rodar em volta do alimento; aqui ele só vira enquanto avança, avança só se o
-      // alvo estiver à frente, e recua pela trilha se o alvo ficar para trás. O desvio em
-      // relação ao corpo do motor fica limitado a poucos px.
-      const T=this.trail,H0=this._at(this.Sh);
-      const dx=this.gx-H0.x,dy=this.gy-H0.y,dist=Math.hypot(dx,dy);
-      const d=Math.atan2(Math.sin(Math.atan2(dy,dx)-this.dir),Math.cos(Math.atan2(dy,dx)-this.dir));
-      const fwd=dist*Math.cos(d);
-      if(fwd>0.05){
-        const sp=Math.min(0.7,fwd*0.08+Math.max(0,dist-8)*0.05);
-        const rate=sp*(0.08+0.025*Math.max(0,dist-7));           // curvatura máx. ~1/12 px (raio de curva mínimo)
-        this.dir+=clamp(d,-rate,rate);
-        const last=T[T.length-1];
-        if(this.Sh<last.S-1e-6)T.length=this._idx(this.Sh)+1;      // retoma depois de recuar
-        const L2=T[T.length-1],nx=H0.x+Math.cos(this.dir)*sp,ny=H0.y+Math.sin(this.dir)*sp;
-        if(Math.hypot(nx-L2.x,ny-L2.y)>=0.25)T.push({x:nx,y:ny,S:L2.S+Math.hypot(nx-L2.x,ny-L2.y)});
-        else{L2.x=nx;L2.y=ny}
-        this.Sh=T[T.length-1].S;
-      }else if(dist>5){                                             // alvo atrás: anda de ré
-        this.Sh-=Math.min(0.5,(dist-5)*0.06);
-        const first=T[0],sec=T[1]||first,a=Math.atan2(first.y-sec.y,first.x-sec.x);
-        while(T[0].S>this.Sh-this.Lb-2){const f=T[0];T.unshift({x:f.x+Math.cos(a)*0.5,y:f.y+Math.sin(a)*0.5,S:f.S-0.5})}
-        this.dir=this._at(this.Sh).a;
-      }
-      while(T.length>2&&T[1].S<this.Sh-this.Lb-3)T.shift();
-      const H=this._at(this.Sh);this.hx=H.x;this.hy=H.y;
-      const atRoot=rootX!==undefined&&Math.abs(this.hx-rootX)<4&&this.hy>rootTop&&this.hy<rootBottom+5;
+      const Hh=this.hist;Hh.push(this.gx,this.gy);if(Hh.length>120)Hh.splice(0,2);
+      this.aS+=(Math.hypot(this.gx-Hh[0],this.gy-Hh[1])/Math.max(1,Hh.length/2-1)-this.aS)*0.05;
+      const dx=this.gx-this.px,dy=this.gy-this.py,d=Math.hypot(dx,dy),Rl=this.leash;
+      const atRoot=rootX!==undefined&&Math.abs(this.px-rootX)<4&&this.py>rootTop&&this.py<rootBottom+5;
       this.feed+=((atRoot?1:0)-this.feed)*0.05;
+      const v=Math.max(this.v0,this.aS*1.2)*(1-0.6*this.feed)*(1+clamp((d-Rl)/Rl,0,1.5));   // ficou para trás: acelera
+      // curvas: taxa de giro com passeio aleatório + coleira, limitada pelo raio mínimo de curva
+      this.turn=(this.turn+(R()-0.5)*0.004)*0.985;
+      let rate=this.turn;
+      if(d>Rl*0.5)rate+=clamp(wrap(Math.atan2(dy,dx)-this.dir),-1,1)*0.02*Math.min(3,d/Rl);
+      const kmax=v/(this.Lb*(d>Rl*1.5?0.25:0.4));
+      this.dir=wrap(this.dir+clamp(rate,-kmax,kmax));
+      if(rootTop!==undefined&&this.py<rootTop+3&&Math.sin(this.dir)<0)this.dir=wrap(this.dir+(Math.cos(this.dir)>0?1:-1)*kmax*2);   // perto da superfície, curva para baixo
+      this.px+=Math.cos(this.dir)*v;this.py+=Math.sin(this.dir)*v;
+      if(rootTop!==undefined&&this.py<rootTop+1)this.py=rootTop+1;
+      // o último ponto do rastro é a cabeça (move a cada passo); a cada 0,25 px vira ponto fixo
+      const T=this.trail,P0=T[T.length-2],sd=Math.hypot(this.px-P0.x,this.py-P0.y);
+      const Lh=T[T.length-1];Lh.x=this.px;Lh.y=this.py;Lh.S=P0.S+sd;
+      if(sd>=0.25)T.push({x:this.px,y:this.py,S:Lh.S});
+      this.Sh=Lh.S;
+      while(T.length>2&&T[1].S<this.Sh-this.Lb-3)T.shift();
+      this.hx=T[T.length-1].x;this.hy=T[T.length-1].y;
       this.ph+=0.25;
     }
     _idx(Sv){const T=this.trail;let lo=0,hi=T.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(T[m].S<=Sv)lo=m;else hi=m}return lo}

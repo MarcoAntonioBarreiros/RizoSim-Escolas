@@ -26,58 +26,107 @@
   const zoomOf=ctx=>ctx.getTransform().a/(root.devicePixelRatio||1);
 
   const KINDS={
-    pseudo:{label:'Bacilo, tufo polar',flag:'tuft',n:3,curve:0,len:1.0},
-    bacil: {label:'Bacilo, flagelos peritríquios',flag:'peri',n:6,curve:0,len:1.25,spore:true},
-    azo:   {label:'Víbrio, flagelo polar',flag:'polar',n:1,curve:0.35,len:1.0},
-    methy: {label:'Bacilo rosa com PHB',flag:'polar',n:1,curve:0,len:0.9,phb:true},
-    rhizo: {label:'Bacilo, flagelos peritríquios',flag:'peri',n:4,curve:0,len:0.95,bacteroid:true},
-    pato:  {label:'Bacilo, flagelos peritríquios',flag:'peri',n:5,curve:0,len:1.0}
+    pseudo:{label:'Bacilo, tufo polar',flag:'tuft',n:3,curve:0,len:1.0,v:1.15},
+    bacil: {label:'Bacilo, flagelos peritríquios',flag:'peri',n:6,curve:0,len:1.25,spore:true,v:0.9},
+    azo:   {label:'Víbrio, flagelo polar',flag:'polar',n:1,curve:0.35,len:1.0,v:1.05},
+    methy: {label:'Bacilo rosa com PHB',flag:'polar',n:1,curve:0,len:0.9,phb:true,v:0.85},
+    rhizo: {label:'Bacilo, flagelos peritríquios',flag:'peri',n:4,curve:0,len:0.95,bacteroid:true,v:0.8},
+    pato:  {label:'Bacilo, flagelos peritríquios',flag:'peri',n:5,curve:0,len:1.0,v:0.9}
   };
 
+  /* Movimento: o desenho nada sozinho, preso por uma "coleira" à posição que o motor calcula
+     (como o micélio). O motor continua decidindo para onde o organismo vai; a célula desenhada
+     nunca para e nunca gira no lugar: só muda de rumo enquanto anda.
+     - corre e cambalhota: corridas quase retas de ~1-2 s; peritríquias (Bacillus, rizóbio,
+       patógeno) trocam de rumo numa cambalhota curta (~70° ao acaso); as de flagelo polar ou tufo
+       (Pseudomonas, Azospirillum, Methylobacterium) dão ré e depois "viram" ~90° (flick);
+     - corridas na direção da posição do motor duram mais (como na quimiotaxia), e longe dela a
+       célula vai curvando de volta; assim, em média, ela anda o que o motor anda;
+     - velocidade própria pelo gene de propulsão (thr) e pelo grupo: variação natural. */
   class BacteriumBody{
     constructor(x,y,g,kind,seed){
       this.rand=prng(seed);const R=this.rand;
       this.kind=kind;this.K=KINDS[kind];
       this.L=clamp(((g.nd||3)-1)*(g.sl||1.5),2.2,4.6)*this.K.len;
       this.W=clamp(0.55+(g.th||0.8)*0.55,0.7,1.35);
-      this.c={x,y};this.heading=R()*TAU;this.turn=0;this.tumble=0;this.ph=R()*TAU;this.sp=0;
+      this.c={x,y};this.heading=R()*TAU;this.tumble=0;this.ph=R()*TAU;this.sp=0;
       this.spore=0;this.split=0;this.nod=false;
+      this.v0=(0.07+0.14*clamp(((g.thr||0.55)-0.3)/0.5,0,1))*this.K.v;   // px por passo (~4-14 px/s em 1x)
+      this.leash=10;this.back=false;this.dTurn=0;this.pend=null;this.aS=0;this.A=null;
+      this.o={x:0,y:0};this.dh=this.heading;this.vx=0;this.vy=0;
+      this.run=this._runLen();
       this.fl=[];for(let i=0;i<this.K.n;i++)this.fl.push({u:R(),side:i%2?1:-1,a:R()*TAU,len:0.8+0.4*R()});
     }
     get label(){return this.nod?'Bacteroide (dentro do nódulo)':this.K.label}
+    viewPos(){return this.nod?null:this.c}
+    _runLen(){return 40+this.rand()*80}
+    _startTumble(toA,d){
+      const R=this.rand;
+      if(this.K.flag==='peri'){                         // cambalhota: novo rumo ao acaso, com leve viés de volta
+        let sgn=R()<0.5?-1:1;
+        if(d>this.leash*0.6&&R()<0.7)sgn=wrap(toA-this.heading)<0?-1:1;
+        this.tumble=8+Math.floor(R()*6);this.dTurn=sgn*(0.7+R()*0.9)/this.tumble;this.pend=null;
+      }else if(!this.back){                             // polar/tufo: freia e dá ré
+        this.tumble=4;this.dTurn=0;this.pend='rev';
+      }else{                                            // depois da ré: "flick" de ~90°
+        this.back=false;const sgn=R()<0.5?-1:1;
+        this.tumble=6+Math.floor(R()*3);this.dTurn=sgn*(Math.PI/2)*(0.7+0.6*R())/this.tumble;this.pend=null;
+      }
+    }
 
     update(core,aim,hunting,rootX,rootTop,rootBottom,org){
-      // centro = média dos pontos do corpo do motor (a cabeça tremia com os "músculos" e
-      // fazia o bacilo girar em torno de um ponto); direção = velocidade média suavizada
-      let tx=core.x,ty=core.y;
-      if(org&&org.pts&&org.pts.length>1){tx=0;ty=0;for(const p of org.pts){tx+=p.x;ty+=p.y}tx/=org.pts.length;ty/=org.pts.length}
-      let dx=tx-this.c.x,dy=ty-this.c.y;
-      if(dx*dx+dy*dy>400){this.c.x=tx;this.c.y=ty;dx=dy=0;this.vx=this.vy=0}
-      const ox=this.c.x,oy=this.c.y;
-      this.c.x+=dx*0.15;this.c.y+=dy*0.15;
-      // direção só muda com deslocamento LÍQUIDO (últimos ~40 passos): parada ou tremendo no
-      // lugar, a célula mantém a orientação em vez de girar em torno de si mesma
-      const H=this.hist||(this.hist=[]);H.push(this.c.x,this.c.y);if(H.length>80)H.splice(0,2);
-      const ndx=this.c.x-H[0],ndy=this.c.y-H[1],net=Math.hypot(ndx,ndy);
-      const sp=net/(H.length/2);
-      this.sp+=(sp-this.sp)*0.2;
-      if(net>1.2){
-        const d=wrap(Math.atan2(ndy,ndx)-this.heading);
-        this.heading+=d*0.06;
-        if(Math.abs(d)>1.6&&this.tumble<=0)this.tumble=18;          // mudança brusca = cambalhota
+      const R=this.rand;
+      // posição do motor = média dos pontos do corpo (sem o tremor dos "músculos")
+      let ax=core.x,ay=core.y;
+      if(org&&org.pts&&org.pts.length>1){ax=0;ay=0;for(const p of org.pts){ax+=p.x;ay+=p.y}ax/=org.pts.length;ay/=org.pts.length}
+      if(!this.A||Math.hypot(ax-this.A.x,ay-this.A.y)>30){       // nascimento ou inoculação
+        this.A={x:ax,y:ay};this.c.x=ax;this.c.y=ay;this.hist=[];this.aS=0;this.o.x=this.o.y=0;
       }
-      if(this.tumble>0)this.tumble--;
-      this.ph+=0.55+this.sp*2;
+      const A=this.A;A.x+=(ax-A.x)*0.05;A.y+=(ay-A.y)*0.05;   // só o deslocamento de fato, sem o tremor
+      const H=this.hist;H.push(A.x,A.y);if(H.length>80)H.splice(0,2);  // deslocamento líquido do motor (~40 passos)
+      const aS=Math.hypot(A.x-H[0],A.y-H[1])/Math.max(1,H.length/2-1);
+      this.aS+=(aS-this.aS)*0.05;
       if(org){
         const e=org.e;
         this.nod=!!org.nodulated;
         this.split=clamp((e/REPRO_E-0.82)/0.18,0,1);                  // divisão binária
         if(this.K.spore)this.spore=clamp(this.spore+(e<900?0.006:-0.01),0,1);  // esporulação
       }
+      if(this.nod){this.c.x=A.x;this.c.y=A.y;this.o.x=this.o.y=0;this.tumble=0;return}
+      // nado próprio: deslocamento "o" em relação à posição do motor, preso pela coleira
+      const o=this.o,d=Math.hypot(o.x,o.y),toA=Math.atan2(-o.y,-o.x),Rl=this.leash;
+      let v=this.v0;
+      if(this.spore>0.5)v*=0.5;
+      if(this.tumble>0){                                 // reorientação curta, ainda se movendo devagar
+        this.tumble--;this.heading+=this.dTurn;v*=0.3;
+        if(this.tumble===0){if(this.pend==='rev')this.back=true;this.pend=null;this.run=this._runLen()*(this.back?0.6:1)}
+      }else{
+        const mv=this.heading+(this.back?Math.PI:0);
+        this.heading+=(R()-0.5)*0.05+this.K.curve*0.004;  // difusão rotacional (o víbrio descreve arcos)
+        if(d>Rl*1.3)this.heading+=clamp(wrap(toA-mv),-1,1)*0.06*Math.min(2,d/Rl-1);   // coleira: curva de volta
+        const cosA=d>Rl*0.5?Math.cos(wrap(toA-mv))*Math.min(1,d/Rl):0;
+        this.run-=1-0.7*cosA;                            // corrida de volta para o motor dura mais
+        if(this.run<=0&&!(d>Rl*1.3&&cosA>0.5))this._startTumble(toA,d);
+      }
+      const m=this.heading+(this.back?Math.PI:0);
+      o.x+=Math.cos(m)*v;o.y+=Math.sin(m)*v;
+      const px=this.c.x,py=this.c.y;
+      this.c.x=A.x+o.x;this.c.y=A.y+o.y;                 // posição desenhada = motor + nado próprio
+      if(rootTop!==undefined&&this.c.y<rootTop+1){this.c.y=rootTop+1;o.y=this.c.y-A.y;if(Math.sin(m)<0)this.heading=-this.heading}  // não sai do solo
+      // orientação desenhada = direção do movimento total; a célula só gira enquanto anda
+      this.vx+=((this.c.x-px)-this.vx)*0.25;this.vy+=((this.c.y-py)-this.vy)*0.25;
+      const spd=Math.hypot(this.vx,this.vy);
+      if(spd>0.01){
+        let tgt=Math.atan2(this.vy,this.vx);
+        if(this.back&&this.aS<v)tgt+=Math.PI;            // dando ré: anda para trás sem virar o corpo
+        const rate=this.tumble>0?0.3:spd/(0.5*this.L);   // fora da cambalhota, curva com raio ~ meio corpo
+        this.dh+=clamp(wrap(tgt-this.dh),-rate,rate);
+      }
+      this.sp=spd;this.ph+=0.5+spd*2.5;
     }
 
     draw(ctx,g,al,gc,org){
-      const K=this.K,c=this.nod&&org&&org._nodVis?org._nodVis:this.c,h=this.heading,L=this.L*(1+0.25*this.split),W=this.W;
+      const K=this.K,c=this.nod&&org&&org._nodVis?org._nodVis:this.c,h=this.dh,L=this.L*(1+0.25*this.split),W=this.W;
       const zoom=zoomOf(ctx),hx=Math.cos(h),hy=Math.sin(h),nx=-hy,ny=hx;
       const hs=(H,S,Li,A)=>`hsla(${H},${S}%,${Li}%,${A})`;
       ctx.save();ctx.lineCap='round';ctx.lineJoin='round';

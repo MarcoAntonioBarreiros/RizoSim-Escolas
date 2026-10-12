@@ -425,7 +425,7 @@
       clearSelection();
       return;
     }
-    const point=RizoSimEngine.worldToScreen(selectedOrganism.x,selectedOrganism.y);
+    const vp=selectedOrganism.vpos?selectedOrganism.vpos():selectedOrganism;const point=RizoSimEngine.worldToScreen(vp.x,vp.y);
     observeLabel.textContent=(RizoSimEngine.geometry.following?'Acompanhando ':'Observando ')+GUILDS[selectedOrganism.g.guild].name+'.';
     selectionRing.style.left=point.x+'px';
     selectionRing.style.top=point.y+'px';
