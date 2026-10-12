@@ -43,6 +43,14 @@ Regras comuns às quatro guildas:
 | Saprófito | cenocíticas (tipo Mucor) | esporângios escuros |
 | Micorriza | grossas, brancas, cenocíticas (Glomeromycota) | esporos de parede espessa; perto da raiz, uma hifa entra nela e forma arbúsculos e vesículas |
 | Arthrobotrys | septadas | alças adesivas; ao capturar, o nematoide se debate preso na alça |
+| Patógeno (parte dele) | septadas, branco-violáceas (tipo *Fusarium oxysporum*) | macroconídios em forma de canoa com septos e microconídios; uma hifa penetra a raiz e o tecido escurece, com a mancha subindo pelo xilema (murcha vascular) |
+
+**Tropismo pela raiz:**
+- **Micorriza:** perto da raiz, as hifas ramificam mais e se orientam para ela, como a resposta às estrigolactonas ([Akiyama et al. 2005](https://www.doi.org/10.1038/NATURE03608); [Sbrana & Giovannetti 2005](https://link.springer.com/doi/10.1007/s00572-005-0362-5)).
+- ***Fusarium*:** as hifas são atraídas de mais longe, como pelas peroxidases da raiz ([Turrà et al. 2015](https://doi.org/10.1038/nature15516)).
+- **Os dois:** quando a colônia chega a ~35 px da raiz, uma hifa vai até ela e entra.
+
+**Quais patógenos aparecem como *Fusarium*:** os de morfologia ramificada ou tentacular (genes `mt` 2 ou 4), cerca de um terço. É só aparência: a guilda continua a mesma do motor, com as mesmas regras.
 
 Com zoom pequeno, o desenho simplifica: some septos e pontas e ficam as hifas e as estruturas coloridas.
 

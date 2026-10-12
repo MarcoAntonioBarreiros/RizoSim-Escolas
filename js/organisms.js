@@ -96,7 +96,7 @@
       color:'#ef4444',
       pattern:'alerta',
       simple:'Pode causar estresse quando chega muito perto da raiz.',
-      science:'A guilda patogênica mantém ataque oportunista perto da raiz. O dano aumenta estresse e reduz biomassa, com resposta modulada pelo ferro solúvel local.'
+      science:'A guilda patogênica mantém ataque oportunista perto da raiz. O dano aumenta estresse e reduz biomassa, com resposta modulada pelo ferro solúvel local. Parte dos patógenos aparece como fungo do tipo Fusarium: as hifas são atraídas por substâncias da raiz (peroxidases), penetram e escurecem o tecido; os macroconídios têm forma de canoa.'
     },
     7:{
       name:'Cianobactéria',
@@ -146,7 +146,7 @@
       color:'#d4d4d8',
       pattern:'hifas',
       simple:'É um fungo parceiro: suas hifas entram na raiz e exploram o solo buscando fósforo para a planta.',
-      science:'Fungos micorrízicos arbusculares (Glomeromycota) têm hifas grossas sem septos e esporos grandes no solo. Dentro da raiz formam arbúsculos (onde trocam fósforo por carbono) e vesículas. O motor preserva a regra de rede hifal: consome carbono da planta/exsudatos e mobiliza fósforo em células vizinhas da grade.'
+      science:'Fungos micorrízicos arbusculares (Glomeromycota) têm hifas grossas sem septos e esporos grandes no solo. Perto da raiz, as estrigolactonas que ela libera (mais quando falta fósforo) fazem as hifas ramificarem e crescerem em direção a ela. Dentro da raiz formam arbúsculos (onde trocam fósforo por carbono) e vesículas. O motor preserva a regra de rede hifal: consome carbono da planta/exsudatos e mobiliza fósforo em células vizinhas da grade.'
     },
     12:{
       name:'Arthrobotrys',

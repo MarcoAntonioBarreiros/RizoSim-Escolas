@@ -375,6 +375,8 @@
       return 'Este Arthrobotrys está formando uma rede que pode funcionar como armadilha.';
     }
     if(gid===6){
+      if(org.skin&&org.skin.arbs&&org.skin.arbs.length)return 'Este patógeno é um fungo (tipo Fusarium): uma hifa penetrou a raiz e o tecido está escurecendo.';
+      if(org.skin&&org.skin.rootF>0)return 'Este patógeno é um fungo (tipo Fusarium): substâncias liberadas pela raiz atraem suas hifas.';
       if(nearRoot)return 'Este patógeno está perto da raiz e pode aumentar o estresse do feijão.';
       return 'Este patógeno está no solo e ainda não está em contato forte com a raiz.';
     }

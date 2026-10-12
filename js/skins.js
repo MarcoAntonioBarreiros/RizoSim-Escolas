@@ -20,6 +20,8 @@
       const g=org.g,gid=g.guild,seed=hash(gid,g.hue,g.sl,g.cs,g.th,x,y);
       if(gid===8&&root.AmoebaBody)return new root.AmoebaBody(x,y,g,seed);
       if(FUNGI[gid]&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,FUNGI[gid],seed);
+      // patógeno: indivíduos de morfologia ramificada/tentacular aparecem como Fusarium (só aparência)
+      if(gid===6&&(g.mt===2||g.mt===4)&&root.MyceliumBody)return new root.MyceliumBody(x,y,g,'fusa',seed);
       return null;
     }
   };

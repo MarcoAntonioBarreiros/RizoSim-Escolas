@@ -15,7 +15,11 @@
    - Saprófito: esporangióforos com esporângios escuros (tipo Mucor);
    - Micorriza: hifas grossas brancas, esporos globosos grandes e, encostando na raiz,
      arbúsculos (árvore de ramificação dicotômica dentro da célula cortical) e vesículas;
-   - Arthrobotrys: redes adesivas (alças) que capturam nematoides.
+   - Arthrobotrys: redes adesivas (alças) que capturam nematoides;
+   - Fusarium (aparência de parte dos patógenos): micélio branco-violáceo, macroconídios em
+     canoa com septos e microconídios; atraído pela raiz, penetra e escurece o tecido.
+   - Tropismo pela raiz: hifas de micorriza ramificam mais e se orientam para a raiz
+     (resposta às estrigolactonas); as de Fusarium são atraídas de mais longe (peroxidases).
 */
 (function(root){
   'use strict';
@@ -27,7 +31,8 @@
   const KINDS={
     tricho:{label:'Hifas septadas',Rmax:7.0,tipsMin:3,tipsMax:6,branch:0.10,angle:0.75,septa:true, width:0.28,life:700, maxSegs:64,feat:'conid',featP:0.07},
     sapro: {label:'Hifas cenocíticas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.65,septa:false,width:0.30,life:650, maxSegs:64,feat:'spor', featP:0.05},
-    myco:  {label:'Hifas de micorriza',Rmax:9.0,tipsMin:3,tipsMax:5,branch:0.07,angle:0.85,septa:false,width:0.42,life:900, maxSegs:64,feat:'spore',featP:0.025},
+    myco:  {label:'Hifas de micorriza',Rmax:9.0,tipsMin:3,tipsMax:5,branch:0.07,angle:0.85,septa:false,width:0.42,life:900, maxSegs:64,feat:'spore',featP:0.025,rootTrop:90,branchRoot:2.5,contact:'arb'},
+    fusa:  {label:'Hifas de Fusarium',Rmax:7.5,tipsMin:3,tipsMax:6,branch:0.09,angle:0.70,septa:true, width:0.26,life:700, maxSegs:64,feat:'macro',featP:0.06,rootTrop:120,branchRoot:0.8,contact:'lesion'},
     arthro:{label:'Hifas com armadilhas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.80,septa:true, width:0.28,life:750, maxSegs:64,feat:'trap', featP:0.08}
   };
 
@@ -69,27 +74,35 @@
       const R=this.rand,P=this.P,T=this.tips;
       this.t++;
       const tipSpeed=0.035+this.speed*1.3;   // extensão apical: lenta parada, acompanha a colônia quando ela avança
-      const nearRoot=live&&this.kind==='myco'&&rootX!==undefined&&Math.abs(cx-rootX)<35&&cy>rootTop&&cy<rootBottom+20;
+      // tropismo pela raiz (micorriza: estrigolactonas; Fusarium: peroxidases da raiz)
+      let rootF=0;
+      if(live&&P.rootTrop&&rootX!==undefined&&cy>rootTop){
+        const dr=Math.hypot(cx-rootX,Math.max(0,cy-rootBottom));
+        rootF=clamp(1-dr/P.rootTrop,0,1);
+      }
+      this.rootF=rootF;
+      const nearRoot=live&&P.contact&&rootX!==undefined&&Math.abs(cx-rootX)<35&&cy>rootTop&&cy<rootBottom+20;
       for(let k=T.length-1;k>=0;k--){
         const p=T[k];
         const ddx=p.x-cx,ddy=p.y-cy,d=Math.hypot(ddx,ddy);
         const out=d>0.3?Math.atan2(ddy,ddx):p.a;
         let steer=wrap(out-p.a)*0.025+wrap(this.heading-p.a)*0.012+(R()-0.5)*0.16;
+        if(rootF>0){const ry=clamp(p.y,rootTop+2,rootBottom);steer+=wrap(Math.atan2(ry-p.y,rootX-p.x)-p.a)*0.03*rootF}
         if(p.toRoot){const ry=clamp(p.y,rootTop+2,rootBottom);steer=wrap(Math.atan2(ry-p.y,rootX-p.x)-p.a)*0.045+(R()-0.5)*0.2}
         p.a+=steer;
-        const lim=p.toRoot?this.Rmax*2.2:this.Rmax;
+        const lim=p.toRoot?40:this.Rmax;               // a hifa que busca a raiz pode se estender além da colônia
         const gr=tipSpeed*clamp((lim-d)/1.5,0,1);
         if(gr<0.01){if(++p.idle>40){T.splice(k,1);continue}}else p.idle=0;
         p.x+=Math.cos(p.a)*gr;p.y+=Math.sin(p.a)*gr;p.acc+=gr;
         if(this.surf!==undefined&&p.y<this.surf+0.6){p.y=this.surf+0.6;p.a=Math.abs(p.a)}   // não sai do solo
-        if(p.toRoot&&Math.abs(p.x-rootX)<1.4){              // hifa entrou na raiz: arbúsculo
-          this.arbs.push({x:rootX+(p.x<rootX?-0.6:0.6),y:p.y,t0:this.t,side:p.x<rootX?-1:1,seed:R()});
+        if(p.toRoot&&Math.abs(p.x-rootX)<1.4){              // hifa entrou na raiz: arbúsculo (FMA) ou lesão (Fusarium)
+          this.arbs.push({x:rootX+(p.x<rootX?-0.6:0.6),y:p.y,t0:this.t,side:p.x<rootX?-1:1,seed:R(),type:P.contact});
           if(this.arbs.length>3)this.arbs.shift();
           this._seg(p);T.splice(k,1);continue;
         }
         if(p.acc>=this.segLen){
           this._seg(p);
-          if(T.length<P.tipsMax&&R()<P.branch){
+          if(T.length<P.tipsMax+2*rootF&&R()<P.branch*(1+(P.branchRoot||0)*rootF)){   // perto da raiz ramifica mais
             const s=R()<0.5?-1:1;this._tip(p.x,p.y,p.a+s*(P.angle+(R()-0.5)*0.4),p.gen+1);
           }
         }
@@ -104,7 +117,7 @@
         const a=moving?this.heading+(R()-0.5)*1.6:(best?Math.atan2(by-cy,bx-cx):R()*TAU)+(R()-0.5)*1.2;
         this._tip(bx,by,a,1);
       }
-      if(nearRoot&&!T.some(p=>p.toRoot)&&R()<0.01){         // micorriza: uma hifa procura a raiz
+      if(nearRoot&&!T.some(p=>p.toRoot)&&R()<0.01){         // uma hifa vai até a raiz e entra nela
         const S=this.segs;const s=S.length?S[S.length-1-Math.floor(R()*Math.min(10,S.length))]:null;
         if(s){this._tip(s.x2,s.y2,Math.atan2(0,rootX-s.x2),1);T[T.length-1].toRoot=true}
       }
@@ -144,17 +157,18 @@
       for(const s of this.segs){if(s.age>life)continue;ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2)}
       ctx.strokeStyle=hs(hue,sat,lit,0.7*(0.4+0.6*al));ctx.lineWidth=W;ctx.stroke();
       let col=null;const k=this.kind;
-      if(k==='tricho')col=`rgba(80,175,80,${0.85*al})`;else if(k==='sapro')col=`rgba(30,24,22,${0.9*al})`;else if(k==='myco')col=`rgba(214,150,70,${0.85*al})`;else col=hs(hue,60,80,0.7*al);
+      if(k==='tricho')col=`rgba(80,175,80,${0.85*al})`;else if(k==='fusa')col=`rgba(250,235,245,${0.85*al})`;else if(k==='sapro')col=`rgba(30,24,22,${0.9*al})`;else if(k==='myco')col=`rgba(214,150,70,${0.85*al})`;else col=hs(hue,60,80,0.7*al);
       ctx.beginPath();
       for(const s of this.segs){if(!s.feat||s.age<60||s.age>life)continue;ctx.moveTo(s.x2+0.6,s.y2);ctx.arc(s.x2,s.y2,0.6*this.scale,0,TAU)}
       if(k==='arthro'){ctx.strokeStyle=col;ctx.lineWidth=W*0.9;ctx.stroke()}else{ctx.fillStyle=col;ctx.fill()}
-      for(const A of this.arbs){ctx.fillStyle='rgba(250,250,245,0.7)';ctx.beginPath();ctx.arc(A.x,A.y,0.7,0,TAU);ctx.fill()}
+      for(const A of this.arbs){if(A.type==='lesion'){ctx.fillStyle='rgba(70,35,20,0.55)';ctx.beginPath();ctx.ellipse(A.x-A.side*0.6,A.y,1.3,3.2,0,0,TAU);ctx.fill()}else{ctx.fillStyle='rgba(250,250,245,0.7)';ctx.beginPath();ctx.arc(A.x,A.y,0.7,0,TAU);ctx.fill()}}
     }
 
     draw(ctx,g,al,gc){
       const P=this.P,k=this.kind,t=this.t;
       const hs=(h,s,l,a)=>`hsla(${h},${s}%,${l}%,${a})`;
-      const hue=g.hue,sat=k==='myco'?Math.min(g.sat,8):g.sat*0.55,lit=k==='myco'?88:Math.min(82,g.lit+18);
+      // Fusarium oxysporum: micélio branco-violáceo
+      const hue=k==='fusa'?300:g.hue,sat=k==='myco'?Math.min(g.sat,8):k==='fusa'?32:g.sat*0.55,lit=k==='myco'?88:k==='fusa'?84:Math.min(82,g.lit+18);
       const W=P.width*this.scale,life=P.life;
       const zoom=ctx.getTransform().a/(root.devicePixelRatio||1);
       ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=1;
@@ -199,6 +213,16 @@
           ctx.fillStyle=`rgba(214,150,70,${0.85*al})`;ctx.strokeStyle=`rgba(95,55,20,${0.95*al})`;ctx.lineWidth=0.28;
           ctx.beginPath();ctx.arc(ex,ey,r,0,TAU);ctx.fill();ctx.stroke();
           ctx.fillStyle=`rgba(255,235,190,${0.55*al})`;ctx.beginPath();ctx.arc(ex,ey,r*0.38,0,TAU);ctx.fill();
+        }else if(s.feat==='macro'){      // macroconídio em forma de canoa, com septos (+ microconídios)
+          const L=2.4*this.scale*m,mx=s.x2+Math.cos(a)*1.0,my=s.y2+Math.sin(a)*1.0,b=a+Math.PI/2;
+          const x0=mx-Math.cos(b)*L/2,y0=my-Math.sin(b)*L/2,x1=mx+Math.cos(b)*L/2,y1=my+Math.sin(b)*L/2;
+          const cxq=mx+Math.cos(a)*0.7*m,cyq=my+Math.sin(a)*0.7*m;
+          ctx.strokeStyle=`rgba(250,235,245,${0.9*al})`;ctx.lineWidth=0.55*m+0.1;ctx.beginPath();ctx.moveTo(x0,y0);ctx.quadraticCurveTo(cxq,cyq,x1,y1);ctx.stroke();
+          ctx.strokeStyle=`rgba(150,90,140,${0.7*al})`;ctx.lineWidth=0.08;ctx.beginPath();
+          for(let i=1;i<5;i++){const u=i/5,qx=(1-u)*(1-u)*x0+2*(1-u)*u*cxq+u*u*x1,qy=(1-u)*(1-u)*y0+2*(1-u)*u*cyq+u*u*y1;ctx.moveTo(qx+Math.cos(a)*0.28,qy+Math.sin(a)*0.28);ctx.lineTo(qx-Math.cos(a)*0.28,qy-Math.sin(a)*0.28)}
+          ctx.stroke();
+          ctx.fillStyle=`rgba(245,230,240,${0.8*al})`;
+          for(let i=0;i<3;i++){const c2=s.fs+i*2.1;ctx.beginPath();ctx.ellipse(s.x2+Math.cos(c2)*0.7,s.y2+Math.sin(c2)*0.7,0.28*m+0.05,0.17*m+0.04,c2,0,TAU);ctx.fill()}
         }else if(s.feat==='trap'){       // alça adesiva da rede (Arthrobotrys)
           const r=0.75*this.scale*m,ex=s.x2+Math.cos(a)*r,ey=s.y2+Math.sin(a)*r;
           ctx.strokeStyle=hs(hue,sat+10,lit-5,0.85*al);ctx.lineWidth=W*0.9;ctx.beginPath();ctx.arc(ex,ey,r,0,TAU);ctx.stroke();
@@ -208,6 +232,12 @@
       // arbúsculos e vesículas dentro da raiz (micorriza)
       for(const A of this.arbs){
         const age=t-A.t0,m=clamp(age/120,0,1)*clamp((900-age)/200,0,1);if(m<=0)continue;
+        if(A.type==='lesion'){         // Fusarium penetrou: tecido escurecido (murcha vascular)
+          ctx.fillStyle=`rgba(60,28,16,${0.7*m})`;ctx.beginPath();ctx.ellipse(A.x-A.side*0.6,A.y,1.1*m,2.6*m,0,0,TAU);ctx.fill();
+          ctx.strokeStyle=`rgba(90,40,25,${0.55*m})`;ctx.lineWidth=0.35;ctx.beginPath();ctx.moveTo(A.x-A.side*0.6,A.y-2*m);ctx.lineTo(A.x-A.side*0.6,A.y-7*m);ctx.moveTo(A.x-A.side*0.6,A.y+2*m);ctx.lineTo(A.x-A.side*0.6,A.y+7*m);ctx.stroke();   // escurecimento subindo pelo xilema
+          ctx.strokeStyle=`rgba(245,225,240,${0.8*m})`;ctx.lineWidth=0.18;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(A.x-A.side*1.2,A.y+0.4);ctx.lineTo(A.x-A.side*1.4,A.y+2.2*m);ctx.stroke();
+          continue;
+        }
         const sd=prng(Math.floor(A.seed*1e9));
         ctx.strokeStyle=`rgba(250,250,245,${0.85*m})`;ctx.lineWidth=0.14;
         const branch=(x,y,a,l,d)=>{const ex=x+Math.cos(a)*l,ey=y+Math.sin(a)*l;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ex,ey);ctx.stroke();
