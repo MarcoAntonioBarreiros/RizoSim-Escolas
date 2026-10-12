@@ -55,14 +55,16 @@
       if(dx*dx+dy*dy>400){this.c.x=tx;this.c.y=ty;dx=dy=0;this.vx=this.vy=0}
       const ox=this.c.x,oy=this.c.y;
       this.c.x+=dx*0.15;this.c.y+=dy*0.15;
-      const vx=this.c.x-ox,vy=this.c.y-oy;
-      this.vx=(this.vx||0)+(vx-(this.vx||0))*0.06;this.vy=(this.vy||0)+(vy-(this.vy||0))*0.06;
-      const sp=Math.hypot(this.vx,this.vy);
+      // direção só muda com deslocamento LÍQUIDO (últimos ~40 passos): parada ou tremendo no
+      // lugar, a célula mantém a orientação em vez de girar em torno de si mesma
+      const H=this.hist||(this.hist=[]);H.push(this.c.x,this.c.y);if(H.length>80)H.splice(0,2);
+      const ndx=this.c.x-H[0],ndy=this.c.y-H[1],net=Math.hypot(ndx,ndy);
+      const sp=net/(H.length/2);
       this.sp+=(sp-this.sp)*0.2;
-      if(sp>0.02){
-        const d=wrap(Math.atan2(this.vy,this.vx)-this.heading);
-        this.heading+=d*0.12;
-        if(Math.abs(d)>1.3&&this.tumble<=0)this.tumble=18;          // mudança brusca = cambalhota
+      if(net>1.2){
+        const d=wrap(Math.atan2(ndy,ndx)-this.heading);
+        this.heading+=d*0.06;
+        if(Math.abs(d)>1.6&&this.tumble<=0)this.tumble=18;          // mudança brusca = cambalhota
       }
       if(this.tumble>0)this.tumble--;
       this.ph+=0.55+this.sp*2;
