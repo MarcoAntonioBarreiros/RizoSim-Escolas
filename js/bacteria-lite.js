@@ -76,16 +76,17 @@
       }
     }
 
-    draw(ctx,g,al,gc){
-      const K=this.K,c=this.c,h=this.heading,L=this.L*(1+0.25*this.split),W=this.W;
+    draw(ctx,g,al,gc,org){
+      const K=this.K,c=this.nod&&org&&org._nodVis?org._nodVis:this.c,h=this.heading,L=this.L*(1+0.25*this.split),W=this.W;
       const zoom=zoomOf(ctx),hx=Math.cos(h),hy=Math.sin(h),nx=-hy,ny=hx;
       const hs=(H,S,Li,A)=>`hsla(${H},${S}%,${Li}%,${A})`;
       ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
       if(this.nod){                     // bacteroides em Y dentro do nódulo
-        ctx.strokeStyle=`rgba(255,245,200,${0.8*al})`;ctx.lineWidth=0.55;
-        for(let i=0;i<3;i++){const a=h+i*2.1,bx=c.x+Math.cos(a)*1.2,by=c.y+Math.sin(a)*1.2;
-          ctx.beginPath();ctx.moveTo(bx-Math.cos(a)*0.9,by-Math.sin(a)*0.9);ctx.lineTo(bx,by);
-          ctx.lineTo(bx+Math.cos(a+0.6)*0.8,by+Math.sin(a+0.6)*0.8);ctx.moveTo(bx,by);ctx.lineTo(bx+Math.cos(a-0.6)*0.8,by+Math.sin(a-0.6)*0.8);ctx.stroke()}
+        const k=c.r?clamp(c.r/3.2,0.6,1.3):1;            // cabem dentro do nódulo desenhado na raiz
+        ctx.strokeStyle=`rgba(255,245,200,${0.8*al})`;ctx.lineWidth=0.55*k;
+        for(let i=0;i<3;i++){const a=h+i*2.1,bx=c.x+Math.cos(a)*1.2*k,by=c.y+Math.sin(a)*1.2*k;
+          ctx.beginPath();ctx.moveTo(bx-Math.cos(a)*0.9*k,by-Math.sin(a)*0.9*k);ctx.lineTo(bx,by);
+          ctx.lineTo(bx+Math.cos(a+0.6)*0.8*k,by+Math.sin(a+0.6)*0.8*k);ctx.moveTo(bx,by);ctx.lineTo(bx+Math.cos(a-0.6)*0.8*k,by+Math.sin(a-0.6)*0.8*k);ctx.stroke()}
         ctx.restore();return;
       }
       const tailX=c.x-hx*L/2,tailY=c.y-hy*L/2;

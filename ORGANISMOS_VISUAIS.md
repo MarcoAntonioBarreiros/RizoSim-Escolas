@@ -67,7 +67,7 @@ A bactéria é uma célula rígida, que **não ondula como um verme**: é empurr
 | Bacillus | bacilo grande | peritríquios | com pouca energia forma endósporo refringente |
 | Azospirillum | bastonete curvo (vibrioide) | um polar | — |
 | Methylobacterium | bacilo rosa | polar | grânulos de PHB |
-| Rizóbio | bacilo | peritríquios | dentro do nódulo vira bacteroide (forma em Y, sem flagelos) |
+| Rizóbio | bacilo | peritríquios | dentro do nódulo vira bacteroide (forma em Y, sem flagelos); o nódulo é desenhado colado na superfície da raiz, com os bacteroides dentro |
 | Patógeno | bacilo | peritríquios | os que não aparecem como *Fusarium* |
 | Cianobactéria | tricoma (fila de células, tipo *Anabaena*/*Nostoc*) que desliza pelo próprio caminho | — | heterocistos a cada ~9 células |
 

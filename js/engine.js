@@ -383,7 +383,7 @@ physics() {
 draw(ctx,t){const g=this.g,gd=GUILDS[g.guild];const al=cl(this.e/1500,.2,.95);
 const gc=gd.color;const col=hs(g.hue,g.sat,g.lit,al),colB=hs(g.hue,g.sat,g.lit+15,al);
 ctx.lineCap="round";ctx.lineJoin="round";
-if(this.skin){this.skin.draw(ctx,g,al,gc,this);const eP=cl(this.e/C.REPRO_E,0,1),hd=this.core,bY=hd.y-(g.cs+5);ctx.fillStyle="rgba(255,255,255,0.08)";ctx.globalAlpha=1;ctx.fillRect(hd.x-6,bY,2,0.2);ctx.fillStyle=hs(eP>.5?120:eP>.25?50:0,80,50,.55);ctx.fillRect(hd.x-6,bY,2*eP,0.2);if(this.nodulated){ctx.beginPath();ctx.arc(this.core.x,this.core.y,4,0,Math.PI*2);ctx.fillStyle="rgba(200,60,70,0.22)";ctx.globalAlpha=1;ctx.fill();ctx.strokeStyle="rgba(160,30,40,0.55)";ctx.lineWidth=0.35;ctx.stroke()}ctx.globalAlpha=1;return}
+if(this.skin){this.skin.draw(ctx,g,al,gc,this);const nv=this.nodulated?this._nodVis:null;const eP=cl(this.e/C.REPRO_E,0,1),hd=nv||this.core,bY=hd.y-(g.cs+5);ctx.fillStyle="rgba(255,255,255,0.08)";ctx.globalAlpha=1;ctx.fillRect(hd.x-6,bY,2,0.2);ctx.fillStyle=hs(eP>.5?120:eP>.25?50:0,80,50,.55);ctx.fillRect(hd.x-6,bY,2*eP,0.2);if(this.nodulated&&!nv){ctx.beginPath();ctx.arc(this.core.x,this.core.y,4,0,Math.PI*2);ctx.fillStyle="rgba(200,60,70,0.22)";ctx.globalAlpha=1;ctx.fill();ctx.strokeStyle="rgba(160,30,40,0.55)";ctx.lineWidth=0.35;ctx.stroke()}ctx.globalAlpha=1;return}
 if(g.mt===0){const P=this.pts;if(P.length<2)return;for(let pass=0;pass<2;pass++){ctx.beginPath();ctx.moveTo(P[0].x,P[0].y);for(let i=0;i<P.length-1;i++){const xc=(P[i].x+P[i+1].x)/2,yc=(P[i].y+P[i+1].y)/2;ctx.quadraticCurveTo(P[i].x,P[i].y,xc,yc)}ctx.lineTo(P[P.length-1].x,P[P.length-1].y);ctx.strokeStyle=pass===0?gc:colB;ctx.lineWidth=pass===0?g.th:g.th*.35;ctx.globalAlpha=al;ctx.stroke()}ctx.beginPath();ctx.arc(P[0].x,P[0].y,g.cs,0,Math.PI*2);ctx.fillStyle=colB;ctx.globalAlpha=al;ctx.fill();const ea=this.hdg();ctx.beginPath();ctx.arc(P[0].x+Math.cos(ea)*g.cs*.5,P[0].y+Math.sin(ea)*g.cs*.5,cl(g.cs*.3,.5,1.8),0,Math.PI*2);ctx.fillStyle=`rgba(10,10,10,${al*.9})`;ctx.fill()}
 else if(g.mt===1){const ring=this.pts.slice(1);if(ring.length<3)return;ctx.beginPath();ctx.moveTo(ring[0].x,ring[0].y);for(let i=0;i<ring.length;i++){const nx=ring[(i+1)%ring.length];ctx.quadraticCurveTo(ring[i].x,ring[i].y,(ring[i].x+nx.x)/2,(ring[i].y+nx.y)/2)}ctx.closePath();ctx.fillStyle=hs(g.hue,g.sat,g.lit,al*.3);ctx.globalAlpha=al;ctx.fill();ctx.strokeStyle=gc;ctx.lineWidth=g.th*.6;ctx.stroke();ctx.strokeStyle=hs(g.hue,g.sat,g.lit+10,al*.15);ctx.lineWidth=.5;for(const r of ring){ctx.beginPath();ctx.moveTo(this.core.x,this.core.y);ctx.lineTo(r.x,r.y);ctx.stroke()}const pulse=1+.2*Math.sin(t*.004+this.age*g.spd);ctx.beginPath();ctx.arc(this.core.x,this.core.y,g.cs*pulse,0,Math.PI*2);ctx.fillStyle=colB;ctx.fill();if(gd.trophic==='photo'){const gr=ctx.createRadialGradient(this.core.x,this.core.y,0,this.core.x,this.core.y,g.sl*2.5);gr.addColorStop(0,`hsla(120,80%,50%,${al*.1})`);gr.addColorStop(1,`hsla(120,80%,50%,0)`);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(this.core.x,this.core.y,g.sl*2.5,0,Math.PI*2);ctx.fill()}}
 else if(g.mt===2){for(const b of this.bones){const isC=b.a===this.core;ctx.beginPath();ctx.moveTo(b.a.x,b.a.y);ctx.lineTo(b.b.x,b.b.y);ctx.strokeStyle=isC?colB:gc;ctx.lineWidth=isC?g.th*1.2:g.th*.7;ctx.globalAlpha=al;ctx.stroke()}ctx.fillStyle=hs(g.hue,g.sat,g.lit+10,al*.6);for(const p of this.pts){if(p===this.core)continue;ctx.beginPath();ctx.arc(p.x,p.y,g.th*.35,0,Math.PI*2);ctx.fill()}ctx.beginPath();ctx.arc(this.core.x,this.core.y,g.cs*1.2,0,Math.PI*2);ctx.fillStyle=colB;ctx.globalAlpha=al;ctx.fill();if(gd.trophic==='pred'||g.guild===6){ctx.beginPath();ctx.arc(this.core.x,this.core.y,g.cs*.5,0,Math.PI*2);ctx.fillStyle=`hsla(0,70%,45%,${al*.7})`;ctx.fill()}}
@@ -1652,8 +1652,16 @@ _LA.forEach(function(L){
     }
   }
 });
-_pp.nods.forEach(function(nd){if(!nd.nodOff)return;var nx=_pcx+nd.nodOff.x,ny=gY+nd.nodOff.y*growPct*2.5;if(ny<gY||ny>gY+_pRootD+10)return;
-  ctx.fillStyle=(typeof RizoSkins!=='undefined'&&RizoSkins.enabled)?'rgba(190,35,45,0.85)':'rgba(234,179,8,0.7)';ctx.beginPath();ctx.arc(nx,ny,2.5+growPct*2,0,Math.PI*2);ctx.fill()});
+_pp.nods.forEach(function(nd){if(!nd.nodOff)return;
+  if(typeof RizoSkins!=='undefined'&&RizoSkins.enabled){
+    /* camada visual: o nódulo fica colado na superfície da raiz, dentro do comprimento dela, e a
+       bactéria nodulada (bacteroides) é desenhada dentro dele — só desenho, o motor não muda */
+    var r=2.5+growPct*2,dy=cl(nd.nodOff.y*(plant.bio/100),r+1,Math.max(r+1,_pRootD-r-1)),y=gY+dy,side=nd.nodOff.x<0?-1:1;
+    var x=rootCenterXAt(y)+side*(rootWidthAt(y)+r*0.55);nd._nodVis={x:x,y:y,r:r};
+    ctx.fillStyle='rgba(190,35,45,0.85)';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(120,20,30,0.8)';ctx.lineWidth=0.3;ctx.stroke();return}
+  var nx=_pcx+nd.nodOff.x,ny=gY+nd.nodOff.y*growPct*2.5;if(ny<gY||ny>gY+_pRootD+10)return;
+  ctx.fillStyle='rgba(234,179,8,0.7)';ctx.beginPath();ctx.arc(nx,ny,2.5+growPct*2,0,Math.PI*2);ctx.fill()});
 
 /* Gradiente exsudato - sutil */
 const exG=ctx.createRadialGradient(_pcx,gY+_pRootD*0.5,3,_pcx,gY+_pRootD*0.5,_pRootD*0.7);

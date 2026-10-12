@@ -29,11 +29,11 @@
   function prng(seed){let s=seed>>>0||1;return function(){s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
   const KINDS={
-    tricho:{label:'Hifas septadas',Rmax:7.0,tipsMin:3,tipsMax:6,branch:0.10,angle:0.75,septa:true, width:0.28,life:700, maxSegs:48,feat:'conid',featP:0.07},
-    sapro: {label:'Hifas cenocíticas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.65,septa:false,width:0.30,life:650, maxSegs:48,feat:'spor', featP:0.05},
-    myco:  {label:'Hifas de micorriza',Rmax:9.0,tipsMin:3,tipsMax:5,branch:0.07,angle:0.85,septa:false,width:0.42,life:900, maxSegs:48,feat:'spore',featP:0.025,rootTrop:90,branchRoot:2.5,contact:'arb'},
-    fusa:  {label:'Hifas de Fusarium',Rmax:7.5,tipsMin:3,tipsMax:6,branch:0.09,angle:0.70,septa:true, width:0.26,life:700, maxSegs:48,feat:'macro',featP:0.06,rootTrop:120,branchRoot:0.8,contact:'lesion'},
-    arthro:{label:'Hifas com armadilhas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.80,septa:true, width:0.28,life:750, maxSegs:48,feat:'trap', featP:0.08}
+    tricho:{label:'Hifas septadas',Rmax:7.0,tipsMin:3,tipsMax:6,branch:0.10,angle:0.75,septa:true, width:0.28,life:700, maxSegs:64,feat:'conid',featP:0.07},
+    sapro: {label:'Hifas cenocíticas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.65,septa:false,width:0.30,life:650, maxSegs:64,feat:'spor', featP:0.05},
+    myco:  {label:'Hifas de micorriza',Rmax:9.0,tipsMin:3,tipsMax:5,branch:0.07,angle:0.85,septa:false,width:0.42,life:900, maxSegs:64,feat:'spore',featP:0.025,rootTrop:90,branchRoot:2.5,contact:'arb'},
+    fusa:  {label:'Hifas de Fusarium',Rmax:7.5,tipsMin:3,tipsMax:6,branch:0.09,angle:0.70,septa:true, width:0.26,life:700, maxSegs:64,feat:'macro',featP:0.06,rootTrop:120,branchRoot:0.8,contact:'lesion'},
+    arthro:{label:'Hifas com armadilhas',Rmax:8.0,tipsMin:3,tipsMax:6,branch:0.09,angle:0.80,septa:true, width:0.28,life:750, maxSegs:64,feat:'trap', featP:0.08}
   };
 
   class MyceliumBody{
@@ -45,7 +45,7 @@
       this.Rmax=this.P.Rmax*this.scale;
       this.c={x,y};this.heading=R()*TAU;this.speed=0.1;
       this.t=0;this.segs=[];this.tips=[];this.events=[];this.arbs=[];
-      this.segLen=1.3+0.3*R();
+      this.segLen=0.8+0.3*R();
       const n=this.P.tipsMin+1;
       for(let k=0;k<n;k++)this._tip(x,y,k/n*TAU+R()*0.6,0);
       this.pre=true;                 // pré-crescimento na 1ª atualização (quando já se sabe onde é a superfície)
