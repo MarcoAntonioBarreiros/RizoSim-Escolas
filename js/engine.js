@@ -8,6 +8,7 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
   GUILD_SHARE:{bact:0.3,fungi:0.5},   /* espaço máx. de um grupo sozinho dentro do seu tipo (bactérias: vários grupos convivem) */
   NEMA_COOL:4,
   NICHE_EXCL:0.18,    /* cada bactéria benéfica vizinha reduz o ataque do patógeno à raiz (competição por sítio) */
+  WOUND_SYN:1.5,      /* com a raiz muito ferida por nematoides, o ataque do patógeno chega a 2,5× */
   ANTIB_STATIC:1,     /* antibiose (Bacillus + 0,6×Pseudomonas vizinhos): a partir de 1, bacteriostática — o patógeno não cresce nem se divide */
   ANTIB_KILL:3,       /* a partir de 3, bactericida */
   ANTIB_KILL_DMG:12,  /* energia/passo perdida sob dose bactericida */
@@ -704,6 +705,7 @@ plant.limitFactor=limN<=limP&&limN<=limFe?'N':limP<=limFe?'P':'Fe';
 if(liebig>0.1){
   plant.bio+=0.04*liebig*env.nutRet;
   plant.stress-=0.04*liebig; /* recuperação proporcional ao liebig */
+  plant.wound=(plant.wound||0)*0.998; /* feridas de nematoide cicatrizam em ~10 s (1x) depois que o ataque para */
   plant.n-=0.008;plant.p-=0.008;plant.fe-=0.002;
 } else if(liebig>0.03){
   /* zona intermediária: crescimento lento, estresse leve */
@@ -817,8 +819,11 @@ else if(gid===6){/* Patógeno */
      (2) antibiose — lipopeptídeos do Bacillus (iturina, fengicina, surfactina) e metabólitos/sideróforos
          da Pseudomonas. Abaixo de um limiar é bacteriostática (o patógeno não cresce nem se divide);
          acima dele é bactericida (o patógeno perde energia e morre). */
+  /* sinergia: as feridas abertas pelos nematoides são porta de entrada (complexo Meloidogyne–Fusarium):
+     perto da raiz ferida o patógeno ataca mais e, dentro do tecido, fica menos exposto à antibiose */
+  const woundF=isNearRoot&&dRootX<15?1+C.WOUND_SYN*(plant.wound||0)/((plant.wound||0)+5):1;
   let benef=0;for(const k of [0,1,2,3,5])benef+=(_guildCounts[k]||0);
-  const antib=((_guildCounts[1]||0)+0.6*(_guildCounts[0]||0))/envP;
+  const antib=((_guildCounts[1]||0)+0.6*(_guildCounts[0]||0))/(envP*woundF);
   const kill=antib>=C.ANTIB_KILL,stat=!kill&&antib>=C.ANTIB_STATIC;
   if(kill){s.e-=C.ANTIB_KILL_DMG;if(tk%6===0)fx.push({x:hd.x,y:hd.y,life:12,type:'shield'})}
   if(stat||kill)s.reproCool=Math.max(s.reproCool,30);
@@ -827,7 +832,7 @@ else if(gid===6){/* Patógeno */
     if(s.age-s.lastAte>=C.DIGEST_TICKS){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R){
       s.e+=C.EXU_ENERGY*s.g.eff*Math.max(0.15,exConc)*(f.det?0.4:1.0)*0.7;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}
   }
-  if(isNearRoot&&dRootX<15){let atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog*envP/(1+C.NICHE_EXCL*benef);
+  if(isNearRoot&&dRootX<15){let atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog*envP*woundF/(1+C.NICHE_EXCL*benef);
     if(stat||kill)atkRate*=0.3;
     plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;if(!stat&&!kill)s.e+=atkRate*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}
 
@@ -890,7 +895,7 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
   else if(!s.cyst&&s.age-s.lastAte>=C.DIGEST_TICKS*2){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R+5){s.e+=300;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}}
 
 else if(gid===9){/* Nematóide herbívoro — dano às raízes + bacterívoro/predador oportunista */
-  if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.055;plant.bio-=herbRate*0.002;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
+  if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.055;plant.wound=(plant.wound||0)+herbRate*0.04; /* feridas na raiz */plant.bio-=herbRate*0.002;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
   /* Bacterívoro oportunista — come bactérias e fungos no caminho */
   if(s.age-s.lastAte>=C.DIGEST_TICKS*3){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.nodulated)continue;
   const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&preyGd.type!=='fungi')continue;

@@ -63,6 +63,7 @@ Antes, a população tinha só um teto total (280) e quem se reproduzia mais rá
 | Nodulação | probabilidade por passo 0,3% (N baixo), 0,1% (N médio), 0,03% (N alto); máx. 3 a 12 nódulos conforme o tamanho da planta; bacteroides no nódulo não são predados | a infecção leva tempo e a planta autorregula a nodulação |
 | Proteção contra o patógeno | competição por sítio: cada benéfica vizinha reduz o ataque (fator 0,18); antibiose = Bacillus + 0,6×Pseudomonas vizinhos: a partir de 1 é bacteriostática (o patógeno não cresce nem se divide), a partir de 3 é bactericida (perde 12 de energia por passo) | o patógeno ataca a planta saudável; com benéficas a doença diminui, com muitas ela é eliminada |
 | Patógeno bacteriano | divide-se no ciclo rápido das bactérias e come exsudatos na rizosfera | patógenos de solo colonizam a rizosfera antes de atacar |
+| Sinergia nematoide–patógeno | o dano dos nematoides abre feridas na raiz (cicatrizam em ~10 s em 1x); perto da raiz ferida o ataque do patógeno chega a 2,5× e a antibiose rende proporcionalmente menos | complexo *Meloidogyne*–*Fusarium*: feridas são porta de entrada |
 | Triângulo da doença | umidade > 80% soma 0,6 e temperatura > 32 °C soma 0,4 ao fator ambiental, que aumenta o ataque e divide a antibiose | encharcamento e calor favorecem surtos |
 
 ## Imprevistos naturais (`js/imprevistos.js`)
