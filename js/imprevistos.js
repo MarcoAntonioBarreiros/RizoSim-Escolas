@@ -146,7 +146,9 @@
     const st=E.state;
     if(lastTick===null||st.tick<lastTick){lastTick=st.tick;if(nextAt===null)schedule();return}
     const dt=st.tick-lastTick;lastTick=st.tick;
-    if(st.paused||!enabled()){return}
+    if(st.paused)return;
+    /* imprevistos desligados: nada espontâneo, mas o que o professor provocou continua até o fim */
+    if(!enabled()){if(active){runTicks+=dt;stepEvent()}return}
     advance(dt);
   },500);
   function advance(dt){

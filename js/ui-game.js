@@ -39,8 +39,10 @@
   const pip=document.createElement('div');
   pip.className='game-pipette';pip.hidden=true;
   pip.innerHTML='<span id="gmPipText">Toque no solo para colocar</span><button type="button" id="gmPipDone">Concluir</button>';
+  /* rodapé de notícias (como no telejornal): sempre visível, mostra os acontecimentos em tempo real */
   const ticker=document.createElement('button');
-  ticker.type='button';ticker.className='game-ticker';ticker.hidden=true;
+  ticker.type='button';ticker.className='game-news';ticker.setAttribute('aria-live','polite');
+  ticker.innerHTML='<span class="gn-tag">AGORA</span><span class="gn-view"><span class="gn-text" id="gnText">A simulação está começando.</span></span><span class="gn-more" id="gnMore" hidden></span><span class="gn-go" aria-hidden="true">?</span>';
   const cw=$('cw');
   cw.appendChild(hud);cw.appendChild(pip);cw.appendChild(ticker);
   /* cliques nos controles não chegam ao solo (não selecionam organismo nem colocam pipeta) */
@@ -166,19 +168,57 @@
   });
   setInterval(syncHud,300);syncHud();
 
-  /* ── último acontecimento em uma faixa sobre o solo; tocar abre a explicação ── */
-  const list=$('childEventList');let tickTimer=null,lastText='';
-  function showTicker(){
-    const first=list?.querySelector('li');if(!first)return;
-    const text=first.querySelector('p')?.textContent||'';
-    if(!text||text===lastText)return;
-    lastText=text;ticker.textContent=text;ticker.hidden=false;ticker.classList.remove('is-out');
-    clearTimeout(tickTimer);tickTimer=setTimeout(()=>ticker.classList.add('is-out'),7000);
+  /* ── rodapé de notícias ──
+     Cada acontecimento novo fica na tela pelo menos 4 s (ou até o texto longo terminar de correr).
+     Imprevistos e avisos de clima entram na hora; os de rotina esperam a vez (no máximo 2 na fila),
+     para o rodapé não se atrasar. Texto que não cabe corre da direita
+     para a esquerda, como o letreiro do telejornal. Quando a fila acaba, o último continua visível.
+     Tocar abre a explicação ("Entenda") do acontecimento que está na tela. */
+  const list=$('childEventList'),gnText=$('gnText'),gnMore=$('gnMore');
+  /* prioridade: imprevistos e avisos de clima (prioridade 4) furam a fila e entram na hora;
+     os avisos de rotina esperam a vez e, se acumulam, ficam só os 2 mais recentes */
+  const prio=new Map();
+  if(window.RizoSchoolEvents){const add0=RizoSchoolEvents.add;RizoSchoolEvents.add=function(item){if(item&&item.message)prio.set(item.message.trim(),item.priority||1);return add0.apply(this,arguments)}}
+  let prev=new Set();const queue=[];let showing=null,shownAt=0,showingTop=false;
+  function harvest(){
+    if(!list)return;
+    const now=new Set(),fresh=[];
+    list.querySelectorAll('li p').forEach(p=>{const t=p.textContent.trim();if(!t)return;now.add(t);if(!prev.has(t))fresh.push(t)});
+    prev=now;
+    for(const t of fresh){
+      if((prio.get(t)||0)>=4){
+        queue.unshift(t);
+        if(!showingTop)shownAt=-1e9;   /* interrompe a notícia de rotina que está na tela */
+      }else queue.push(t);
+    }
+    const top=queue.filter(t=>(prio.get(t)||0)>=4),rest=queue.filter(t=>(prio.get(t)||0)<4).slice(-2);
+    queue.length=0;queue.push(...top,...rest);
+    pump();
   }
-  if(list)new MutationObserver(showTicker).observe(list,{childList:true});
+  let holdMs=4000;
+  function pump(){
+    gnMore.hidden=queue.length===0;gnMore.textContent=queue.length?'+'+queue.length:'';
+    if(!queue.length)return;
+    if(showing&&performance.now()-shownAt<holdMs)return;
+    showing=queue.shift();shownAt=performance.now();showingTop=(prio.get(showing)||0)>=4;
+    ticker.classList.toggle('is-alert',showingTop);
+    ticker.querySelector('.gn-tag').textContent=showingTop?'ALERTA':'AGORA';
+    gnMore.hidden=queue.length===0;gnMore.textContent=queue.length?'+'+queue.length:'';
+    ticker.classList.remove('is-new');void ticker.offsetWidth;ticker.classList.add('is-new');
+    gnText.textContent=showing;gnText.classList.remove('is-crawl');gnText.style.removeProperty('--crawl');holdMs=4000;
+    requestAnimationFrame(()=>{
+      const view=gnText.parentElement,over=gnText.scrollWidth-view.clientWidth;
+      if(over>4){const dur=Math.max(4,over/60+2.5);gnText.style.setProperty('--crawl',(-over-16)+'px');gnText.style.animationDuration=dur+'s';gnText.classList.add('is-crawl');holdMs=dur*1000+1500}   /* fica até o letreiro terminar de correr */
+    });
+  }
+  if(list)new MutationObserver(harvest).observe(list,{childList:true});
+  setInterval(pump,500);
+  /* o que já estava na lista ao abrir a página não vira notícia nova */
+  list?.querySelectorAll('li p').forEach(p=>prev.add(p.textContent.trim()));
   ticker.addEventListener('click',e=>{
     e.stopPropagation();
-    const btn=list?.querySelector('li [data-event-index="0"]');
+    const li=[...(list?.querySelectorAll('li')||[])].find(item=>item.querySelector('p')?.textContent.trim()===showing);
+    const btn=li?.querySelector('[data-event-index]');
     if(btn)btn.click();else openMenu('eventos');
   });
 

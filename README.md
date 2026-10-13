@@ -59,7 +59,8 @@ tests/regression.js
 Em telas estreitas (até 900 px) ou baixas com toque (celular deitado), a simulação ocupa a tela inteira e o resto vira um menu de pausa, como em um jogo (`js/ui-game.js`):
 
 - **☰** pausa e abre o menu: Organismos (observar/adicionar), Feijão (indicadores), Acontecimentos, Professor (mapas, solo, provocar, gráficos) e Mais (cenários, reiniciar, ajuda, tela cheia). **Continuar ▶** fecha e retoma.
-- **⏸/▶** e **1x/2x/Aula** ficam sempre visíveis; o último acontecimento aparece numa faixa embaixo (tocar abre a explicação).
+- **⏸/▶** e **1x/2x/Aula** ficam sempre visíveis.
+- **Rodapé de notícias** (como no telejornal), sempre visível: os acontecimentos passam em tempo real; texto longo corre da direita para a esquerda. Imprevistos e avisos de clima entram na hora, com a etiqueta **ALERTA**; os de rotina (**AGORA**) esperam a vez. Tocar no rodapé abre a explicação do que está na tela; o histórico fica no menu.
 - Ao "Adicionar", o menu fecha e cada toque no solo coloca o organismo; **Concluir** encerra.
 - "Ver como página" (em Mais) volta ao layout antigo naquele aparelho; um botão "⛶ Tela cheia" desfaz a escolha.
 - No computador nada muda. Para testar no computador: `index.html?modo=jogo`; para forçar a página: `?modo=pagina`.
