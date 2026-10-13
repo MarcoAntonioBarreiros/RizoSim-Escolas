@@ -10,7 +10,8 @@
       ferramentas). O clima muda aos poucos e depois volta ao que era.
 
    Só conta o tempo com a simulação rodando (pausada ou nos testes com step(), nada acontece).
-   O professor pode desligar no painel do modo professor ("Imprevistos naturais"). */
+   O professor pode desligar na barra do modo professor ("Imprevistos naturais") e provocar cada
+   acontecimento na hora ("Provocar"). */
 (function(){
   'use strict';
   const E=window.RizoSimEngine,ENV=window.RizoSchoolEnvironment;
@@ -37,15 +38,26 @@
   const origApply=ENV.applyScenario;
   ENV.applyScenario=function(id){
     const sc=ENV.scenarios.find(s=>s.id===id)||ENV.scenarios[0];
-    baseValues={...sc.values};
+    baseValues={...sc.values};userSet={};
     if(!enabled())return origApply(id);
     const saved=sc.values;sc.values=jitter(saved);
     try{return origApply(id)}finally{sc.values=saved;stopEvent(false);schedule()}
   };
+  /* Reiniciar mantém o que o professor escolheu: o tipo de solo (antes voltava sempre para franco)
+     e os controles que ele mexeu à mão; o resto é sorteado de novo em torno do cenário. */
+  const INPUTS={rT:'temp',rPH:'ph',rM:'moist',rLI:'light',rIC:'organicC',rINH4:'NH4',rINO3:'NO3',rIPf:'PO4free',rIPb:'PO4bound',rIFe3:'Fe3',rIFe2:'Fe2'};
+  let userSet={};
+  document.addEventListener('input',event=>{const k=INPUTS[event.target&&event.target.id];if(k&&event.isTrusted)userSet[k]=true});
   const origReset=E.reset;
   E.reset=function(){
-    if(enabled())E.configure(jitter(baseValues));
-    stopEvent(false);schedule();
+    stopEvent(true);
+    if(enabled()){
+      const v=jitter(baseValues),cur=E.state.env;
+      for(const id in INPUTS){const k=INPUTS[id];if(userSet[k]){const el=document.getElementById(id);if(el)v[k]=+el.value}}
+      v.soil=cur.soil;
+      E.configure(v);
+    }
+    schedule();
     return origReset.apply(this,arguments);
   };
 
@@ -71,9 +83,19 @@
      detail:'Nematoides chegam com solo e mudas contaminados ou com a água. Fungos como Arthrobotrys podem capturá-los; sem inimigos naturais, eles danificam a raiz.'}
   ];
   let runTicks=0,lastTick=null,nextAt=null,active=null;
-  function schedule(){nextAt=runTicks+rnd(2500,6000)}   // ~40 s a 1,7 min em 1x
+  function schedule(){nextAt=runTicks+rnd(7000,12500)}  // ~2 a 3,5 min em 1x: dá tempo de ver a resposta e a recuperação
+  const ICON={seca:'☀',chuva:'🌧',calor:'🔥',frio:'❄',patogeno:'🦠',nematoide:'🪱'};
+  let badge=null,badgeTimer=null;
+  function showBadge(text,ms){
+    const host=document.getElementById('cw');if(!host)return;
+    if(!badge){badge=document.createElement('div');badge.className='event-badge is-hidden';badge.setAttribute('aria-live','polite');host.appendChild(badge)}
+    badge.textContent=text;badge.classList.remove('is-hidden');
+    clearTimeout(badgeTimer);if(ms)badgeTimer=setTimeout(()=>badge.classList.add('is-hidden'),ms);
+  }
+  function hideBadge(){if(badge)badge.classList.add('is-hidden')}
   function announce(ev,end){
     const text=end?ev.endMsg:ev.msg;
+    if(!end)showBadge(ICON[ev.id]+' '+ev.title,ev.arrive!==undefined?9000:0);else showBadge(ICON[ev.id]+' '+text,6000);
     if(window.RizoSchoolEvents)RizoSchoolEvents.add({priority:4,key:'imprev-'+ev.id+(end?'-fim':''),message:text,title:ev.title,detail:ev.detail});
     if(typeof addEv==='function')addEv('eD','🌦 '+text);
   }
@@ -82,8 +104,8 @@
     for(const e of EVENTS){r-=e.w;if(r<=0)return e}
     return EVENTS[0];
   }
-  function startEvent(){
-    const ev=pick();
+  function startEvent(forced){
+    const ev=forced||pick();
     if(ev.arrive!==undefined){
       const g=E.geometry,n=Math.round(rnd(ev.n[0],ev.n[1]));
       const side=Math.random()<0.5?-1:1,x=g.wCx+side*rnd(25,90),y=g.gY+rnd(15,Math.min(110,g.rootDepth+40));
@@ -97,7 +119,14 @@
   }
   function stopEvent(restore){
     if(active&&restore)E.configure({[active.ev.key]:active.base});
+    if(active)hideBadge();
     active=null;
+  }
+  /* professor provoca um acontecimento: substitui o que estiver em curso */
+  function trigger(id){
+    const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
+    stopEvent(true);startEvent(ev);if(!active)schedule();
+    if(E.state.paused)E.setPaused(false);
   }
   function stepEvent(){
     const a=active,key=a.ev.key,cur=E.state.env[key];
@@ -125,5 +154,5 @@
   // começo da sessão: condições já variadas
   window.addEventListener('load',()=>{if(enabled()){E.resetWith(jitter(baseValues));schedule()}});
 
-  window.RizoSchoolImprevistos={jitter,events:EVENTS,get active(){return active?active.ev.id:null},advance,get debug(){return {runTicks,nextAt,active:active&&{id:active.ev.id,base:active.base,target:active.target,until:active.until,returning:active.returning}}},start:startEvent};
+  window.RizoSchoolImprevistos={jitter,events:EVENTS,get active(){return active?active.ev.id:null},advance,get debug(){return {runTicks,nextAt,active:active&&{id:active.ev.id,base:active.base,target:active.target,until:active.until,returning:active.returning}}},start:startEvent,trigger};
 })();

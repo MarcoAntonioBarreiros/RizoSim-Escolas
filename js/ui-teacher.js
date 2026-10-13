@@ -1,7 +1,9 @@
 (function(){
   const drawer=document.getElementById('sb');
   const overlay=document.getElementById('sbOverlay');
-  const openBtn=document.getElementById('teacherBtn');
+  const modeBtn=document.getElementById('teacherBtn');
+  const openBtn=document.getElementById('teacherPanelBtn');
+  const bar=document.getElementById('teacherBar');
   const closeBtn=document.getElementById('teacherClose');
 
   function openTeacher(){
@@ -32,6 +34,20 @@
     update();
   }
 
+  /* Modo professor: liga uma barra de ferramentas no topo (mapa, tipo de solo, provocar acontecimentos,
+     imprevistos). Os gráficos detalhados e os controles finos ficam no painel lateral ("Gráficos e controles"). */
+  function setTeacherMode(on){
+    if(bar)bar.hidden=!on;
+    document.body.classList.toggle('teacher-on',on);
+    modeBtn?.setAttribute('aria-pressed',on?'true':'false');
+    if(modeBtn)modeBtn.textContent=on?'Sair do modo professor':'Modo professor';
+    if(!on){if(drawer.classList.contains('is-open'))closeTeacher();RizoSimEngine.setHeatmap('off');const sel=document.getElementById('selHM');if(sel)sel.value='off'}
+  }
+  modeBtn?.addEventListener('click',()=>setTeacherMode(!document.body.classList.contains('teacher-on')));
+  bar?.addEventListener('click',event=>{
+    const b=event.target.closest('[data-event]');if(!b)return;
+    if(window.RizoSchoolImprevistos)RizoSchoolImprevistos.trigger(b.dataset.event);
+  });
   openBtn?.addEventListener('click',openTeacher);
   closeBtn?.addEventListener('click',closeTeacher);
   overlay?.addEventListener('click',closeTeacher);
@@ -60,6 +76,7 @@
 
   window.RizoTeacherUI={
     open:openTeacher,
-    close:closeTeacher
+    close:closeTeacher,
+    setMode:setTeacherMode
   };
 })();

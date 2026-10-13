@@ -69,5 +69,7 @@ Antes, a população tinha só um teto total (280) e quem se reproduzia mais rá
 ## Imprevistos naturais (`js/imprevistos.js`)
 
 - Ao escolher um cenário ou reiniciar, temperatura, pH, umidade, nutrientes, C orgânico, ferro e luz são sorteados em torno dos valores do cenário. O que caracteriza o cenário varia pouco.
-- Com a simulação rodando, a cada ~40 s a 1,7 min (em 1x) pode acontecer (seca e chuva forte são os mais comuns): veranico, chuva forte (encharcamento), onda de calor, frente fria, chegada de patógenos ou de nematoides. O clima muda aos poucos e volta ao que era. Cada acontecimento aparece em "O que está acontecendo?".
-- O professor desliga em "Imprevistos naturais" no painel do modo professor.
+- Com a simulação rodando, a cada ~2 a 3,5 min (em 1x; o primeiro só depois de ~2 min, para a comunidade se formar) pode acontecer (seca e chuva forte são os mais comuns): veranico, chuva forte (encharcamento), onda de calor, frente fria, chegada de patógenos ou de nematoides. O clima muda aos poucos e volta ao que era. Cada acontecimento aparece em "O que está acontecendo?".
+- No modo professor, a barra do topo tem "Provocar" (veranico, chuva forte, calor, frio, patógenos, nematoides) e a caixa "Imprevistos naturais" para desligar os espontâneos. O acontecimento em curso aparece num selo sobre o solo.
+- Reiniciar mantém o tipo de solo e os controles que o professor mexeu à mão.
+- A recuperação do estresse da planta é mais lenta com patógenos e nematoides na raiz e mais rápida com bactérias benéficas e micorriza colonizando a raiz.

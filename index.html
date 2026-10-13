@@ -30,9 +30,37 @@
         <button id="scenarioBtn" class="command" type="button" aria-expanded="false" aria-controls="scenarioPanel">Cenários</button>
         <button id="helpBtn" class="command" type="button">Ajuda</button>
         <button id="fullscreenBtn" class="icon-command" type="button" aria-label="Tela cheia" title="Tela cheia">⛶</button>
-        <button id="teacherBtn" class="teacher-link" type="button" aria-controls="sb" aria-expanded="false">Modo professor</button>
+        <button id="teacherBtn" class="teacher-link" type="button" aria-pressed="false">Modo professor</button>
       </nav>
     </header>
+
+    <div id="teacherBar" class="teacher-bar" hidden>
+      <label class="tb-group"><span>Mapa</span><select id="selHM">
+        <option value="off">desligado</option>
+        <option value="NH4">NH4+</option>
+        <option value="NO3">NO3-</option>
+        <option value="PO4free">Fósforo livre</option>
+        <option value="Fe2">Fe2+</option>
+        <option value="Fe3">Fe3+</option>
+        <option value="organicC">Carbono orgânico</option>
+        <option value="O2">Oxigênio</option>
+      </select></label>
+      <div class="tb-group"><span>Solo</span><div class="soil-buttons" role="group" aria-label="Tipo de solo">
+        <button id="sSandy" type="button" onclick="setSoil('sandy')">Arenoso</button>
+        <button id="sLoam" class="act" type="button" onclick="setSoil('loam')">Franco</button>
+        <button id="sClay" type="button" onclick="setSoil('clay')">Argiloso</button>
+      </div></div>
+      <div class="tb-group" role="group" aria-label="Provocar acontecimento"><span>Provocar</span>
+        <button type="button" class="tb-ev" data-event="seca">☀ Veranico</button>
+        <button type="button" class="tb-ev" data-event="chuva">🌧 Chuva forte</button>
+        <button type="button" class="tb-ev" data-event="calor">🔥 Calor</button>
+        <button type="button" class="tb-ev" data-event="frio">❄ Frio</button>
+        <button type="button" class="tb-ev" data-event="patogeno">🦠 Patógenos</button>
+        <button type="button" class="tb-ev" data-event="nematoide">🪱 Nematoides</button>
+      </div>
+      <label class="tb-group check-row"><input id="rImprev" type="checkbox" checked> Imprevistos naturais</label>
+      <button id="teacherPanelBtn" class="command" type="button" aria-controls="sb" aria-expanded="false">Gráficos e controles</button>
+    </div>
 
     <main id="mainStage" class="school-grid">
       <section class="simulation-region" aria-labelledby="simTitle">
@@ -174,11 +202,6 @@
 
     <div class="teacher-card">
       <h3>Ambiente e estoques iniciais</h3>
-      <div class="soil-buttons" role="group" aria-label="Tipo de solo">
-        <button id="sSandy" type="button" onclick="setSoil('sandy')">Arenoso</button>
-        <button id="sLoam" class="act" type="button" onclick="setSoil('loam')">Franco</button>
-        <button id="sClay" type="button" onclick="setSoil('clay')">Argiloso</button>
-      </div>
       <label>Microbiota inicial <output id="vMI">1.0x</output><input id="rMI" type="range" min="0" max="4" step="0.1" value="1"></label>
       <label>C orgânico <output id="vIC">800</output><input id="rIC" type="range" min="0" max="1500" step="10" value="800"></label>
       <label>NH4+ <output id="vINH4">45</output><input id="rINH4" type="range" min="0" max="150" value="45"></label>
@@ -193,7 +216,6 @@
       <label>Luz <output id="vLI">70%</output><input id="rLI" type="range" min="0" max="100" value="70" oninput="updEnv()"></label>
       <label>UV <output id="vUV">15%</output><input id="rUV" type="range" min="0" max="100" value="15" oninput="updEnv()"></label>
       <label>Agroquímicos <output id="vTX">0%</output><input id="rTX" type="range" min="0" max="100" value="0" oninput="updEnv()"></label>
-      <label class="check-row"><input id="rImprev" type="checkbox" checked> Imprevistos naturais (veranico, chuva forte, calor, frio, chegada de patógenos e nematoides)</label>
     </div>
 
     <div class="teacher-card">
@@ -213,16 +235,6 @@
         <option value="10">Saprófito</option>
         <option value="11">Micorriza</option>
         <option value="12">Arthrobotrys</option>
-      </select>
-      <select id="selHM">
-        <option value="off">Mapa de nutrientes desligado</option>
-        <option value="NH4">NH4+</option>
-        <option value="NO3">NO3-</option>
-        <option value="PO4free">Fósforo livre</option>
-        <option value="Fe2">Fe2+</option>
-        <option value="Fe3">Fe3+</option>
-        <option value="organicC">Carbono orgânico</option>
-        <option value="O2">Oxigênio</option>
       </select>
       <p class="teacher-note">Grade: <span id="gridInfo">--</span></p>
     </div>

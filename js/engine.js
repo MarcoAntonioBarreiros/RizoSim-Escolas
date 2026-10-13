@@ -704,7 +704,11 @@ const limN=plant.n/100,limP=plant.p/100,limFe=plant.fe/100,liebig=Math.min(limN,
 plant.limitFactor=limN<=limP&&limN<=limFe?'N':limP<=limFe?'P':'Fe';
 if(liebig>0.1){
   plant.bio+=0.04*liebig*env.nutRet;
-  plant.stress-=0.04*liebig; /* recuperação proporcional ao liebig */
+  /* recuperação depende da comunidade: patógenos e nematoides na raiz a freiam; benéficas colonizando a
+     raiz a sustentam ("solo vivo é resiliente") */
+  let _pests=0,_benef=0;for(const o of sw){if(!o.alive)continue;const dx=Math.abs(o.x-wCx);if(dx>30||o.y<gY||o.y>gY+rootDepth+20)continue;const k=o.g.guild;if(k===6||k===9)_pests++;else if(k<=5||k===11)_benef++}
+  const recov=(0.6+0.4*Math.min(1,_benef/20))/(1+0.15*_pests);
+  plant.stress-=0.04*liebig*recov; /* recuperação proporcional ao liebig e à comunidade da raiz */
   plant.wound=(plant.wound||0)*0.998; /* feridas de nematoide cicatrizam em ~10 s (1x) depois que o ataque para */
   plant.n-=0.008;plant.p-=0.008;plant.fe-=0.002;
 } else if(liebig>0.03){
