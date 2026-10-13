@@ -174,6 +174,46 @@ let plant={bio:50,n:35,p:30,fe:25,aia:10,stress:0,nodules:[],limitFactor:'—',s
 function updEnv(){env.temp=+document.getElementById('rT').value;env.ph=+document.getElementById('rPH').value;env.moist=+document.getElementById('rM').value;env.tox=+document.getElementById('rTX').value;env.light=+document.getElementById('rLI').value;env.uv=+document.getElementById('rUV').value;
 document.getElementById('vT').textContent=env.temp+'°C';document.getElementById('vPH').textContent=env.ph.toFixed(1);document.getElementById('vM').textContent=env.moist+'%';document.getElementById('vTX').textContent=env.tox+'%';document.getElementById('vLI').textContent=env.light+'%';document.getElementById('vUV').textContent=env.uv+'%';updSoilP()}
 function setSoil(t){env.soil=t;['sSandy','sLoam','sClay'].forEach(id=>document.getElementById(id).classList.remove('act'));document.getElementById(t==='sandy'?'sSandy':t==='clay'?'sClay':'sLoam').classList.add('act');updSoilP()}
+/* ladrilhos de textura do solo (128×128 px do mundo, desenhados em 6 px por unidade) */
+const _soilTiles={};
+function _tileRand(seed){let x=seed>>>0;return()=>{x=(x+0x6D2B79F5)|0;let t=Math.imul(x^x>>>15,1|x);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function _mkTile(draw){const T=128,S=6,c=document.createElement('canvas');c.width=c.height=T*S;const g=c.getContext('2d');g.scale(S,S);draw(g,T);return c}
+function soilPattern(ctx,type){
+  if(typeof document==='undefined')return null;
+  if(!_soilTiles[type]){
+    const R=_tileRand(type==='sandy'?11:type==='clay'?23:37);
+    const tile=_mkTile((g,T)=>{
+      const grain=(x,y,r,fill,edge,lw)=>{for(const ox of [-T,0,T])for(const oy of [-T,0,T]){const cx=x+ox,cy=y+oy;if(cx<-r||cx>T+r||cy<-r||cy>T+r)continue;
+        g.beginPath();const n=14;for(let i=0;i<=n;i++){const a=i/n*Math.PI*2,rr=r*(0.88+0.08*Math.sin(a*2+x*7)+0.05*Math.sin(a*5+y*3));i?g.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr):g.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr)}
+        g.closePath();g.fillStyle=fill;g.fill();if(edge){g.strokeStyle=edge;g.lineWidth=lw;g.stroke()}}};
+      if(type==='sandy'){                       // grãos grandes de quartzo, poros entre eles
+        for(let i=0;i<136;i++)grain(R()*T,R()*T,2.6+R()*3.2,`rgba(${200+R()*40|0},${180+R()*30|0},${140+R()*30|0},${0.07+R()*0.06})`,'rgba(0,0,0,0.18)',0.25);
+        for(let i=0;i<240;i++)grain(R()*T,R()*T,0.4+R()*0.6,'rgba(230,215,180,0.07)',null,0);
+      }else if(type==='clay'){                  // partículas finas em agregados
+        for(let i=0;i<64;i++)grain(R()*T,R()*T,4+R()*5,`rgba(${130+R()*30|0},${75+R()*20|0},${55+R()*15|0},${0.09+R()*0.06})`,'rgba(0,0,0,0.22)',0.3);
+        for(let i=0;i<3600;i++)grain(R()*T,R()*T,0.22+R()*0.3,`rgba(${170+R()*40|0},${115+R()*30|0},${80+R()*20|0},${0.12+R()*0.1})`,null,0);
+      }else{                                    // franco: mistura de areia, silte e argila
+        for(let i=0;i<56;i++)grain(R()*T,R()*T,1.8+R()*2.4,`rgba(${195+R()*40|0},${170+R()*30|0},${130+R()*30|0},${0.09+R()*0.06})`,'rgba(0,0,0,0.2)',0.25);
+        for(let i=0;i<32;i++)grain(R()*T,R()*T,3+R()*4,`rgba(${125+R()*30|0},${80+R()*20|0},${55+R()*15|0},${0.07+R()*0.05})`,'rgba(0,0,0,0.12)',0.25);
+        for(let i=0;i<1800;i++)grain(R()*T,R()*T,0.22+R()*0.4,`rgba(${180+R()*40|0},${140+R()*30|0},${95+R()*20|0},${0.09+R()*0.08})`,null,0);
+      }});
+    const pat=ctx.createPattern(tile,'repeat');if(pat&&pat.setTransform)pat.setTransform(new DOMMatrix().scale(1/6));
+    _soilTiles[type]=pat;
+  }
+  return _soilTiles[type];
+}
+function soilCracks(ctx){
+  if(typeof document==='undefined')return null;
+  if(!_soilTiles._cracks){
+    const R=_tileRand(91);
+    const tile=_mkTile((g,T)=>{g.strokeStyle='rgba(0,0,0,0.55)';g.lineWidth=0.5;g.lineCap='round';
+      for(let k=0;k<28;k++){let x=R()*T,y=R()*T,a=R()*Math.PI*2;g.beginPath();g.moveTo(x,y);
+        for(let i=0;i<10;i++){a+=(R()-0.5)*1.1;x+=Math.cos(a)*3;y+=Math.sin(a)*3;g.lineTo(x,y)}g.stroke()}});
+    const pat=ctx.createPattern(tile,'repeat');if(pat&&pat.setTransform)pat.setTransform(new DOMMatrix().scale(1/6));
+    _soilTiles._cracks=pat;
+  }
+  return _soilTiles._cracks;
+}
 function updSoilP(){const bv=env.soil==='sandy'?0.8:env.soil==='clay'?1.4:1.0;env.nutRet=env.soil==='sandy'?0.6:env.soil==='clay'?1.3:1.0;env.visc=env.moist<40?bv*(1+(40-env.moist)*0.08):bv}
 
 /* Luz decai exponencialmente com profundidade */
@@ -1102,6 +1142,14 @@ const dryPct=1-(env.moist/100);
 const darkBase=env.soil==='sandy'?[45,35,25]:env.soil==='clay'?[30,18,12]:[35,25,18];
 ctx.fillStyle=`rgb(${darkBase[0]+dryPct*8},${darkBase[1]+dryPct*5},${darkBase[2]+dryPct*3})`;
 ctx.fillRect(bgL,gY,bgW,cH*10);
+
+/* Textura do solo (só visual, não afeta o motor): arenoso = grãos grandes e arredondados com poros
+   grandes; argiloso = partículas finas em agregados; franco = mistura. A umidade aparece nos poros:
+   encharcado escurece/azula, seco clareia e o argiloso racha. Ladrilho desenhado uma vez por tipo. */
+{const pat=soilPattern(ctx,env.soil);if(pat){ctx.fillStyle=pat;ctx.fillRect(bgL,gY,bgW,cH*10)}
+ if(env.moist>72){ctx.fillStyle=`rgba(20,40,70,${Math.min(0.28,(env.moist-72)/28*0.28)})`;ctx.fillRect(bgL,gY,bgW,cH*10)}
+ else if(env.moist<35){ctx.fillStyle=`rgba(255,235,200,${(35-env.moist)/35*0.06})`;ctx.fillRect(bgL,gY,bgW,cH*10);
+   if(env.soil!=='sandy'){const cp=soilCracks(ctx);if(cp){ctx.globalAlpha=Math.min(1,(35-env.moist)/20)*(env.soil==='clay'?1:0.5);ctx.fillStyle=cp;ctx.fillRect(bgL,gY,bgW,cH*10);ctx.globalAlpha=1}}}}
 
 /* Camadas do solo escurecendo */
 const soilGrad=ctx.createLinearGradient(0,gY,0,gY+cH*1.5);
