@@ -702,17 +702,23 @@ rootDepth=20+prevGrowPct*Math.min(280,worldDepth*0.7);
 var rootSA=1+Math.min(10,Math.floor(prevGrowPct*12))*0.1+(prevGrowPct>0.25?Math.min(30,Math.floor((prevGrowPct-0.2)*45)):0)*0.04;
 
 /* ═══ Fontes de estresse ambiental (apenas quando realmente estressante) ═══ */
+/* água e temperatura limitam a planta (antes só N, P e Fe limitavam o crescimento, e a seca mal estressava:
+   um veranico quase não aparecia). Fatores de 0 a 1: conforto hídrico (mesma curva do indicador "Água")
+   e térmico (ótimo 20–30 °C). */
+const _wv=cl(env.moist,0,100),waterF=(_wv<30?_wv/30*0.34:_wv<45?0.35+(_wv-30)/15*0.32:_wv<=75?Math.max(0.68,1-Math.abs(_wv-60)*0.009):_wv<=85?0.67-(_wv-75)*0.018:Math.max(0.22,0.5-(_wv-85)*0.014));
+const tempPF=cl(1-Math.max(0,Math.abs(env.temp-25)-5)/15,0.15,1),envPF=Math.min(waterF,tempPF);
+plant.envF=envPF;
 var _sG=0;
-if(env.moist<30)_sG+=0.03*(1-env.moist/30);
-if(env.moist>85)_sG+=0.01*((env.moist-85)/15); /* encharcamento */
-if(env.temp>35)_sG+=0.03*((env.temp-35)/10);
-if(env.temp<12)_sG+=0.025*((12-env.temp)/10);
+if(env.moist<30)_sG+=0.25*(1-env.moist/30);
+if(env.moist>85)_sG+=0.15*((env.moist-85)/15); /* encharcamento: falta O2 para a raiz */
+if(env.temp>33)_sG+=0.15*((env.temp-33)/7);
+if(env.temp<13)_sG+=0.06*((13-env.temp)/8);
 if(env.tox>0)_sG+=env.tox*0.002;
 
 /* ═══ Saúde nutricional — fator de recuperação robusto ═══ */
 var _hF=cl(((plant.n||0)+(plant.p||0)+(plant.fe||0))/300,0,1);
 /* Recuperação PROPORCIONAL à saúde: planta saudável se recupera muito mais rápido */
-var stressRecovery = _hF * 0.04 + 0.008; /* base 0.008 + até 0.04 extra */
+var stressRecovery = (_hF * 0.04 + 0.008)*envPF; /* base 0.008 + até 0.04 extra; sob seca/calor/encharcamento a planta não se recupera */
 
 /* ═══ Homeostase: estresse tende a um equilíbrio, não acumula infinitamente ═══ */
 /* O estresse decai proporcionalmente ao seu próprio nível (feedback negativo) */
@@ -743,17 +749,17 @@ if(totalRP>0){
 const limN=plant.n/100,limP=plant.p/100,limFe=plant.fe/100,liebig=Math.min(limN,limP,limFe);
 plant.limitFactor=limN<=limP&&limN<=limFe?'N':limP<=limFe?'P':'Fe';
 if(liebig>0.1){
-  plant.bio+=0.04*liebig*env.nutRet;
+  plant.bio+=0.04*liebig*env.nutRet*envPF;
   /* recuperação depende da comunidade: patógenos e nematoides na raiz a freiam; benéficas colonizando a
      raiz a sustentam ("solo vivo é resiliente") */
   let _pests=0,_benef=0;for(const o of sw){if(!o.alive)continue;const dx=Math.abs(o.x-wCx);if(dx>30||o.y<gY||o.y>gY+rootDepth+20)continue;const k=o.g.guild;if(k===6||k===9)_pests++;else if(k<=5||k===11)_benef++}
   const recov=(0.6+0.4*Math.min(1,_benef/20))/(1+0.15*_pests);
-  plant.stress-=0.04*liebig*recov; /* recuperação proporcional ao liebig e à comunidade da raiz */
+  plant.stress-=0.04*liebig*recov*envPF; /* recuperação proporcional ao liebig, à comunidade da raiz e ao clima */
   plant.wound=(plant.wound||0)*0.998; /* feridas de nematoide cicatrizam em ~10 s (1x) depois que o ataque para */
   plant.n-=0.008;plant.p-=0.008;plant.fe-=0.002;
 } else if(liebig>0.03){
   /* zona intermediária: crescimento lento, estresse leve */
-  plant.bio+=0.01*liebig*env.nutRet;
+  plant.bio+=0.01*liebig*env.nutRet*envPF;
   plant.stress+=0.005;
   plant.n-=0.004;plant.p-=0.004;plant.fe-=0.001;
 } else {
@@ -761,7 +767,8 @@ if(liebig>0.1){
   plant.stress+=0.012; /* muito menos que antes (era 0.02) */
 }
 /* Auxina: janela ótima 20-60, excesso é fitotóxico (epinastia) */
-if(plant.aia>=20&&plant.aia<=60)plant.bio+=0.012;
+if(plant.aia>=20&&plant.aia<=60)plant.bio+=0.012*envPF;
+if(envPF<0.45)plant.bio-=0.02*(0.45-envPF)/0.45; /* murcha: perde biomassa sob seca forte, calor ou encharcamento */
 else if(plant.aia>60){var aiaExcess=(plant.aia-60)/40;plant.stress+=aiaExcess*0.08;plant.bio-=aiaExcess*0.003}
 plant.fe=Math.max(0,plant.fe-0.002);plant.aia=Math.max(0,plant.aia-0.004-plant.aia*0.003); /* IAA-oxidase: degradação proporcional */
 plant.stress=cl(plant.stress||0,0,100);plant.bio=cl(plant.bio||20,20,150);plant.n=cl(plant.n,0,100);plant.p=cl(plant.p,0,100);plant.fe=cl(plant.fe,0,100);plant.aia=cl(plant.aia,0,100);
@@ -1139,7 +1146,7 @@ for(let i=0;i<4;i++){const cx=wCx+Math.sin(i*2.1+now*0.00002)*cW*0.5,cy=gY*0.3+M
 
 /* ═══ SOLO BEM ESCURO ═══ */
 const dryPct=1-(env.moist/100);
-const darkBase=env.soil==='sandy'?[45,35,25]:env.soil==='clay'?[30,18,12]:[35,25,18];
+const darkBase=env.soil==='sandy'?[66,52,34]:env.soil==='clay'?[52,26,17]:[38,27,19]; /* arenoso mais claro e amarelado, argiloso avermelhado, franco marrom-escuro */
 ctx.fillStyle=`rgb(${darkBase[0]+dryPct*8},${darkBase[1]+dryPct*5},${darkBase[2]+dryPct*3})`;
 ctx.fillRect(bgL,gY,bgW,cH*10);
 

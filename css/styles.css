@@ -50,6 +50,7 @@ input:focus-visible,
 
 .school-app{
   min-height:100dvh;
+  height:100dvh;          /* a área da simulação ocupa o que sobrar depois do topo (e da barra do professor) */
   display:flex;
   flex-direction:column;
 }
@@ -162,7 +163,8 @@ input:focus-visible,
 }
 
 .school-grid{
-  height:calc(100dvh - 64px);
+  flex:1 1 auto;
+  min-height:0;
   padding:10px;
   display:grid;
   grid-template-columns:minmax(0,1fr) 330px;
@@ -909,7 +911,9 @@ body[data-water="wet"] .canvas-shell::after{
 }
 
 @media (max-width:900px){
+  .school-app{height:auto}
   .school-grid{
+    flex:none;
     height:auto;
     min-height:calc(100dvh - 126px);
     grid-template-columns:1fr;

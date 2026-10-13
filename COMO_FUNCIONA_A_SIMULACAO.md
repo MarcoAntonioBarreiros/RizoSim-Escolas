@@ -64,6 +64,7 @@ Antes, a população tinha só um teto total (280) e quem se reproduzia mais rá
 | Proteção contra o patógeno | competição por sítio: cada benéfica vizinha reduz o ataque (fator 0,18); antibiose = Bacillus + 0,6×Pseudomonas vizinhos: a partir de 1 é bacteriostática (o patógeno não cresce nem se divide), a partir de 3 é bactericida (perde 12 de energia por passo) | o patógeno ataca a planta saudável; com benéficas a doença diminui, com muitas ela é eliminada |
 | Patógeno bacteriano | divide-se no ciclo rápido das bactérias e come exsudatos na rizosfera | patógenos de solo colonizam a rizosfera antes de atacar |
 | Sinergia nematoide–patógeno | o dano dos nematoides abre feridas na raiz (cicatrizam em ~10 s em 1x); perto da raiz ferida o ataque do patógeno chega a 2,5× e a antibiose rende proporcionalmente menos | complexo *Meloidogyne*–*Fusarium*: feridas são porta de entrada |
+| Água e temperatura na planta | o crescimento é multiplicado pelo menor entre o conforto hídrico (curva do indicador "Água") e o térmico (ótimo 20–30 °C); seca (<30%), encharcamento (>85%), calor (>33 °C) e frio (<13 °C) geram estresse e travam a recuperação; abaixo de 45% de conforto a planta murcha (perde biomassa) | antes só N, P e Fe limitavam o crescimento e um veranico quase não aparecia |
 | Triângulo da doença | umidade > 80% soma 0,6 e temperatura > 32 °C soma 0,4 ao fator ambiental, que aumenta o ataque e divide a antibiose | encharcamento e calor favorecem surtos |
 
 ## Imprevistos naturais (`js/imprevistos.js`)
