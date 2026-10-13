@@ -53,3 +53,13 @@ tests/regression.js
 
 `js/engine.js` contém o motor extraído do RizoSim original e uma pequena API de acesso para UI/testes. Os demais arquivos organizam a camada escolar.
 
+
+## Celular e tablet: modo tela cheia
+
+Em telas estreitas (até 900 px) ou baixas com toque (celular deitado), a simulação ocupa a tela inteira e o resto vira um menu de pausa, como em um jogo (`js/ui-game.js`):
+
+- **☰** pausa e abre o menu: Organismos (observar/adicionar), Feijão (indicadores), Acontecimentos, Professor (mapas, solo, provocar, gráficos) e Mais (cenários, reiniciar, ajuda, tela cheia). **Continuar ▶** fecha e retoma.
+- **⏸/▶** e **1x/2x/Aula** ficam sempre visíveis; o último acontecimento aparece numa faixa embaixo (tocar abre a explicação).
+- Ao "Adicionar", o menu fecha e cada toque no solo coloca o organismo; **Concluir** encerra.
+- "Ver como página" (em Mais) volta ao layout antigo naquele aparelho; um botão "⛶ Tela cheia" desfaz a escolha.
+- No computador nada muda. Para testar no computador: `index.html?modo=jogo`; para forçar a página: `?modo=pagina`.

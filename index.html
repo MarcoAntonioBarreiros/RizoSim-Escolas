@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RizoSim Escolas</title>
   <link rel="stylesheet" href="css/styles.css">
+  <script>
+    /* Celular/tablet: simulação em tela cheia com menu de pausa (js/ui-game.js). O computador não muda.
+       ?modo=jogo ou ?modo=pagina forçam um modo; a escolha "Ver como página" fica lembrada no aparelho. */
+    (function(){
+      var q=null,pref=null;
+      try{q=new URLSearchParams(location.search).get('modo')}catch(e){}
+      try{pref=localStorage.getItem('rizosim-modo')}catch(e){}
+      var small=window.matchMedia&&matchMedia('(max-width: 900px), (max-height: 500px) and (pointer: coarse)').matches;
+      var on=q?q==='jogo':(small&&pref!=='pagina');
+      if(on)document.documentElement.classList.add('game-mode');
+      else if(small&&pref==='pagina'&&q!=='pagina')document.documentElement.classList.add('game-optout');
+    })();
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#mainStage">Pular para a simulação</a>
@@ -276,5 +289,6 @@
   <script src="js/tutorial.js"></script>
   <script src="js/ui-child.js"></script>
   <script src="js/imprevistos.js"></script>
+  <script src="js/ui-game.js"></script>
 </body>
 </html>

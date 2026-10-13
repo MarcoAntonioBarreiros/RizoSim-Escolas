@@ -1060,3 +1060,85 @@ body[data-water="wet"] .canvas-shell::after{
 /* selo do acontecimento em curso, sobre o solo */
 .event-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;padding:5px 12px;border-radius:14px;max-width:calc(100% - 24px);width:max-content;text-align:center;line-height:1.3;background:rgba(255,255,255,.9);border:1px solid var(--line);font-weight:700;font-size:.9rem;pointer-events:none;transition:opacity .6s ease;box-shadow:0 2px 10px rgba(0,0,0,.15)}
 .event-badge.is-hidden{opacity:0}
+
+/* ═══ MODO TELA CHEIA (celular e tablet) — js/ui-game.js ═══
+   Tudo aqui depende de html.game-mode (ligado só em telas estreitas ou baixas com toque, ou com ?modo=jogo):
+   o layout do computador não muda. A simulação ocupa a tela; o resto fica no menu de pausa. */
+html.game-mode,
+html.game-mode body{height:100%;overflow:hidden;background:#07120d;overscroll-behavior:none}
+html.game-mode .topbar,
+html.game-mode .simulation-region > .section-label,
+html.game-mode .disclaimer{display:none}
+html.game-mode .text-alternative{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html.game-mode .school-app{min-height:0}
+html.game-mode .school-grid{display:block;height:auto;min-height:0;padding:0}
+html.game-mode .simulation-region{overflow:visible}
+/* altura "grande" (lvh): não muda quando a barra do navegador aparece/some, então a simulação não se redimensiona */
+html.game-mode #cw{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100lvh;z-index:5;border:0;border-radius:0}
+html.game-mode #zi{bottom:auto;top:calc(12px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
+html.game-mode .event-badge{top:calc(64px + env(safe-area-inset-top));font-size:.84rem}
+
+html.game-mode .game-hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));z-index:9;display:flex;gap:8px}
+html.game-mode .hud-btn{min-width:46px;height:46px;padding:0;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(10,24,18,.62);color:#fff;font-size:1.25rem;font-weight:700;line-height:1;cursor:pointer;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+html.game-mode .hud-menu{font-size:1.45rem}
+html.game-mode .hud-speed{min-width:58px;padding:0 10px;font-size:.95rem}
+
+/* faixas de baixo: position fixed acompanha a parte visível da tela (barra do navegador) */
+html.game-mode .game-ticker,
+html.game-mode .game-pipette{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));z-index:9;max-width:calc(100% - 24px);width:max-content}
+html.game-mode .game-ticker{padding:9px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.93);color:var(--ink);font-size:.86rem;font-weight:600;text-align:left;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;transition:opacity .6s ease}
+html.game-mode .game-ticker::after{content:"  Entenda ›";color:var(--blue);font-weight:800;white-space:nowrap}
+html.game-mode .game-ticker.is-out{opacity:0;pointer-events:none}
+html.game-mode .game-pipette{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;border-radius:14px;background:var(--teal);color:#fff;font-weight:700;font-size:.88rem;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+html.game-mode .game-pipette[hidden],
+html.game-mode .game-ticker[hidden]{display:none}
+html.game-mode .game-pipette button{min-height:40px;padding:0 14px;border:0;border-radius:10px;background:#fff;color:var(--teal);font-weight:800}
+html.game-mode .game-pipette:not([hidden]) ~ .game-ticker{bottom:calc(68px + env(safe-area-inset-bottom))}
+html.game-mode .selected-bubble{position:fixed;left:calc(10px + env(safe-area-inset-left));right:auto;bottom:calc(12px + env(safe-area-inset-bottom));max-width:min(380px,calc(100vw - 20px))}
+html.game-mode .selected-bubble:not([hidden]) ~ .game-ticker{display:none}
+
+/* menu de pausa */
+html.game-mode .game-menu{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;background:rgba(9,22,17,.74);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+html.game-mode .game-menu[hidden]{display:none}
+html.game-mode .gm-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;color:#fff}
+html.game-mode .gm-title strong{display:block;font-size:1.05rem}
+html.game-mode .gm-title span{font-size:.8rem;opacity:.8}
+html.game-mode .gm-continue{min-height:46px;padding:0 18px;border:0;border-radius:12px;background:var(--green);color:#fff;font-weight:800;font-size:1rem;cursor:pointer}
+html.game-mode .gm-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 10px}
+html.game-mode .gm-tabs button{flex:0 0 auto;min-height:40px;padding:0 13px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-weight:700;font-size:.88rem;cursor:pointer}
+html.game-mode .gm-tabs button[aria-selected="true"]{background:#fff;color:var(--ink);border-color:#fff}
+/* celular deitado: cabeçalho do menu mais baixo, sobra mais espaço para o conteúdo */
+@media (max-height:500px){
+  html.game-mode .gm-head{padding:6px 12px}
+  html.game-mode .gm-title span{display:none}
+  html.game-mode .gm-continue{min-height:40px}
+  html.game-mode .gm-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}
+  html.game-mode .gm-tabs button{min-height:36px}
+}
+html.game-mode .gm-body{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg);border-radius:14px 14px 0 0;padding:12px 12px calc(18px + env(safe-area-inset-bottom))}
+html.game-mode .gm-pane[hidden]{display:none}
+html.game-mode .gm-action{display:block;width:100%;min-height:48px;margin:0 0 10px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-weight:700;font-size:.98rem;text-align:left;cursor:pointer}
+html.game-mode .gm-quiet{color:var(--muted);font-weight:600}
+html.game-mode .gm-note{margin:4px 2px 12px;color:var(--muted);font-size:.84rem}
+
+/* painéis originais dentro do menu: lista vertical, sem rolagem lateral nem altura fixa */
+html.game-mode .gm-pane .organisms-region,
+html.game-mode .gm-pane .bean-region,
+html.game-mode .gm-pane .events-region{display:block;height:auto;max-height:none;overflow:visible;border:0;background:none}
+html.game-mode .gm-pane .organism-head{display:block;padding:0;border:0}
+html.game-mode .gm-pane .section-label{padding:0 2px 8px}
+html.game-mode .gm-pane .category-tabs{flex-wrap:wrap;padding:0 0 10px}
+html.game-mode .gm-pane .category-tabs button{min-height:40px}
+html.game-mode .gm-pane .organism-cards{grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));overflow:visible;padding:0}
+html.game-mode .gm-pane .card-actions button{min-height:44px}
+html.game-mode .gm-pane .indicator-stack{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));overflow:visible;padding:0}
+html.game-mode .gm-pane .child-events{max-height:none;overflow:visible;padding:0}
+html.game-mode .gm-pane .child-events p{font-size:.9rem}
+html.game-mode .gm-pane .understand-btn{min-height:40px;padding:0 12px}
+html.game-mode .gm-pane .teacher-bar{position:static;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px}
+html.game-mode .gm-pane .teacher-bar[hidden]{display:none}
+html.game-mode .gm-pane .teacher-bar button,
+html.game-mode .gm-pane .teacher-bar select{min-height:40px}
+
+/* celular em modo página (escolhido no menu): atalho para voltar à tela cheia */
+.game-return{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:30;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--teal);font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.2)}
