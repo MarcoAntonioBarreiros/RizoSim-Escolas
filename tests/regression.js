@@ -271,14 +271,18 @@
       const q10=(engine.configure({temp:11}),engine.climateImpact().q10);
       engine.configure({temp:25});
       const bactDry=at({moist:22},1,'wa'),fungDry=at({moist:22},10,'wa');
-      engine.configure({moist:93,soil:'clay'});
-      const fungOx=engine.climateImpact().groups.find(item=>item.guild===10).ox;
-      engine.step(5);const denit=engine.climateImpact().denit;
+      engine.configure({moist:93,soil:'clay'});engine.step(400);   /* o O₂ do solo leva alguns segundos para cair */
+      const fungOx=(engine.climateImpact().groups.find(item=>item.guild===10)||{ox:NaN}).ox;
+      const denit=engine.climateImpact().denit;
+      /* gradiente: O₂ cai com a profundidade e o mapa deixa de ser homogêneo */
+      engine.configure({moist:60,soil:'loam'});engine.step(600);
+      const raw=engine.raw,colO2=r=>raw.grid.reduce((a,col)=>a+col[r].O2,0)/raw.grid.length;
+      const o2Top=colO2(0),o2Deep=colO2(raw.grid[0].length-1);
       engine.configure({moist:60,soil:'loam',temp:25});
       results.push(result(
         'Calor, frio, seca e encharcamento afetam cada grupo de um jeito',
-        base===1&&rhizoHot<0.5&&bacHot>=0.95&&q10<0.6&&bactDry<fungDry&&fungOx<0.5&&denit>0,
-        `conforto ${base}; calor: rizóbio ${rhizoHot.toFixed(2)}, Bacillus ${bacHot.toFixed(2)}; frio Q10 ${q10.toFixed(2)}; seca: bactéria ${bactDry.toFixed(2)}, fungo ${fungDry.toFixed(2)}; argiloso encharcado: O₂ fungo ${fungOx.toFixed(2)}, desnitrificação ${denit.toFixed(3)}`
+        base===1&&rhizoHot<0.5&&bacHot>=0.95&&q10<0.6&&bactDry<fungDry&&fungOx<0.5&&denit>0&&o2Top-o2Deep>4,
+        `conforto ${base}; calor: rizóbio ${rhizoHot.toFixed(2)}, Bacillus ${bacHot.toFixed(2)}; frio Q10 ${q10.toFixed(2)}; seca: bactéria ${bactDry.toFixed(2)}, fungo ${fungDry.toFixed(2)}; argiloso encharcado: O₂ fungo ${fungOx.toFixed(2)}, desnitrificação ${denit.toFixed(3)}; O₂ superfície ${o2Top.toFixed(1)} × fundo ${o2Deep.toFixed(1)}`
       ));
     }
 

@@ -22,7 +22,12 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
   EXU_ENERGY:550,     /* energia por partícula de exsudato */
   DRY_BACT:0.55,      /* atividade mínima de bactérias e protozoários no solo muito seco (10%) */
   DRY_COST:0.5,       /* custo extra na seca (estresse osmótico) */
-  ANOX_COST:1.2       /* custo extra sem O₂ (aeróbios sensíveis) */
+  ANOX_COST:1.2,      /* custo extra sem O₂ (aeróbios sensíveis) */
+  LEACH_K:3,          /* intensidade da lixiviação descendente do nitrato */
+  O2_USE:{bact:0.004,fungi:0.008,proto:0.006,nema:0.012},   /* O₂ respirado por passo (× atividade) */
+  O2_SAPRO:0.08,      /* O₂ extra por unidade de decomposição do saprófito */
+  O2_PHOTO:0.03,      /* O₂ produzido por unidade de fotossíntese da cianobactéria */
+  O2_ROOT:0.25        /* respiração da raiz (total, distribuído pelas células com raiz) */
 };
 /* Velocidade máxima rígida por tipo biológico (pixels/tick) */
 const MAX_SPEED={bact:0.8,fungi:0.5,proto:1.2,nema:0.6};
@@ -55,7 +60,7 @@ const SOIL_INIT={organicC:800,NH4:45,NO3:35,PO4free:25,PO4bound:60,Fe3:60,Fe2:15
 /* Coeficientes de difusão (0-1): refletem mobilidade real no solo */
 const DIFF={
   NH4:0.06,    /* adsorve em argilas, mobilidade média */
-  NO3:0.22,    /* ânion livre, alta mobilidade (mass flow) */
+  NO3:0.05,    /* ânion livre, mas se move sobretudo descendo com a água (lixiviação, à parte); difusão lateral lenta → zona de depleção perto da raiz */
   PO4free:0.006, /* quase imóvel! zona depleção ~1-2mm real */
   PO4bound:0.0,  /* fixado em partículas, não difunde */
   Fe2:0.035,   /* solúvel mas reativo */
@@ -155,19 +160,30 @@ function waterAct(gd,m){
   if(gd.type==='nema')return m<45?cl(0.25+0.75*(m-15)/30,0.25,1):1;
   const w0=C.DRY_BACT;return m<40?cl(w0+(1-w0)*(m-10)/30,w0,1):1;
 }
+/* O₂ ≥ 25: sem limitação; abaixo, cada grupo perde atividade conforme sua sensibilidade (o2s); 8 ou menos: anóxia */
+function oxFor(gd,o2){return 1-gd.o2s*(1-cl((o2-8)/17,0,1))}
 function climFor(gd){
   const d=env.temp-gd.tOpt;let th=1;
   if(d<-gd.tLo)th=Math.max(0.3,Math.pow(2,(d+gd.tLo)/10));
   else if(d>gd.tHi)th=Math.max(0.2,1-(d-gd.tHi)/8);
-  const wa=waterAct(gd,env.moist),ox=1-gd.o2s*(1-cl((o2Soil()-14)/20,0,1));   /* O₂ ≥ 34: sem limitação (franco até ~77% de umidade, argiloso até ~60%, arenoso sempre) */
+  const wa=waterAct(gd,env.moist),ox=oxFor(gd,soil.O2);   /* média do solo (avisos e palidez); cada organismo usa o O₂ da sua célula */
   /* gasto de manutenção: abaixo de 20 °C cai para todos (Q10 ≈ 2); seca (estresse osmótico, células
      danificadas) e falta de O₂ (respiração interrompida) custam caro a quem é sensível */
   const q10=env.temp<20?Math.max(0.3,Math.pow(2,(env.temp-20)/10)):1,rel=th*wa*ox;
   /* rel: quanto o grupo sofre em relação aos outros (usado nos avisos e na palidez);
      act: ritmo real de alimentação, crescimento e funções (inclui o Q10 que vale para todos) */
-  return {act:rel*q10,rel,q10,th,wa,ox,costF:q10*(1+C.DRY_COST*(1-wa)+C.ANOX_COST*(1-ox)),mob:Math.max(0.4,th*ox*(0.6+0.4*q10))};
+  return {act:rel*q10,rel,q10,th,wa,ox,costF:q10*(1+C.DRY_COST*(1-wa)),mob:Math.max(0.4,th*ox*(0.6+0.4*q10))};
 }
 function updClim(){climG=GUILDS.map(climFor)}
+/* ═══ TIPO DE SOLO ═══
+   leach: lixiviação do nitrato · nh4Leach: fração do amônio que também desce (baixa CTC do arenoso)
+   pRatio/pAds: equilíbrio e velocidade da fixação de fosfato · refuge: chance de uma bactéria escapar do
+   protozoário em poros pequenos demais para ele · omProt: velocidade de decomposição (argila protege) */
+const SOILK={
+  sandy:{leach:0.002, nh4Leach:0.3,pRatio:0.6,pAds:0.001,refuge:0,  omProt:1.25},
+  loam: {leach:0.0008,nh4Leach:0,  pRatio:0.4,pAds:0.002,refuge:0,  omProt:1},
+  clay: {leach:0.0003,nh4Leach:0,  pRatio:0.2,pAds:0.004,refuge:0.3,omProt:0.75}
+};
 
 /* Configuração de tamanho por tipo biológico — ranges originais ricos */
 /*const SIZE_LIMITS = {
@@ -498,7 +514,8 @@ physics() {
   const baseCost = 0.25 + (this.pts.length * 0.012) + (this.g.spd * 1.2) + (this.age * 0.0001);
   const localDens = sHh.cnt(this.core.x, this.core.y);
   const compPen = localDens > 10 ? 1 + (localDens - 10) * 0.012 : 1;
-  this.e -= (baseCost * gd.cost * envMult * fiPen * compPen) * clim.costF * (this.cyst ? 0.1 : 1); /* cisto: metabolismo quase parado */
+  const oxS = this._ox === undefined ? clim.ox : this._ox;   /* O₂ da célula onde está (passo anterior) */
+  this.e -= (baseCost * gd.cost * envMult * fiPen * compPen) * clim.costF * (1 + C.ANOX_COST * (1 - oxS)) * (this.cyst ? 0.1 : 1); /* cisto: metabolismo quase parado */
 }
 
 draw(ctx,t){const g=this.g,gd=GUILDS[g.guild];const al=cl(this.e/1500,.2,.95)*(0.6+0.4*(climG[g.guild]||CLIM_ONE).rel);   /* fora da faixa de conforto: mais pálido */
@@ -706,37 +723,48 @@ tk++;denitRate=0;
 /* Abióticos do Solo — PROCESSAMENTO POR CÉLULA DA GRADE */
 /* Cada célula tem sua própria concentração local */
 const nCells=gCols*gRows;
+/* O₂ do solo: entra pela superfície (troca com o ar) e cai com a profundidade; cai mais e circula
+   menos quando os poros estão cheios de água (argiloso, encharcado). Quem respira consome no lugar
+   onde está (saprófitos decompondo muito → hipóxia local); cianobactérias produzem O₂ na superfície. */
+const SK=SOILK[env.soil]||SOILK.loam,o2Top=o2Soil(),airF=cl((o2Top-5)/40,0.15,1),o2Drop=6+14*(1-airF);
+DIFF.O2=0.18*airF;
 for(let _gc=0;_gc<gCols;_gc++){for(let _gr=0;_gr<gRows;_gr++){
   const gc=grid[_gc][_gr];
-  /* Nitrificação: NH4→NO3 (bactérias nitrificantes implícitas) */
-  if(gc.O2>20){const nitr=mm(0.15,gc.NH4,25)*0.012;gc.NH4-=nitr;gc.NO3+=nitr}
+  /* Nitrificação: NH4→NO3 (bactérias nitrificantes implícitas, aeróbias: param com pouco O₂) */
+  const nitO=cl((gc.O2-5)/20,0,1);if(nitO>0){const nitr=mm(0.15,gc.NH4,25)*0.012*nitO;gc.NH4-=nitr;gc.NO3+=nitr}
   /* Oxidação Fe2→Fe3 (abiótica em solo aeróbio) */
   if(gc.O2>30){const feOx=0.004*gc.Fe2;gc.Fe2-=feOx;gc.Fe3+=feOx}
   /* Mineralização: C orgânico → NH4 (decomposição microbiana implícita) */
-  var minerRate=mm(0.12,gc.organicC,180)*(env.temp/28)*(env.moist/80)*0.008;
+  var minerRate=mm(0.12,gc.organicC,180)*(env.temp/28)*(env.moist/80)*0.008*SK.omProt;   /* argila protege a matéria orgânica */
   gc.organicC-=minerRate;gc.NH4+=minerRate*0.35;gc.PO4free+=minerRate*0.08;
-  /* Lixiviação (depende do tipo de solo) */
-  const leach=env.soil==='sandy'?0.002:env.soil==='clay'?0.0003:0.0008;
-  gc.NO3*=(1-leach);gc.PO4free*=(1-leach*0.2);
+  /* Lixiviação do P (pouca); o nitrato desce com a água (ver depois do laço) */
+  gc.PO4free*=(1-SK.leach*0.2);
   /* Reposição — inputs naturais (distribuídos por célula) */
   gc.organicC+=0.12/nCells;  /* liteira, resíduos */
   gc.PO4bound+=0.015/nCells; /* intemperismo mineral */
   gc.Fe3+=0.02/nCells;       /* intemperismo Fe */
   /* Deposição atmosférica — só na camada superficial */
   if(_gr===0){gc.NH4+=0.008*gCols/nCells;gc.NO3+=0.005*gCols/nCells}
-  /* Dessorção PO4bound→PO4free */
-  if(gc.PO4free<gc.PO4bound*0.4){
-    var desorp=0.003*(gc.PO4bound*0.4-gc.PO4free);gc.PO4bound-=desorp;gc.PO4free+=desorp;
-  }
-  /* pH e O2 */
-  gc.O2=o2Soil();
+  /* Fosfato: equilíbrio entre livre e preso às partículas. Argila e óxidos de Fe/Al prendem mais
+     (equilíbrio com 20% livre no argiloso, 40% no franco, 60% no arenoso) */
+  const pEq=gc.PO4bound*SK.pRatio;
+  if(gc.PO4free<pEq){var desorp=0.003*(pEq-gc.PO4free);gc.PO4bound-=desorp;gc.PO4free+=desorp}
+  else{const ads=SK.pAds*(gc.PO4free-pEq);gc.PO4free-=ads;gc.PO4bound+=ads}
+  /* O₂: tende ao perfil de equilíbrio (superfície troca mais rápido com o ar) */
+  gc.O2+=(_gr===0?0.08:0.03)*(o2Top-o2Drop*_gr/(gRows-1)-gc.O2);
   /* Desnitrificação: sem O₂ (solo encharcado), bactérias desnitrificantes respiram nitrato e o N
      escapa para o ar como N₂/N₂O. Mais forte no argiloso (encharca), quase nula no arenoso (drena). */
-  if(gc.O2<30){const den=gc.NO3*0.0012*(30-gc.O2)/30*gc.organicC/(gc.organicC+100);gc.NO3-=den;gc.organicC-=den*0.2;denitRate+=den}
+  if(gc.O2<20){const den=gc.NO3*0.0018*(20-gc.O2)/20*gc.organicC/(gc.organicC+100);gc.NO3-=den;gc.organicC-=den*0.2;denitRate+=den}
   if(env.ph>7.5){gc.PO4free*=(1-0.004*(env.ph-7.5))}
   if(env.ph<5.5){gc.PO4free*=(1-0.003*(5.5-env.ph))}
   for(const k in gc)gc[k]=cl(gc[k],0,k==='organicC'?1500:k==='PO4bound'?200:150);
 }}
+/* Lixiviação: a água que percola leva o nitrato para baixo, camada por camada, e o que passa da
+   última camada sai do alcance da raiz. Mais rápido no arenoso e no solo úmido; no arenoso (pouca
+   capacidade de troca de cátions) parte do amônio também desce. */
+{const perc=cl(env.moist/60,0.2,1.6),fN=SK.leach*C.LEACH_K*perc,fH=fN*SK.nh4Leach;
+ for(let _gc=0;_gc<gCols;_gc++)for(let _gr=gRows-1;_gr>=0;_gr--){const gc=grid[_gc][_gr],mN=gc.NO3*fN,mH=gc.NH4*fH;gc.NO3-=mN;gc.NH4-=mH;
+   if(_gr<gRows-1){grid[_gc][_gr+1].NO3+=mN;grid[_gc][_gr+1].NH4+=mH}}}
 /* Difusão a cada 2 ticks (performance) */
 if(tk%2===0)diffuseGrid();
 /* Sincronizar média da grade → soil para UI */
@@ -781,6 +809,7 @@ if(totalRP>0){
   for(const rc of rootCells){
     const gc=grid[rc.c][rc.r];
     const w=rc.rp/totalRP; /* peso desta célula na absorção */
+    gc.O2=Math.max(0,gc.O2-C.O2_ROOT*rootSA*w);   /* a raiz também respira */
     const localAbsN=mm(0.06,gc.NH4+gc.NO3,25)*rootSA*w;
     const localAbsP=mm(0.04,gc.PO4free,18)*rootSA*w;
     const localAbsFe=mm(0.03,gc.Fe2,12)*rootSA*w;
@@ -797,7 +826,7 @@ if(totalRP>0){
 const limN=plant.n/100,limP=plant.p/100,limFe=plant.fe/100,liebig=Math.min(limN,limP,limFe);
 plant.limitFactor=limN<=limP&&limN<=limFe?'N':limP<=limFe?'P':'Fe';
 if(liebig>0.1){
-  plant.bio+=0.04*liebig*env.nutRet*envPF;
+  plant.bio+=0.04*liebig*envPF;
   /* recuperação depende da comunidade: patógenos e nematoides na raiz a freiam; benéficas colonizando a
      raiz a sustentam ("solo vivo é resiliente") */
   let _pests=0,_benef=0;for(const o of sw){if(!o.alive)continue;const dx=Math.abs(o.x-wCx);if(dx>30||o.y<gY||o.y>gY+rootDepth+20)continue;const k=o.g.guild;if(k===6||k===9)_pests++;else if(k<=5||k===11)_benef++}
@@ -807,7 +836,7 @@ if(liebig>0.1){
   plant.n-=0.008;plant.p-=0.008;plant.fe-=0.002;
 } else if(liebig>0.03){
   /* zona intermediária: crescimento lento, estresse leve */
-  plant.bio+=0.01*liebig*env.nutRet*envPF;
+  plant.bio+=0.01*liebig*envPF;
   plant.stress+=0.005;
   plant.n-=0.004;plant.p-=0.004;plant.fe-=0.001;
 } else {
@@ -889,7 +918,10 @@ const fi=s.g.fi;const exConc=exudateConc(hd.x,hd.y);const localLight=lightAt(hd.
     s.e -= (intraComp + interComp) * compZone;
     /* clima: tudo o que o organismo ganha neste passo (comida, exsudato, luz, presas) e o que ele faz
        pela planta saem na proporção da sua atividade (A = 1 na faixa de conforto) */
-    const A=(climG[gid]||CLIM_ONE).act,e0=s.e;
+    const _k=climG[gid]||CLIM_ONE,oxL=oxFor(gd,lc.O2);s._ox=oxL;
+    const A=_k.th*_k.wa*oxL*_k.q10,e0=s.e;
+    /* respiração: cada aeróbio consome O₂ na sua célula (cisto quase nada) */
+    if(gd.trophic!=='photo'&&hd.y>gY)lc.O2=Math.max(0,lc.O2-C.O2_USE[gd.type]*(0.3+0.7*gd.o2s)*A*(s.cyst?0.1:1));
 
 /* ═══ GUILDAS FUNCIONAIS ═══ */
 
@@ -956,7 +988,7 @@ else if(gid===5){/* Rhizobium */
 else if(gid===7){/* Cianobactéria — fotossíntese + N₂ */
   const photoRate=mm(GUILDS[7].Vmax_photo,localLight*100,GUILDS[7].Km_light)*fi.photo;
   s.e+=photoRate*3;/* Energia da luz — custo maquinaria alto */
-  lc.O2+=photoRate*0.002;lc.organicC+=photoRate*0.001;
+  lc.O2+=photoRate*C.O2_PHOTO;lc.organicC+=photoRate*0.001;   /* O₂ da fotossíntese: a crosta da superfície fica mais oxigenada */
   if(fi.nfix>0.1){const nfR=mm(GUILDS[7].Vmax_nfix,lc.organicC,GUILDS[7].Km_Corg)*fi.nfix*localLight;lc.NH4+=nfR*0.008;s.e-=nfR*0.3}
   if(tk%400===0&&photoRate>0.5)addEv('eG','🟢 Ciano: fotossíntese v='+photoRate.toFixed(1))}
 
@@ -985,6 +1017,8 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
     if(preyGd.type==='bact'&&Math.abs(prey.ref.core.x-wCx)<C.REFUGE_R&&prey.ref.core.y>gY&&prey.ref.core.y<gY+rootDepth+5&&Math.random()<PK.refuge)continue;
     /* Pseudomonas se defende quimicamente: a ameba recua na maioria das vezes e, quando come, aproveita pouco */
     const toxic=prey.ref.g.guild===0;if(toxic&&Math.random()<C.PSEUDO_DEFENSE)continue;
+    /* poros pequenos (argila) escondem bactérias do protozoário */
+    if(preyGd.type==='bact'&&SK.refuge>0&&Math.random()<SK.refuge)continue;
     /* Bônus de captura se for a presa mais abundante (frequência-dependente) */
     var captureBonus = (prey.ref.g.guild===mostAbundant && totalPrey>4) ? 1.5 : 1.0;
     const localPrey=totalPrey;const predRate=mm(GUILDS[8].Vmax_pred,localPrey,GUILDS[8].Km_prey)*fi.pred*captureBonus;
@@ -1013,7 +1047,8 @@ else if(gid===10){/* Saprófito — decompõe C orgânico EM QUALQUER LUGAR DO S
   /* Saprófitos não dependem de exsudatos — usam matéria orgânica do solo */
   /* exsudato (açúcares e ácidos simples) é recurso das bactérias: o saprófito não ganha bônus na rizosfera */
   const soilOMFactor = 0.7;
-  const decRate0=mm(GUILDS[10].Vmax_dec,lc.organicC,GUILDS[10].Km_Corg)*fi.sapro*soilOMFactor,decRate=decRate0*A;
+  const decRate0=mm(GUILDS[10].Vmax_dec,lc.organicC,GUILDS[10].Km_Corg)*fi.sapro*soilOMFactor*SK.omProt,decRate=decRate0*A;
+  lc.O2=Math.max(0,lc.O2-decRate*C.O2_SAPRO);   /* decompor é respirar: muitos saprófitos juntos esgotam o O₂ (hipóxia) */
   lc.organicC-=decRate*0.01;lc.NH4+=decRate*0.004;lc.PO4free+=decRate*0.002;
   /* perto da raiz, bactérias vizinhas competem pelo carbono lábil */
   let bactNear=0;if(isNearRoot){for(const k of [0,1,2,3,5,6])bactNear+=(_guildCounts[k]||0)}
@@ -1236,14 +1271,18 @@ if(showHeatmap!=='off'&&grid.length>0){
   /* Paleta por nutriente */
   const hmPal={NH4:[50,180,255],NO3:[100,255,100],PO4free:[255,140,50],Fe2:[80,200,200],Fe3:[200,100,50],organicC:[200,150,255],O2:[255,255,150]};
   const rgb=hmPal[hmKey]||[255,255,255];
+  /* cada célula vira um pixel de uma imagem pequena, ampliada com suavização: o gradiente aparece
+     contínuo (profundidade, zona de depleção, focos de hipóxia) em vez de quadrados */
+  if(!window._hmCv)window._hmCv=document.createElement('canvas');
+  const hc=window._hmCv;if(hc.width!==gCols||hc.height!==gRows){hc.width=gCols;hc.height=gRows}
+  const hx=hc.getContext('2d'),img=hx.createImageData(gCols,gRows);
   for(let c=0;c<gCols;c++){for(let r=0;r<gRows;r++){
-    const v=grid[c][r][hmKey]||0;
-    const norm=cl((v-hmLo)/hmRange,0,1);
-    if(norm<0.02)continue;
-    const wx=gridX0+c*GCELL,wy=gY+r*GCELL;
-    ctx.fillStyle=`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${norm*0.45})`;
-    ctx.fillRect(wx,wy,GCELL,GCELL);
+    const norm=cl(((grid[c][r][hmKey]||0)-hmLo)/hmRange,0,1),i=(r*gCols+c)*4;
+    img.data[i]=rgb[0];img.data[i+1]=rgb[1];img.data[i+2]=rgb[2];img.data[i+3]=Math.round(norm*0.5*255);
   }}
+  hx.putImageData(img,0,0);
+  ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(hc,gridX0,gY,gCols*GCELL,gRows*GCELL);ctx.restore();
   /* Contorno das células com raiz */
   if(rootCells.length>0){
     ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=0.5;

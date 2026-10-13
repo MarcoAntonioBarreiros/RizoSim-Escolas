@@ -76,16 +76,39 @@ Na faixa de conforto de cada grupo nada muda em relação ao modelo anterior (a 
 | Calor (acima de T ótima + tolerância) | atividade (comer, funções, caçar) cai até 20%; o custo continua subindo como antes | Pseudomonas, rizóbio, micorriza, Trichoderma, protozoários | Bacillus (até 40 °C), patógeno, Azospirillum, cianobactérias, nematoides |
 | Frio (abaixo de 20 °C) | tudo desacelera pelo Q10 ≈ 2 (gasto, alimentação, caça, nado); abaixo da faixa do grupo, desacelera mais | Bacillus, Azospirillum, Methylobacterium, cianobactérias | Pseudomonas, saprófitos |
 | Seca (< 40%) | bactérias e protozoários perdem atividade (até 55%), nematoides mais (até 25%); custo extra até +50%; nado mais lento; protozoários encistam | nematoides, bactérias | fungos (as hifas cruzam os poros com ar: sentem 30% da viscosidade), cianobactérias da crosta |
-| Encharcamento (O₂ < 34) | aeróbios perdem atividade conforme a sensibilidade ao O₂; custo extra até +120% | fungos, nematoides, rizóbio, Methylobacterium | Azospirillum (microaeróbio), patógeno, cianobactérias |
-| Desnitrificação (O₂ < 30) | o NO₃ do solo vira gás, mais rápido quanto menos O₂ e mais C orgânico | — | — |
+| Pouco O₂ na célula (< 25) | aeróbios perdem atividade conforme a sensibilidade ao O₂ (cada organismo usa o O₂ da célula onde está); custo extra até +120% | fungos, nematoides, rizóbio, Methylobacterium | Azospirillum (microaeróbio), patógeno, cianobactérias |
+| Desnitrificação (O₂ < 20 na célula) | o NO₃ do solo vira gás, mais rápido quanto menos O₂ e mais C orgânico | — | — |
 
 Faixas (T ótima − tolerância ao frio … T ótima + tolerância ao calor): Pseudomonas 10–30 °C, Bacillus 22–40, Azospirillum 20–35, Methylobacterium 20–34, Trichoderma 13–31, rizóbio 16–30, patógeno 15–37, cianobactéria 20–36, protozoário 13–31, nematoide 17–34, saprófito 13–34, micorriza 14–30, Arthrobotrys 13–31.
 
-O O₂ depende da umidade e do solo: o franco só fica limitante acima de ~77% de umidade, o argiloso acima de ~60%, e o arenoso, que drena, nunca. Por isso o mesmo encharcamento é forte no argiloso, moderado no franco e quase nulo no arenoso.
+O O₂ depende da umidade, do solo, da profundidade e de quem respira por perto (ver abaixo). Por isso o mesmo encharcamento é forte no argiloso, moderado no franco e quase nulo no arenoso.
 
 Organismos fora da faixa ficam mais pálidos. Quando o solo fica quente (≥ 32 °C), frio (≤ 15 °C), seco (< 35%) ou encharcado (> 82%) por alguns segundos, o selo sobre o solo e "O que está acontecendo?" dizem quais grupos presentes estão com dificuldade e quais toleram.
 
-Medido (4 sementes, 40 s de condição, comunidade com benéficas inoculadas, soma das populações; controle → condição): calor 36 °C: Pseudomonas 59 → 19, rizóbio 80 → 16, Bacillus 88 → 152 (os protozoários, sensíveis, caçam menos); seca 22%: fungos estáveis, protozoários encistam; argiloso encharcado: rizóbio 68 → 12, Trichoderma 129 → 81, micorriza 8 → 0, Azospirillum 37 → 104, NO₃ 18 → 4.
+Medido (4 sementes, 40 s de condição, comunidade com benéficas inoculadas, soma das populações; controle → condição): calor 36 °C: Pseudomonas 71 → 16, rizóbio 91 → 14, Bacillus 65 → 152 (os protozoários, sensíveis, caçam menos); seca 22%: fungos estáveis, protozoários encistam; franco encharcado: NO₃ 18 → 6, Azospirillum 31 → 79; argiloso encharcado: rizóbio 94 → 42, Arthrobotrys 77 → 38, micorriza 11 → 4, Azospirillum 51 → 98, NO₃ 45 → 3.
+
+## Oxigênio e nitrato com gradiente
+
+Antes o O₂ era recalculado igual em todo o solo a cada passo, e o nitrato se espalhava rápido demais (difusão 0,22): os dois mapas ficavam homogêneos.
+
+- **O₂**: cada célula tende a um perfil que entra pela superfície e cai com a profundidade (queda maior com poros cheios de água: 6 no franco a 60%, ~10 no argiloso, ~13 no franco encharcado; a difusão do gás também cai com a água). Sobre isso, o O₂ é consumido onde há respiração: cada aeróbio (fungos e nematoides mais que bactérias), a raiz e, sobretudo, os saprófitos decompondo (25 saprófitos juntos levam a célula de ~40 para ~21: hipóxia local). As cianobactérias produzem O₂ na superfície (fotossíntese), que fica mais oxigenada onde elas estão.
+- **Nitrato**: a nitrificação precisa de O₂; a lixiviação leva o nitrato para baixo camada por camada (mais no arenoso e no solo úmido) e o que passa da última camada se perde; a difusão lateral é lenta (0,05), então aparece a zona de depleção perto da raiz; nos pontos sem O₂ ele é desnitrificado. No franco a 60% o nitrato aumenta com a profundidade (de ~7 na superfície a ~19 no fundo): a raiz absorve em cima e a água leva o resto para baixo, para fora do alcance da raiz.
+- O mapa de calor agora é desenhado suavizado (cada célula da grade é um ponto de uma imagem ampliada), mostrando o gradiente contínuo.
+
+## Tipo de solo
+
+| | Arenoso | Franco | Argiloso | Por quê |
+|---|---|---|---|---|
+| Lixiviação do nitrato | 0,002 | 0,0008 | 0,0003 | poros grandes, água desce rápido |
+| Amônio também lixivia | 30% da taxa do nitrato | não | não | baixa capacidade de troca de cátions |
+| Fosfato livre no equilíbrio | 60% do preso | 40% | 20% | argila e óxidos de Fe/Al fixam fosfato: Bacillus e micorriza valem mais no argiloso |
+| Bactérias escondidas em poros pequenos | — | — | escapam de 30% dos protozoários | exclusão por tamanho de poro |
+| Decomposição da matéria orgânica | ×1,25 | ×1 | ×0,75 | argila protege a matéria orgânica |
+| O₂ | +15 | 0 | −10 | arejamento |
+| Veranico | seca 1,8× mais rápido e mais fundo | — | seca 2× mais devagar e menos | retenção de água |
+| Chuva forte | quase não encharca e drena rápido | — | encharca mais e por 1,5× mais tempo | drenagem |
+
+O multiplicador direto do crescimento da planta (arenoso 0,6, argiloso 1,3) foi retirado: a diferença entre os solos agora vem desses mecanismos. Medido (5 sementes, média aos 150 s, 25 °C e 60%): planta no arenoso 113, franco 127, argiloso 146; fósforo na planta menor no argiloso; amônio menor no arenoso; nitrato retido no argiloso.
 
 ## Imprevistos naturais (`js/imprevistos.js`)
 

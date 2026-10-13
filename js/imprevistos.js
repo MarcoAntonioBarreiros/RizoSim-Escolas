@@ -63,12 +63,12 @@
 
   /* ── 2. acontecimentos espontâneos ── */
   const EVENTS=[
-    {id:'seca',w:4,key:'moist',target:b=>Math.max(14,b-38),dur:[3000,6000],
+    {id:'seca',w:4,key:'moist',target:(b,soil)=>soil==='sandy'?Math.max(10,b-45):soil==='clay'?Math.max(20,b-30):Math.max(14,b-38),dur:[3000,6000],
      msg:'Veranico: o solo está secando.',title:'Veranico',
-     detail:'Alguns dias sem chuva deixam o solo seco. A planta perde vigor, os organismos se movem e se alimentam com mais dificuldade, e os que resistem melhor à seca levam vantagem. Quando a chuva volta, o solo se recupera.'},
-    {id:'chuva',w:3,key:'moist',target:()=>rnd(88,96),dur:[1800,3600],
+     detail:'Alguns dias sem chuva deixam o solo seco. A planta perde vigor, os organismos se movem e se alimentam com mais dificuldade, e os que resistem melhor à seca levam vantagem. Quando a chuva volta, o solo se recupera. O arenoso, de poros grandes, seca mais depressa e mais fundo; o argiloso segura a água por mais tempo.'},
+    {id:'chuva',w:3,key:'moist',target:(b,soil)=>soil==='sandy'?rnd(78,84):soil==='clay'?rnd(92,98):rnd(88,96),dur:[1800,3600],
      msg:'Chuva forte: o solo encharcou.',title:'Solo encharcado',
-     detail:'Com os poros cheios de água, falta oxigênio para as raízes e para muitos micro-organismos. Patógenos que gostam de umidade (como Pythium) podem ser favorecidos. Quando a água escoa, o solo volta ao normal.'},
+     detail:'Com os poros cheios de água, falta oxigênio para as raízes e para muitos micro-organismos. Patógenos que gostam de umidade (como Pythium) podem ser favorecidos. Quando a água escoa, o solo volta ao normal. O arenoso drena rápido e quase não encharca; o argiloso fica encharcado por mais tempo.'},
     {id:'calor',w:2,key:'temp',target:()=>rnd(34,37),dur:[2400,4800],
      msg:'Onda de calor: o solo esquentou.',title:'Onda de calor',
      detail:'Temperaturas altas estressam a planta e mudam quem cresce melhor no solo: cada organismo tem uma faixa de temperatura em que funciona bem.'},
@@ -113,7 +113,8 @@
       announce(ev,false);schedule();return;
     }
     const base=E.state.env[ev.key];
-    active={ev,base,target:ev.target(base),until:runTicks+rnd(ev.dur[0],ev.dur[1]),returning:false};
+    const soil=E.state.env.soil,durK=ev.id==='chuva'?(soil==='clay'?1.5:soil==='sandy'?0.6:1):1;   /* argiloso fica encharcado mais tempo */
+    active={ev,base,target:ev.target(base,soil),until:runTicks+rnd(ev.dur[0],ev.dur[1])*durK,returning:false};
     ev.endMsg=ev.id==='seca'?'Voltou a chover: o solo está se recuperando.':ev.id==='chuva'?'A água escoou: o solo voltou a respirar.':'A temperatura do solo está voltando ao normal.';
     announce(ev,false);
   }
@@ -133,7 +134,11 @@
     if(!a.returning&&runTicks>=a.until){a.returning=true;announce(a.ev,true)}
     const goal=a.returning?a.base:a.target;
     const diff=goal-cur;                           // muda aos poucos (pelo menos 1 unidade por vez)
-    const v=Math.abs(diff)<=1?Math.round(goal):Math.round(cur+Math.sign(diff)*Math.max(1,Math.abs(diff)*0.08));
+    /* o solo decide a velocidade da água: o arenoso seca e drena depressa; o argiloso segura a água
+       (seca devagar) e também demora a drenar depois da chuva */
+    const soil=E.state.env.soil,drying=key==='moist'&&diff<0&&(a.ev.id==='seca'||a.returning);
+    const k=drying?(soil==='sandy'?1.8:soil==='clay'?0.5:1):1;
+    const v=Math.abs(diff)<=1?Math.round(goal):Math.round(cur+Math.sign(diff)*Math.max(1,Math.abs(diff)*0.08*k));
     E.configure({[key]:v});
     if(a.returning&&v===Math.round(goal)){active=null;schedule()}
   }
