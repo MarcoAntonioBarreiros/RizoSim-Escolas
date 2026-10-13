@@ -1106,14 +1106,18 @@ ctx.fillStyle=soilGrad;ctx.fillRect(bgL,gY,bgW,cH*10);
 if(showHeatmap!=='off'&&grid.length>0){
   const hmKey=showHeatmap;
   /* Determinar range para normalização */
-  let hmMax=0.01;
-  for(let c=0;c<gCols;c++)for(let r=0;r<gRows;r++){const v=grid[c][r][hmKey]||0;if(v>hmMax)hmMax=v}
+  /* escala entre o mínimo e o máximo do momento (antes era só v/máximo: como os valores ficam
+     parecidos de célula para célula, o mapa parecia homogêneo). A faixa mínima de 15% do máximo
+     evita transformar ruído em gradiente quando o campo é realmente uniforme. */
+  let hmMax=0.01,hmMin=Infinity;
+  for(let c=0;c<gCols;c++)for(let r=0;r<gRows;r++){const v=grid[c][r][hmKey]||0;if(v>hmMax)hmMax=v;if(v<hmMin)hmMin=v}
+  const hmLo=Math.min(hmMin,hmMax*0.85),hmRange=Math.max(hmMax-hmLo,0.01);
   /* Paleta por nutriente */
   const hmPal={NH4:[50,180,255],NO3:[100,255,100],PO4free:[255,140,50],Fe2:[80,200,200],Fe3:[200,100,50],organicC:[200,150,255],O2:[255,255,150]};
   const rgb=hmPal[hmKey]||[255,255,255];
   for(let c=0;c<gCols;c++){for(let r=0;r<gRows;r++){
     const v=grid[c][r][hmKey]||0;
-    const norm=cl(v/hmMax,0,1);
+    const norm=cl((v-hmLo)/hmRange,0,1);
     if(norm<0.02)continue;
     const wx=gridX0+c*GCELL,wy=gY+r*GCELL;
     ctx.fillStyle=`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${norm*0.45})`;
@@ -1135,7 +1139,7 @@ if(showHeatmap!=='off'&&grid.length>0){
   /* Gradient bar */
   for(let i=0;i<120;i++){const t=i/120;ctx.fillStyle=`rgba(${rgb[0]},${rgb[1]},${rgb[2]},${t*0.7})`;ctx.fillRect(lgX+i,lgY2+8,1,10)}
   ctx.fillStyle='#8fa';ctx.font='9px monospace';
-  ctx.fillText('0',lgX,lgY2+30);ctx.fillText(hmMax.toFixed(0),lgX+100,lgY2+30);
+  ctx.fillText(hmLo.toFixed(hmLo<10?1:0),lgX,lgY2+30);ctx.fillText(hmMax.toFixed(hmMax<10?1:0),lgX+100,lgY2+30);
   ctx.restore();
 }
 
@@ -1956,7 +1960,11 @@ function updDiag(){
   else{dR.style.display='none'}
 }
 
-function loop(now){requestAnimationFrame(loop);if(!paused)for(let i=0;i<spd;i++)updateW();updateCameraFollow();render(now);if(tk%18===0)updUI();if(tk%50===0)recH();if(tk%80===0){updDiag();updMobileInfo()}}
+let _loopLast=null,_loopAcc=0;
+/* passo fixo: 60 passos por segundo em 1x, qualquer que seja a taxa de quadros da tela (antes, telas de
+   90/120 Hz — comuns em celulares — rodavam a simulação 1,5 a 2 vezes mais rápido) */
+function loop(now){requestAnimationFrame(loop);const _dt=_loopLast===null?16.67:Math.min(100,now-_loopLast);_loopLast=now;
+if(!paused){_loopAcc+=_dt/16.667*spd;let _n=Math.floor(_loopAcc);_loopAcc-=_n;if(_n>spd*4){_n=spd*4;_loopAcc=0}for(let i=0;i<_n;i++)updateW()}else _loopAcc=0;updateCameraFollow();render(now);if(tk%18===0)updUI();if(tk%50===0)recH();if(tk%80===0){updDiag();updMobileInfo()}}
 requestAnimationFrame(loop);
 
 /* ═══ MOBILE SIDEBAR / SHEET TOGGLE ═══ */
@@ -2103,8 +2111,8 @@ cv.addEventListener('touchmove',e=>{
     lastTouchDist=dist;touchPanning=false;
   }else if(e.touches.length===1&&touchPanning){
     const dx=e.touches[0].clientX-touchStartX,dy=e.touches[0].clientY-touchStartY;
-    if(Math.abs(dx)+Math.abs(dy)>5)dragMoved=true;
-    px=psx+dx;py=psy+dy;
+    if(Math.abs(dx)+Math.abs(dy)>10)dragMoved=true;   /* dedo treme: só arrasta acima de 10 px */
+    if(dragMoved){px=psx+dx;py=psy+dy}
   }
 },{passive:false});
 cv.addEventListener('touchend',e=>{
@@ -2113,29 +2121,10 @@ cv.addEventListener('touchend',e=>{
     const dt=Date.now()-touchTapTime;
     const ct=e.changedTouches[0];
     const tapDist=Math.hypot(ct.clientX-touchTapX,ct.clientY-touchTapY);
-    if(dt<300&&tapDist<12){
-      /* Simulate click for selection/inoculation */
-      const rect=cv.getBoundingClientRect();
-      const w=s2w(ct.clientX-rect.left,ct.clientY-rect.top);
-      const selInoc=document.getElementById('selInoc');
-      const inocVal=selInoc?parseInt(selInoc.value):-1;
-      if(inocVal>=0){
-        for(let i=0;i<3;i++){
-          const ox=w.x+rng(-15,15),oy=w.y+rng(-15,15);
-          sw.push(new Sw(ox,oy,mkG(inocVal)));
-        }
-        spawnParticles(w.x,w.y,GUILDS[inocVal].color,20);
-        addEv('eB',`💉 ${GUILDS[inocVal].name}`);
-      }else{
-        let best=null,bestD=20/zm;
-        for(const s of sw){const vp=s.vpos();const d=Math.hypot(w.x-vp.x,w.y-vp.y);if(d<bestD){bestD=d;best=s}}
-        const panel=document.getElementById('selP'),grid=document.getElementById('selG');
-        if(best){panel.style.display='block';
-          const g=best.g,gd=GUILDS[g.guild],fi=g.fi;
-          const fiStr=Object.entries(fi).filter(([k,v])=>v>0.1).map(([k,v])=>`${k}:${v.toFixed(2)}`).join(' ');
-          grid.innerHTML=[['Tipo',gd.type,''],['Guilda',gd.name,gd.color],['Morfo',(best.skin?best.skin.label:MN[g.mt])||'?','#86efac'],['Função',gd.fn,''],['Trófico',gd.trophic,'#a78bfa'],['Invest.',fiStr,''],['Energia',Math.round(best.e),''],['Geração',best.gen,'#b484f0']].map(([l,v,c])=>`<span class="l">${l}</span><span${c?` style="color:${c}"`:``}>${v}</span>`).join('');
-        }else{panel.style.display='none'}
-      }
+    if(dt<350&&tapDist<14){
+      /* toque curto = clique: passa pelo mesmo caminho do mouse (pipeta, seleção e acompanhar com zoom) */
+      dragMoved=false;
+      cv.dispatchEvent(new MouseEvent('click',{clientX:ct.clientX,clientY:ct.clientY,bubbles:true,cancelable:true}));
     }
   }
   lastTouchDist=0;touchPanning=false;

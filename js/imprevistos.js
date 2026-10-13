@@ -51,10 +51,10 @@
 
   /* ── 2. acontecimentos espontâneos ── */
   const EVENTS=[
-    {id:'seca',w:3,key:'moist',target:b=>Math.max(14,b-38),dur:[3000,6000],
+    {id:'seca',w:4,key:'moist',target:b=>Math.max(14,b-38),dur:[3000,6000],
      msg:'Veranico: o solo está secando.',title:'Veranico',
      detail:'Alguns dias sem chuva deixam o solo seco. A planta perde vigor, os organismos se movem e se alimentam com mais dificuldade, e os que resistem melhor à seca levam vantagem. Quando a chuva volta, o solo se recupera.'},
-    {id:'chuva',w:2,key:'moist',target:()=>rnd(88,96),dur:[1800,3600],
+    {id:'chuva',w:3,key:'moist',target:()=>rnd(88,96),dur:[1800,3600],
      msg:'Chuva forte: o solo encharcou.',title:'Solo encharcado',
      detail:'Com os poros cheios de água, falta oxigênio para as raízes e para muitos micro-organismos. Patógenos que gostam de umidade (como Pythium) podem ser favorecidos. Quando a água escoa, o solo volta ao normal.'},
     {id:'calor',w:2,key:'temp',target:()=>rnd(34,37),dur:[2400,4800],
@@ -71,7 +71,7 @@
      detail:'Nematoides chegam com solo e mudas contaminados ou com a água. Fungos como Arthrobotrys podem capturá-los; sem inimigos naturais, eles danificam a raiz.'}
   ];
   let runTicks=0,lastTick=null,nextAt=null,active=null;
-  function schedule(){nextAt=runTicks+rnd(4000,9000)}
+  function schedule(){nextAt=runTicks+rnd(2500,6000)}   // ~40 s a 1,7 min em 1x
   function announce(ev,end){
     const text=end?ev.endMsg:ev.msg;
     if(window.RizoSchoolEvents)RizoSchoolEvents.add({priority:4,key:'imprev-'+ev.id+(end?'-fim':''),message:text,title:ev.title,detail:ev.detail});

@@ -68,5 +68,5 @@ Antes, a população tinha só um teto total (280) e quem se reproduzia mais rá
 ## Imprevistos naturais (`js/imprevistos.js`)
 
 - Ao escolher um cenário ou reiniciar, temperatura, pH, umidade, nutrientes, C orgânico, ferro e luz são sorteados em torno dos valores do cenário. O que caracteriza o cenário varia pouco.
-- Com a simulação rodando, a cada ~1–2,5 min (em 1x) pode acontecer: veranico, chuva forte (encharcamento), onda de calor, frente fria, chegada de patógenos ou de nematoides. O clima muda aos poucos e volta ao que era. Cada acontecimento aparece em "O que está acontecendo?".
+- Com a simulação rodando, a cada ~40 s a 1,7 min (em 1x) pode acontecer (seca e chuva forte são os mais comuns): veranico, chuva forte (encharcamento), onda de calor, frente fria, chegada de patógenos ou de nematoides. O clima muda aos poucos e volta ao que era. Cada acontecimento aparece em "O que está acontecendo?".
 - O professor desliga em "Imprevistos naturais" no painel do modo professor.
