@@ -259,6 +259,29 @@
     target.document.getElementById('closeSelectionBtn')?.click();
     engine.setPaused(true);
 
+    /* clima por grupo: cada grupo tem sua faixa; seca poupa os fungos; encharcado no argiloso tira O₂ e desnitrifica */
+    {
+      const g=engine.geometry;
+      engine.resetWith({...target.RizoSchoolEnvironment.defaults});
+      for(const k of [1,5,10])engine.inoculateAt(k,g.wCx+8,g.gY+40,4);
+      const at=(values,guild,field)=>{engine.configure(values);const x=engine.climateImpact().groups.find(item=>item.guild===guild);return x?x[field]:NaN};
+      const base=at({temp:25,moist:60},5,'act');
+      const rhizoHot=at({temp:36},5,'th'),bacHot=at({temp:36},1,'th');
+      engine.configure({temp:25});
+      const q10=(engine.configure({temp:11}),engine.climateImpact().q10);
+      engine.configure({temp:25});
+      const bactDry=at({moist:22},1,'wa'),fungDry=at({moist:22},10,'wa');
+      engine.configure({moist:93,soil:'clay'});
+      const fungOx=engine.climateImpact().groups.find(item=>item.guild===10).ox;
+      engine.step(5);const denit=engine.climateImpact().denit;
+      engine.configure({moist:60,soil:'loam',temp:25});
+      results.push(result(
+        'Calor, frio, seca e encharcamento afetam cada grupo de um jeito',
+        base===1&&rhizoHot<0.5&&bacHot>=0.95&&q10<0.6&&bactDry<fungDry&&fungOx<0.5&&denit>0,
+        `conforto ${base}; calor: rizóbio ${rhizoHot.toFixed(2)}, Bacillus ${bacHot.toFixed(2)}; frio Q10 ${q10.toFixed(2)}; seca: bactéria ${bactDry.toFixed(2)}, fungo ${fungDry.toFixed(2)}; argiloso encharcado: O₂ fungo ${fungOx.toFixed(2)}, desnitrificação ${denit.toFixed(3)}`
+      ));
+    }
+
     return {
       ok:results.every(item=>item.pass),
       generatedAt:new Date().toISOString(),

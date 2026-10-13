@@ -151,8 +151,54 @@
   }
   document.addEventListener('change',event=>{if(event.target===box()&&!box().checked)stopEvent(true)});
 
+  /* ── 3. quem sofre e quem tolera ──
+     Quando o solo fica quente, frio, seco ou encharcado (por imprevisto, botão "Provocar" ou controle
+     mexido à mão) e continua assim por alguns segundos, um aviso diz quais grupos PRESENTES estão com
+     dificuldade e quais toleram. Volta a avisar só depois que a condição passar. */
+  const COND={
+    calor:{test:env=>env.temp>=32,f:'th',icon:'🔥',title:'Calor no solo',tol:[1,6,2,9],
+      msg:(a,t)=>`Calor: ${a.s?`${a.s} ${v(a,'está','estão')} com dificuldade`:'quem é sensível ao calor sofre'}${t.s?`; ${t.s} ${v(t,'tolera','toleram')}`:''}.`,
+      detail:'Cada organismo funciona bem numa faixa de temperatura. Acima dela, proteínas e membranas sofrem: os sensíveis ficam mais pálidos e lentos, comem e se multiplicam menos e podem morrer. Rizóbio e Pseudomonas são sensíveis ao calor; Bacillus (forma esporos), Azospirillum e muitos patógenos toleram. Com a Pseudomonas enfraquecida, a proteção contra o patógeno diminui. Os predadores sensíveis caçam menos, e as bactérias tolerantes podem até aumentar.'},
+    frio:{test:env=>env.temp<=15,f:'th',icon:'❄',title:'Frio no solo',tol:[0,10],
+      msg:(a,t)=>`Frio: todos ficam mais lentos${a.s?`; ${a.s} ${v(a,'sente','sentem')} mais`:''}${t.s?`; ${t.s} ${v(t,'tolera','toleram')} melhor`:''}.`,
+      detail:'No frio o metabolismo desacelera (mais ou menos pela metade a cada 10 °C): os organismos comem, crescem, caçam e gastam energia mais devagar — ficam quase dormentes, sem morrer de fome. Grupos de regiões quentes, como Bacillus e Azospirillum, sentem mais; Pseudomonas e fungos decompositores toleram bem o frio. A raiz também libera menos exsudatos.'},
+    seca:{test:env=>env.moist<35,f:'wa',lim:0.8,icon:'☀',title:'Solo seco',tol:[4,10,11,12],
+      msg:(a,t)=>`Solo seco: ${a.s?`${a.s} quase ${v(a,'para','param')}`:'bactérias e nematoides quase param'}, sem água em volta${t.s?`; ${t.s} ${v(t,'tolera','toleram')} (as hifas atravessam os poros com ar)`:''}.`,
+      detail:'Bactérias, protozoários e nematoides vivem no filme de água que envolve os grãos do solo. Quando ele seca, eles mal conseguem se mover e se alimentar, e muitos morrem. Protozoários viram cistos. Os fungos atravessam os poros cheios de ar com as hifas e toleram muito melhor a seca. Com predadores encistados, algumas bactérias escapam da predação.'},
+    encharcado:{test:env=>env.moist>82,f:'ox',icon:'🌧',title:'Solo encharcado',tol:[2,6],
+      msg:(a,t,denit)=>`Solo encharcado, falta oxigênio: ${a.s?`${a.s} ${v(a,'sofre','sofrem')}`:'quem precisa de O₂ sofre'}${t.s?`; ${t.s} ${v(t,'é favorecido','são favorecidos')}`:''}${denit?'. O nitrato está virando gás (desnitrificação)':''}.`,
+      detail:'Com os poros cheios de água falta oxigênio. Fungos, nematoides e rizóbio, que precisam de O₂, perdem atividade e podem morrer. Azospirillum prefere pouco oxigênio, e patógenos como o Pythium são favorecidos. Sem O₂, bactérias desnitrificantes respiram nitrato e o nitrogênio escapa para o ar: a planta perde N. No argiloso o efeito é forte, no franco é moderado e no arenoso, que drena rápido, quase não acontece.'}
+  };
+  const climSince={},climTold={};let lastT=null,lastM=null;
+  /* nomes no meio da frase: gêneros como estão; nomes comuns com artigo (e plural quando é o grupo todo) */
+  const COMMON={5:['o rizóbio',0],6:['o patógeno',0],7:['as cianobactérias',1],8:['os protozoários',1],9:['os nematoides',1],10:['os saprófitos',1],11:['a micorriza',0]};
+  const orgName=g=>{if(COMMON[g])return COMMON[g][0];const c=window.RizoSchoolOrganisms&&RizoSchoolOrganisms.get(g);return c?c.name:'grupo '+g};
+  const names=ids=>({s:ids.length<2?ids.map(orgName).join(''):ids.slice(0,-1).map(orgName).join(', ')+' e '+orgName(ids[ids.length-1]),pl:ids.length>1||(ids.length===1&&COMMON[ids[0]]&&COMMON[ids[0]][1]===1)});
+  const v=(n,one,many)=>n.pl?many:one;
+  function climateNotice(id){
+    const c=COND[id],imp=E.climateImpact&&E.climateImpact();if(!imp)return;
+    const present=imp.groups.filter(g=>g.count>0);
+    const affected=present.filter(g=>g[c.f]<(c.lim||0.7)).sort((a,b)=>a[c.f]-b[c.f]).slice(0,3).map(g=>g.guild);
+    const tolerant=c.tol.filter(g=>present.some(p=>p.guild===g&&p[c.f]>=0.9)).slice(0,2);
+    let text=c.msg(names(affected),names(tolerant),imp.denit>0.004);text=text.charAt(0).toUpperCase()+text.slice(1);
+    showBadge(c.icon+' '+text.replace(/\.$/,''),0);
+    clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>{if(active)showBadge(ICON[active.ev.id]+' '+active.ev.title,0);else hideBadge()},10000);
+    if(window.RizoSchoolEvents)RizoSchoolEvents.add({priority:4,key:'clima-'+id,message:c.icon+' '+text,title:c.title,detail:c.detail});
+  }
+  setInterval(()=>{
+    const st=E.state;if(st.paused)return;
+    const now=Date.now(),steady=lastT!==null&&Math.abs(st.env.temp-lastT)<0.5&&Math.abs(st.env.moist-lastM)<0.5;
+    lastT=st.env.temp;lastM=st.env.moist;
+    for(const id in COND){
+      if(COND[id].test(st.env)){
+        if(!climSince[id])climSince[id]=now;
+        else if(!climTold[id]&&now-climSince[id]>3500&&(steady||now-climSince[id]>12000)){climTold[id]=true;climateNotice(id)}   /* espera o clima parar de mudar */
+      }else{climSince[id]=0;climTold[id]=false}
+    }
+  },500);
+
   // começo da sessão: condições já variadas
   window.addEventListener('load',()=>{if(enabled()){E.resetWith(jitter(baseValues));schedule()}});
 
-  window.RizoSchoolImprevistos={jitter,events:EVENTS,get active(){return active?active.ev.id:null},advance,get debug(){return {runTicks,nextAt,active:active&&{id:active.ev.id,base:active.base,target:active.target,until:active.until,returning:active.returning}}},start:startEvent,trigger};
+  window.RizoSchoolImprevistos={jitter,events:EVENTS,get active(){return active?active.ev.id:null},advance,notice:climateNotice,get debug(){return {runTicks,nextAt,active:active&&{id:active.ev.id,base:active.base,target:active.target,until:active.until,returning:active.returning}}},start:startEvent,trigger};
 })();

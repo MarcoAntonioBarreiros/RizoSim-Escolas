@@ -19,7 +19,10 @@ const C={POP0:80,MAX_POP:280,MIN_POP:12,FOOD_MAX:400,REPRO_E:8500,INIT_E:3200,VI
   PROTO_DIGEST:150,   /* protozoário: fagocitose + digestão no vacúolo antes da próxima presa */
   REFUGE_R:6,         /* bactérias coladas na raiz (biofilme do rizoplano)... */
   REFUGE_P:0.75,      /* ...escapam de 75% dos encontros com amebas (95% com flagelados e ciliados: ver PROTO_KIND) */
-  EXU_ENERGY:550      /* energia por partícula de exsudato */
+  EXU_ENERGY:550,     /* energia por partícula de exsudato */
+  DRY_BACT:0.55,      /* atividade mínima de bactérias e protozoários no solo muito seco (10%) */
+  DRY_COST:0.5,       /* custo extra na seca (estresse osmótico) */
+  ANOX_COST:1.2       /* custo extra sem O₂ (aeróbios sensíveis) */
 };
 /* Velocidade máxima rígida por tipo biológico (pixels/tick) */
 const MAX_SPEED={bact:0.8,fungi:0.5,proto:1.2,nema:0.6};
@@ -116,20 +119,55 @@ function calcRootCells(growPct){
 
 /* ═══ 13 GUILDAS: PGPBs + Micorriza + Arthrobotrys + Patógeno + Autotrófico + Predador + Herbívoro + Saprófito ═══ */
 const GUILDS=[
-{id:0,name:"Pseudomonas",fn:"Sideróforo Fe³⁺→Fe²⁺",color:"#20b2aa",ph:[6.0,8.0],tOpt:25,res:0.5,cost:1.2,Vmax_sid:4.0,Km_Fe3:15,gram:'neg',type:'bact',trophic:'chemo'},
-{id:1,name:"Bacillus",fn:"Solub. Fosfato",color:"#f97316",ph:[5.0,9.0],tOpt:30,res:2.0,cost:1.5,Vmax_psol:3.5,Km_Pbound:20,gram:'pos',type:'bact',trophic:'chemo'},
-{id:2,name:"Azospirillum",fn:"Fixação N₂ + AIA",color:"#4dabf7",ph:[6.0,7.5],tOpt:28,res:0.6,cost:2.0,Vmax_nfix:5.0,Km_Corg:25,Vmax_aia:2.0,Km_aia:10,gram:'neg',type:'bact',trophic:'chemo'},
-{id:3,name:"Methylobact.",fn:"Fototrófico AIA",color:"#ff69b4",ph:[5.5,7.5],tOpt:30,res:1.5,cost:1.8,Vmax_aia:1.5,Km_aia:8,gram:'neg',type:'bact',trophic:'mixo'},
-{id:4,name:"Trichoderma",fn:"Biocontrole",color:"#9b59b6",ph:[4.5,7.0],tOpt:25,res:1.2,cost:1.4,gram:'fun',type:'fungi',trophic:'pred'},
-{id:5,name:"Rhizobium",fn:"Nódulo N₂",color:"#eab308",ph:[6.0,7.0],tOpt:26,res:0.4,cost:1.4,/* vida livre no solo: não fixa N (só no nódulo), então custo de bactéria comum (antes 2,8: sumia em ~30 s) */Vmax_nfix:8.0,Km_Corg:15,gram:'neg',type:'bact',trophic:'chemo'},
-{id:6,name:"Patógeno",fn:"Oportunista",color:"#ef4444",ph:[4.0,9.0],tOpt:25,res:1.0,cost:0.9,Vmax_atk:3.0,Km_bio:30,gram:'neg',type:'bact',trophic:'para'},
+{id:0,name:"Pseudomonas",fn:"Sideróforo Fe³⁺→Fe²⁺",color:"#20b2aa",ph:[6.0,8.0],tOpt:25,tLo:15,tHi:5,o2s:0.4,res:0.5,cost:1.2,Vmax_sid:4.0,Km_Fe3:15,gram:'neg',type:'bact',trophic:'chemo'},
+{id:1,name:"Bacillus",fn:"Solub. Fosfato",color:"#f97316",ph:[5.0,9.0],tOpt:30,tLo:8,tHi:10,o2s:0.4,res:2.0,cost:1.5,Vmax_psol:3.5,Km_Pbound:20,gram:'pos',type:'bact',trophic:'chemo'},
+{id:2,name:"Azospirillum",fn:"Fixação N₂ + AIA",color:"#4dabf7",ph:[6.0,7.5],tOpt:28,tLo:8,tHi:7,o2s:0,res:0.6,cost:2.0,Vmax_nfix:5.0,Km_Corg:25,Vmax_aia:2.0,Km_aia:10,gram:'neg',type:'bact',trophic:'chemo'},
+{id:3,name:"Methylobact.",fn:"Fototrófico AIA",color:"#ff69b4",ph:[5.5,7.5],tOpt:30,tLo:10,tHi:4,o2s:0.7,res:1.5,cost:1.8,Vmax_aia:1.5,Km_aia:8,gram:'neg',type:'bact',trophic:'mixo'},
+{id:4,name:"Trichoderma",fn:"Biocontrole",color:"#9b59b6",ph:[4.5,7.0],tOpt:25,tLo:12,tHi:6,o2s:0.8,res:1.2,cost:1.4,gram:'fun',type:'fungi',trophic:'pred'},
+{id:5,name:"Rhizobium",fn:"Nódulo N₂",color:"#eab308",ph:[6.0,7.0],tOpt:26,tLo:10,tHi:4,o2s:0.7,res:0.4,cost:1.4,/* vida livre no solo: não fixa N (só no nódulo), então custo de bactéria comum (antes 2,8: sumia em ~30 s) */Vmax_nfix:8.0,Km_Corg:15,gram:'neg',type:'bact',trophic:'chemo'},
+{id:6,name:"Patógeno",fn:"Oportunista",color:"#ef4444",ph:[4.0,9.0],tOpt:25,tLo:10,tHi:12,o2s:0,res:1.0,cost:0.9,Vmax_atk:3.0,Km_bio:30,gram:'neg',type:'bact',trophic:'para'},
 /* ═══ NOVOS ═══ */
-{id:7,name:"Cianobactéria",fn:"Fotossíntese + N₂",color:"#a3e635",ph:[6.5,8.5],tOpt:28,res:0.8,cost:1.6,gram:'neg',type:'bact',trophic:'photo',Vmax_photo:6.0,Km_light:30,Vmax_nfix:3.0,Km_Corg:35},
-{id:8,name:"Protozoário",fn:"Predador bactérias",color:"#fbbf24",ph:[5.0,8.0],tOpt:25,res:1.0,cost:0.7,gram:'none',type:'proto',trophic:'pred',Vmax_pred:4.0,Km_prey:15},
-{id:9,name:"Nematóide",fn:"Herbívoro raízes",color:"#fb923c",ph:[4.5,8.5],tOpt:25,res:1.5,cost:0.5,gram:'none',type:'nema',trophic:'herb',Vmax_herb:3.0,Km_root:20},
-{id:10,name:"Saprófito",fn:"Decompositor C org",color:"#a78bfa",ph:[4.0,8.0],tOpt:28,res:1.8,cost:1.0,gram:'none',type:'fungi',trophic:'sapro',Vmax_dec:5.0,Km_Corg:40},
-{id:11,name:"Micorriza",fn:"Extensão raízes P",color:"#d4d4d8",ph:[5.0,7.5],tOpt:24,res:1.0,cost:1.6,gram:'none',type:'fungi',trophic:'myco',Vmax_psol:2.0,Km_Pbound:12},
-{id:12,name:"Arthrobotrys",fn:"Nematófago (armadilha)",color:"#2dd4bf",ph:[5.0,7.5],tOpt:25,res:1.0,cost:1.3,gram:'none',type:'fungi',trophic:'pred',Vmax_trap:3.5,Km_nema:10}];
+{id:7,name:"Cianobactéria",fn:"Fotossíntese + N₂",color:"#a3e635",ph:[6.5,8.5],tOpt:28,tLo:8,tHi:8,o2s:0,res:0.8,cost:1.6,gram:'neg',type:'bact',trophic:'photo',Vmax_photo:6.0,Km_light:30,Vmax_nfix:3.0,Km_Corg:35},
+{id:8,name:"Protozoário",fn:"Predador bactérias",color:"#fbbf24",ph:[5.0,8.0],tOpt:25,tLo:12,tHi:6,o2s:0.5,res:1.0,cost:0.7,gram:'none',type:'proto',trophic:'pred',Vmax_pred:4.0,Km_prey:15},
+{id:9,name:"Nematóide",fn:"Herbívoro raízes",color:"#fb923c",ph:[4.5,8.5],tOpt:25,tLo:8,tHi:9,o2s:0.7,res:1.5,cost:0.5,gram:'none',type:'nema',trophic:'herb',Vmax_herb:3.0,Km_root:20},
+{id:10,name:"Saprófito",fn:"Decompositor C org",color:"#a78bfa",ph:[4.0,8.0],tOpt:28,tLo:15,tHi:6,o2s:0.8,res:1.8,cost:1.0,gram:'none',type:'fungi',trophic:'sapro',Vmax_dec:5.0,Km_Corg:40},
+{id:11,name:"Micorriza",fn:"Extensão raízes P",color:"#d4d4d8",ph:[5.0,7.5],tOpt:24,tLo:10,tHi:6,o2s:0.8,res:1.0,cost:1.6,gram:'none',type:'fungi',trophic:'myco',Vmax_psol:2.0,Km_Pbound:12},
+{id:12,name:"Arthrobotrys",fn:"Nematófago (armadilha)",color:"#2dd4bf",ph:[5.0,7.5],tOpt:25,tLo:12,tHi:6,o2s:0.8,res:1.0,cost:1.3,gram:'none',type:'fungi',trophic:'pred',Vmax_trap:3.5,Km_nema:10}];
+
+/* ═══ CLIMA DO SOLO POR GRUPO ═══
+   Cada grupo tem uma faixa de conforto em torno da temperatura ótima (tOpt − tLo … tOpt + tHi).
+   • Frio: abaixo de 20 °C tudo desacelera (Q10 ≈ 2: metade a cada 10 °C) — comer, crescer, dividir-se,
+     caçar, gastar energia e nadar. Quem está abaixo da sua faixa de conforto desacelera ainda mais
+     (Bacillus, Azospirillum e cianobactérias são sensíveis; Pseudomonas e saprófitos toleram o frio).
+   • Calor acima da faixa: proteínas e membranas sofrem. A atividade cai depressa e o gasto sobe
+     (Rhizobium e Pseudomonas são sensíveis; Bacillus, Azospirillum, nematoides e o patógeno toleram).
+   • Seca: bactérias, protozoários e nematoides dependem do filme de água entre os grãos; os fungos
+     atravessam os poros com ar pelas hifas e toleram melhor; as cianobactérias da crosta também.
+   • Encharcamento: os poros cheios de água tiram o O₂. Aeróbios estritos (fungos, nematoides, rizóbio)
+     perdem atividade; Azospirillum (microaerófilo) e o patógeno não. O argiloso encharca pior, o arenoso drena.
+   Na faixa de conforto, nada muda em relação ao modelo anterior. */
+const CLIM_ONE={act:1,rel:1,q10:1,th:1,wa:1,ox:1,costF:1,mob:1};
+let climG=GUILDS.map(()=>CLIM_ONE),denitRate=0;
+function o2Soil(){return cl(80-env.moist*0.6+(env.soil==='sandy'?15:env.soil==='clay'?-10:0),5,95)}
+function waterAct(gd,m){
+  if(gd.trophic==='photo')return m<20?cl(0.6+0.4*(m-5)/15,0.6,1):1;
+  if(gd.type==='fungi')return m<25?cl(0.6+0.4*(m-10)/15,0.6,1):1;
+  if(gd.type==='nema')return m<45?cl(0.25+0.75*(m-15)/30,0.25,1):1;
+  const w0=C.DRY_BACT;return m<40?cl(w0+(1-w0)*(m-10)/30,w0,1):1;
+}
+function climFor(gd){
+  const d=env.temp-gd.tOpt;let th=1;
+  if(d<-gd.tLo)th=Math.max(0.3,Math.pow(2,(d+gd.tLo)/10));
+  else if(d>gd.tHi)th=Math.max(0.2,1-(d-gd.tHi)/8);
+  const wa=waterAct(gd,env.moist),ox=1-gd.o2s*(1-cl((o2Soil()-14)/20,0,1));   /* O₂ ≥ 34: sem limitação (franco até ~77% de umidade, argiloso até ~60%, arenoso sempre) */
+  /* gasto de manutenção: abaixo de 20 °C cai para todos (Q10 ≈ 2); seca (estresse osmótico, células
+     danificadas) e falta de O₂ (respiração interrompida) custam caro a quem é sensível */
+  const q10=env.temp<20?Math.max(0.3,Math.pow(2,(env.temp-20)/10)):1,rel=th*wa*ox;
+  /* rel: quanto o grupo sofre em relação aos outros (usado nos avisos e na palidez);
+     act: ritmo real de alimentação, crescimento e funções (inclui o Q10 que vale para todos) */
+  return {act:rel*q10,rel,q10,th,wa,ox,costF:q10*(1+C.DRY_COST*(1-wa)+C.ANOX_COST*(1-ox)),mob:Math.max(0.4,th*ox*(0.6+0.4*q10))};
+}
+function updClim(){climG=GUILDS.map(climFor)}
 
 /* Configuração de tamanho por tipo biológico — ranges originais ricos */
 /*const SIZE_LIMITS = {
@@ -348,8 +386,12 @@ behave(fH, sH) {
     rSmell += rootSignal * exG / (Math.hypot(rx - wCx, ry - closestRY) + 2);
   }
 
-  const viscMult = 1 / (env.visc || 1);
-  const sM = viscMult * (gd.type === 'nema' ? 0.6 : gd.type === 'proto' ? 0.8 : gd.trophic === 'photo' ? 0.4 : 1.0);
+  /* solo seco: o filme de água some e bactérias, protozoários e nematoides quase não nadam;
+     as hifas dos fungos atravessam os poros com ar e sentem só 30% desse efeito */
+  const dryV = env.moist < 40 ? 1 + (40 - env.moist) * 0.08 : 1;
+  const visc = gd.type === 'fungi' && dryV > 1 ? (env.visc || 1) / dryV * (1 + (dryV - 1) * 0.3) : (env.visc || 1);
+  const viscMult = 1 / visc;
+  const sM = viscMult * (gd.type === 'nema' ? 0.6 : gd.type === 'proto' ? 0.8 : gd.trophic === 'photo' ? 0.4 : 1.0) * (climG[g.guild] || CLIM_ONE).mob;
 
   let steer = (lSmell - rSmell) * g.sW;
   steer = cl(steer, -0.4, 0.4);
@@ -439,7 +481,10 @@ physics() {
     if (spd > maxV) { const s = maxV / spd; p.ox = p.x - pvx * s; p.oy = p.y - pvy * s; }
   }
   const gd = GUILDS[this.g.guild];
-  const tempStr = Math.abs(env.temp - gd.tOpt);
+  /* distância da temperatura ótima: no calor o custo continua crescendo; no frio para de crescer
+     (mais frio = metabolismo mais lento e gasto menor — ver climFor). Até 5 °C abaixo, igual ao modelo anterior. */
+  const dT = env.temp - gd.tOpt, tempStr = dT < 0 ? Math.min(-dT, 5) : dT;   /* no frio o custo extra para em 5 °C abaixo do ótimo */
+  const clim = climG[this.g.guild] || CLIM_ONE;
   let phStr = 0;
   if (env.ph < gd.ph[0]) phStr = gd.ph[0] - env.ph;
   if (env.ph > gd.ph[1]) phStr = env.ph - gd.ph[1];
@@ -453,10 +498,10 @@ physics() {
   const baseCost = 0.25 + (this.pts.length * 0.012) + (this.g.spd * 1.2) + (this.age * 0.0001);
   const localDens = sHh.cnt(this.core.x, this.core.y);
   const compPen = localDens > 10 ? 1 + (localDens - 10) * 0.012 : 1;
-  this.e -= (baseCost * gd.cost * envMult * fiPen * compPen) * (this.cyst ? 0.1 : 1); /* cisto: metabolismo quase parado */
+  this.e -= (baseCost * gd.cost * envMult * fiPen * compPen) * clim.costF * (this.cyst ? 0.1 : 1); /* cisto: metabolismo quase parado */
 }
 
-draw(ctx,t){const g=this.g,gd=GUILDS[g.guild];const al=cl(this.e/1500,.2,.95);
+draw(ctx,t){const g=this.g,gd=GUILDS[g.guild];const al=cl(this.e/1500,.2,.95)*(0.6+0.4*(climG[g.guild]||CLIM_ONE).rel);   /* fora da faixa de conforto: mais pálido */
 const gc=gd.color;const col=hs(g.hue,g.sat,g.lit,al),colB=hs(g.hue,g.sat,g.lit+15,al);
 ctx.lineCap="round";ctx.lineJoin="round";
 if(this.skin){this.skin.draw(ctx,g,al,gc,this);const nv=this.nodulated?this._nodVis:null;const eP=cl(this.e/C.REPRO_E,0,1),hd=nv||this.vpos(),bY=hd.y-(g.cs+5);ctx.fillStyle="rgba(255,255,255,0.08)";ctx.globalAlpha=1;ctx.fillRect(hd.x-6,bY,2,0.2);ctx.fillStyle=hs(eP>.5?120:eP>.25?50:0,80,50,.55);ctx.fillRect(hd.x-6,bY,2*eP,0.2);if(this.nodulated&&!nv){ctx.beginPath();ctx.arc(this.core.x,this.core.y,4,0,Math.PI*2);ctx.fillStyle="rgba(200,60,70,0.22)";ctx.globalAlpha=1;ctx.fill();ctx.strokeStyle="rgba(160,30,40,0.55)";ctx.lineWidth=0.35;ctx.stroke()}ctx.globalAlpha=1;return}
@@ -657,7 +702,7 @@ function s2w(sx,sy){return{x:(sx-px)/zm,y:(sy-py)/zm}}
 
 /* ═══ UPDATE ═══ */
 function updateW(){
-tk++;
+tk++;denitRate=0;
 /* Abióticos do Solo — PROCESSAMENTO POR CÉLULA DA GRADE */
 /* Cada célula tem sua própria concentração local */
 const nCells=gCols*gRows;
@@ -684,7 +729,10 @@ for(let _gc=0;_gc<gCols;_gc++){for(let _gr=0;_gr<gRows;_gr++){
     var desorp=0.003*(gc.PO4bound*0.4-gc.PO4free);gc.PO4bound-=desorp;gc.PO4free+=desorp;
   }
   /* pH e O2 */
-  gc.O2=cl(80-env.moist*0.6+(env.soil==='sandy'?15:env.soil==='clay'?-10:0),5,95);
+  gc.O2=o2Soil();
+  /* Desnitrificação: sem O₂ (solo encharcado), bactérias desnitrificantes respiram nitrato e o N
+     escapa para o ar como N₂/N₂O. Mais forte no argiloso (encharca), quase nula no arenoso (drena). */
+  if(gc.O2<30){const den=gc.NO3*0.0012*(30-gc.O2)/30*gc.organicC/(gc.organicC+100);gc.NO3-=den;gc.organicC-=den*0.2;denitRate+=den}
   if(env.ph>7.5){gc.PO4free*=(1-0.004*(env.ph-7.5))}
   if(env.ph<5.5){gc.PO4free*=(1-0.003*(5.5-env.ph))}
   for(const k in gc)gc[k]=cl(gc[k],0,k==='organicC'?1500:k==='PO4bound'?200:150);
@@ -815,6 +863,7 @@ const exuMaxAge = 1200; /* ~40s de vida */
 fd = fd.filter(f => f.age < exuMaxAge && f.sz > 0.15 && f.y < gY + worldDepth);
 
 fH.clear();sHh.clear();for(const f of fd)fH.ins(f);for(const s of sw)if(s.alive)sHh.ins({x:s.x,y:s.y,ref:s});plant.nodules=[];const nb=[];
+updClim();
 const nGuild=new Array(GUILDS.length).fill(0),nType={bact:0,fungi:0,proto:0,nema:0};let nNod=0;for(const s of sw)if(s.alive){nGuild[s.g.guild]++;nType[GUILDS[s.g.guild].type]++;if(s.nodulated)nNod++}
 
 for(const s of sw){if(!s.alive)continue;s.behave(fH,sHh);s.physics();const hd=s.core,gid=s.g.guild,gd=GUILDS[gid];
@@ -838,6 +887,9 @@ const fi=s.g.fi;const exConc=exudateConc(hd.x,hd.y);const localLight=lightAt(hd.
     /* PGPBs diferentes têm nichos complementares: quase zero competição entre si */
     if(isNearRoot && gid>=0 && gid<=5) interComp *= 0.2;
     s.e -= (intraComp + interComp) * compZone;
+    /* clima: tudo o que o organismo ganha neste passo (comida, exsudato, luz, presas) e o que ele faz
+       pela planta saem na proporção da sua atividade (A = 1 na faixa de conforto) */
+    const A=(climG[gid]||CLIM_ONE).act,e0=s.e;
 
 /* ═══ GUILDAS FUNCIONAIS ═══ */
 
@@ -874,7 +926,7 @@ else if(gid===6){/* Patógeno */
      perto da raiz ferida o patógeno ataca mais e, dentro do tecido, fica menos exposto à antibiose */
   const woundF=isNearRoot&&dRootX<15?1+C.WOUND_SYN*(plant.wound||0)/((plant.wound||0)+5):1;
   let benef=0;for(const k of [0,1,2,3,5])benef+=(_guildCounts[k]||0);
-  const antib=((_guildCounts[1]||0)+0.6*(_guildCounts[0]||0))/(envP*woundF);
+  const antib=((_guildCounts[1]||0)*climG[1].act+0.6*(_guildCounts[0]||0)*climG[0].act)/(envP*woundF);   /* produtores fora da faixa de conforto produzem menos antibiótico */
   const kill=antib>=C.ANTIB_KILL,stat=!kill&&antib>=C.ANTIB_STATIC;
   if(kill){s.e-=C.ANTIB_KILL_DMG;if(tk%6===0)fx.push({x:hd.x,y:hd.y,life:12,type:'shield'})}
   if(stat||kill)s.reproCool=Math.max(s.reproCool,30);
@@ -883,9 +935,9 @@ else if(gid===6){/* Patógeno */
     if(s.age-s.lastAte>=C.DIGEST_TICKS){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R){
       s.e+=C.EXU_ENERGY*s.g.eff*Math.max(0.15,exConc)*(f.det?0.4:1.0)*0.7;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}
   }
-  if(isNearRoot&&dRootX<15){let atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog*envP*woundF/(1+C.NICHE_EXCL*benef);
+  if(isNearRoot&&dRootX<15){let atkRate=mm(GUILDS[6].Vmax_atk,plant.bio,GUILDS[6].Km_bio)*fi.pathog*envP*woundF/(1+C.NICHE_EXCL*benef);const atkE=atkRate;atkRate*=A;
     if(stat||kill)atkRate*=0.3;
-    plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;if(!stat&&!kill)s.e+=atkRate*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}
+    plant.stress+=atkRate*0.12;plant.bio-=atkRate*0.004;if(!stat&&!kill)s.e+=atkE*8;if(tk%200===0)addEv('eD','🦠 Patógeno↑stress')}}
 
 else if(gid===5){/* Rhizobium */
   /* a infecção leva tempo (fio de infecção) e a planta limita o número de nódulos conforme o tamanho
@@ -899,7 +951,7 @@ else if(gid===5){/* Rhizobium */
       s.e+=C.EXU_ENERGY*s.g.eff*Math.max(0.15,exConc)*(f.det?0.4:1.0);s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}
     if(isNearRoot)s.e+=exConc*2.5;
   }
-  if(s.nodulated){plant.nodules.push(s);const nfR=mm(GUILDS[5].Vmax_nfix,lc.organicC,GUILDS[5].Km_Corg)*fi.nfix;lc.NH4+=nfR*0.012;plant.n+=nfR*0.02;lc.organicC-=nfR*0.003;s.e+=nfR*1.5}}
+  if(s.nodulated){plant.nodules.push(s);const nfR0=mm(GUILDS[5].Vmax_nfix,lc.organicC,GUILDS[5].Km_Corg)*fi.nfix,nfR=nfR0*A;lc.NH4+=nfR*0.012;plant.n+=nfR*0.02;lc.organicC-=nfR*0.003;s.e+=nfR0*1.5}}
 
 else if(gid===7){/* Cianobactéria — fotossíntese + N₂ */
   const photoRate=mm(GUILDS[7].Vmax_photo,localLight*100,GUILDS[7].Km_light)*fi.photo;
@@ -946,7 +998,7 @@ else if(gid===8){/* Protozoário predador — PREDAÇÃO FREQUÊNCIA-DEPENDENTE 
   else if(!s.cyst&&s.age-s.lastAte>=C.DIGEST_TICKS*2){const nF=fH.qry(hd.x,hd.y);for(const f of nF){if(Math.hypot(hd.x-f.x,hd.y-f.y)<C.EAT_R+5){s.e+=300;s.lastAte=s.age;const idx=fd.indexOf(f);if(idx>-1)fd.splice(idx,1);break}}}}
 
 else if(gid===9){/* Nematóide herbívoro — dano às raízes + bacterívoro/predador oportunista */
-  if(isNearRoot&&dRootX<25){const herbRate=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb;plant.stress+=herbRate*0.055;plant.wound=(plant.wound||0)+herbRate*0.04; /* feridas na raiz */plant.bio-=herbRate*0.002;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
+  if(isNearRoot&&dRootX<25){const herbRate0=mm(GUILDS[9].Vmax_herb,plant.bio,GUILDS[9].Km_root)*fi.herb,herbRate=herbRate0*A;plant.stress+=herbRate*0.055;plant.wound=(plant.wound||0)+herbRate*0.04; /* feridas na raiz */plant.bio-=herbRate*0.002;s.e+=herbRate*15;if(tk%250===0)addEv('eH','🪱 Nematóide: raiz dano')}
   /* Bacterívoro oportunista — come bactérias e fungos no caminho */
   if(s.age-s.lastAte>=C.DIGEST_TICKS*3){const nS=sHh.qry(hd.x,hd.y);for(const prey of nS){if(!prey.ref||prey.ref===s||!prey.ref.alive||prey.ref.nodulated)continue;
   const preyGd=GUILDS[prey.ref.g.guild];if(preyGd.type!=='bact'&&preyGd.type!=='fungi')continue;
@@ -961,11 +1013,11 @@ else if(gid===10){/* Saprófito — decompõe C orgânico EM QUALQUER LUGAR DO S
   /* Saprófitos não dependem de exsudatos — usam matéria orgânica do solo */
   /* exsudato (açúcares e ácidos simples) é recurso das bactérias: o saprófito não ganha bônus na rizosfera */
   const soilOMFactor = 0.7;
-  const decRate=mm(GUILDS[10].Vmax_dec,lc.organicC,GUILDS[10].Km_Corg)*fi.sapro*soilOMFactor;
+  const decRate0=mm(GUILDS[10].Vmax_dec,lc.organicC,GUILDS[10].Km_Corg)*fi.sapro*soilOMFactor,decRate=decRate0*A;
   lc.organicC-=decRate*0.01;lc.NH4+=decRate*0.004;lc.PO4free+=decRate*0.002;
   /* perto da raiz, bactérias vizinhas competem pelo carbono lábil */
   let bactNear=0;if(isNearRoot){for(const k of [0,1,2,3,5,6])bactNear+=(_guildCounts[k]||0)}
-  s.e+=decRate*8/(1+0.25*bactNear); /* energia adequada de decomposição */if(tk%400===0&&decRate>0.5)addEv('eK','🟣 Saprófito: C→NH₄⁺')}
+  s.e+=decRate0*8/(1+0.25*bactNear);   /* o ganho já é escalado pela atividade no fim do passo */ /* energia adequada de decomposição */if(tk%400===0&&decRate>0.5)addEv('eK','🟣 Saprófito: C→NH₄⁺')}
 
 else if(gid===11){/* Micorriza — rede hifal que absorve P de área estendida e transfere à planta */
   /* Micorrizas se alimentam de exsudatos radiculares (C da planta) */
@@ -982,7 +1034,7 @@ else if(gid===11){/* Micorriza — rede hifal que absorve P de área estendida e
     for(let dc=-1;dc<=1;dc++){for(let dr=-1;dr<=1;dr++){
       const nc=cl(myC+dc,0,gCols-1),nr=cl(myR+dr,0,gRows-1);
       const nc_cell=grid[nc][nr];
-      const pR=mm(GUILDS[11].Vmax_psol,nc_cell.PO4bound,GUILDS[11].Km_Pbound)*fi.psol*0.5;
+      const pR=mm(GUILDS[11].Vmax_psol,nc_cell.PO4bound,GUILDS[11].Km_Pbound)*fi.psol*0.5*A;
       nc_cell.PO4bound-=pR*0.004;nc_cell.PO4free+=pR*0.002;
       pAbsorbed+=pR*0.002;
     }}
@@ -1009,7 +1061,7 @@ else if(gid===12){/* Arthrobotrys — fungo nematófago com armadilhas adesivas 
       addEv('eP','🪤 Arthrobotrys→Nematóide');break}}}
   /* Saprófito secundário */
   if(Math.random()<0.03){s.e+=mm(0.3,lc.organicC,50)*fi.bioctl*10;lc.organicC-=0.3}
-  s.e+=saproBase(lc,isNearRoot,_guildCounts,0.2)}   /* Arthrobotrys: saprófito fraco (20%), vive das armadilhas */
+  s.e+=saproBase(lc,isNearRoot,_guildCounts,0.2)*A}   /* Arthrobotrys: saprófito fraco (20%), vive das armadilhas */
 
 else{/* PGPBs restantes: comem exsudato e detritos */
   /* ═══ FIX #4: Digestão — só come se cooldown permitir ═══ */
@@ -1023,13 +1075,18 @@ else{/* PGPBs restantes: comem exsudato e detritos */
   if(isNearRoot){
     const rizoBonus=exConc*2.5;s.e+=rizoBonus;
     /* ═══ FIX #6: Funções com custo reduzido e contribuições 3-5× maiores ═══ */
-    if(gid===0){const r=mm(GUILDS[0].Vmax_sid,lc.Fe3,GUILDS[0].Km_Fe3)*fi.sid*exConc;lc.Fe3-=r*0.008;lc.Fe2+=r*0.008;plant.fe+=r*0.035;s.e-=r*0.1;if(tk%300===0&&r>0.3)addEv('eS','🔵 Pseudo:Fe³⁺→Fe²⁺')}
-    if(gid===1){const r=mm(GUILDS[1].Vmax_psol,lc.PO4bound,GUILDS[1].Km_Pbound)*fi.psol*exConc;let phE=1;if(env.ph>8)phE=0.3;else if(env.ph<5.5)phE=0.5;else if(env.ph>=6&&env.ph<=7.5)phE=1.2;const eP=r*phE;lc.PO4bound-=eP*0.006;lc.PO4free+=eP*0.006;plant.p+=eP*0.04;s.e-=r*0.08;if(tk%300===0&&eP>0.2)addEv('eE','🟠 Bacillus:PO₄→livre')}
-    if(gid===2){const nR=mm(GUILDS[2].Vmax_nfix,lc.organicC,GUILDS[2].Km_Corg)*fi.nfix*exConc;lc.NH4+=nR*0.01;plant.n+=nR*0.015;s.e-=nR*0.25;
+    if(gid===0){const r=mm(GUILDS[0].Vmax_sid,lc.Fe3,GUILDS[0].Km_Fe3)*fi.sid*exConc*A;lc.Fe3-=r*0.008;lc.Fe2+=r*0.008;plant.fe+=r*0.035;s.e-=r*0.1;if(tk%300===0&&r>0.3)addEv('eS','🔵 Pseudo:Fe³⁺→Fe²⁺')}
+    if(gid===1){const r=mm(GUILDS[1].Vmax_psol,lc.PO4bound,GUILDS[1].Km_Pbound)*fi.psol*exConc*A;let phE=1;if(env.ph>8)phE=0.3;else if(env.ph<5.5)phE=0.5;else if(env.ph>=6&&env.ph<=7.5)phE=1.2;const eP=r*phE;lc.PO4bound-=eP*0.006;lc.PO4free+=eP*0.006;plant.p+=eP*0.04;s.e-=r*0.08;if(tk%300===0&&eP>0.2)addEv('eE','🟠 Bacillus:PO₄→livre')}
+    if(gid===2){const nR=mm(GUILDS[2].Vmax_nfix,lc.organicC,GUILDS[2].Km_Corg)*fi.nfix*exConc*A;lc.NH4+=nR*0.01;plant.n+=nR*0.015;s.e-=nR*0.25;
       const aiaFeedback=Math.max(0,1-plant.aia/70); /* feedback: para de produzir quando AIA≥70 */
-      const aR=mm(GUILDS[2].Vmax_aia,lc.organicC,GUILDS[2].Km_aia)*fi.aia*exConc*aiaFeedback;plant.aia+=aR*0.02;plant.bio+=aR*0.004;if(tk%400===0&&nR>0.3)addEv('eR','🔷 Azospirillum:N₂→NH₄⁺')}
+      const aR=mm(GUILDS[2].Vmax_aia,lc.organicC,GUILDS[2].Km_aia)*fi.aia*exConc*aiaFeedback*A;plant.aia+=aR*0.02;plant.bio+=aR*0.004;if(tk%400===0&&nR>0.3)addEv('eR','🔷 Azospirillum:N₂→NH₄⁺')}
     if(gid===3){const aiaFb3=Math.max(0,1-plant.aia/70);
-      const aR=mm(GUILDS[3].Vmax_aia,lc.organicC,GUILDS[3].Km_aia)*fi.aia*exConc*aiaFb3;plant.aia+=aR*0.015;s.e+=aR*0.5;if(tk%400===0&&aR>0.2)addEv('eE','🩷 Methylo:AIA')}}}
+      const aR0=mm(GUILDS[3].Vmax_aia,lc.organicC,GUILDS[3].Km_aia)*fi.aia*exConc*aiaFb3,aR=aR0*A;plant.aia+=aR*0.015;s.e+=aR0*0.5;if(tk%400===0&&aR>0.2)addEv('eE','🩷 Methylo:AIA')}}}
+
+if(A<1){
+  if(gid===8||gid===9||gid===12){   /* predadores: caçam e digerem mais devagar (o intervalo entre refeições cresce) */
+    if(s.lastAte===s.age)s.lastAte+=Math.round((gid===8?C.PROTO_DIGEST*PROTO_KIND[protoKind(s.g)].dig:C.DIGEST_TICKS*(gid===9?2:0.5))*(1/A-1))}
+  else{const dE=s.e-e0;if(dE>0)s.e=e0+dE*A}}
 
 if(s.e<=0){s.alive=false;nD++;fx.push({x:hd.x,y:hd.y,life:15,type:'die'});
   /* Reciclagem: organismo morto → detritos (food) + nutrientes ao solo */
@@ -2387,6 +2444,12 @@ cv.addEventListener('touchend',e=>{
     get geometry(){return {wCx,gY,cW,cH,rootDepth,worldDepth,worldWidth,gridX0,zoom:zm,panX:px,panY:py,following:Boolean(cameraFollow)}},
     get organisms(){return organisms()},
     get raw(){return {plant,soil,env,sw,grid,rootCells}},
+    /* efeito do clima atual em cada grupo presente: atividade (0–1) e o que mais pesa */
+    climateImpact(){updClim();const c=countGuilds(),out=[];
+      for(let g=0;g<GUILDS.length;g++){if(!c[g])continue;const k=climG[g];
+        const why=k.th<=Math.min(k.wa,k.ox)?(env.temp>GUILDS[g].tOpt?'calor':'frio'):k.wa<=k.ox?'seca':'falta de oxigênio';
+        out.push({guild:g,count:c[g],rel:k.rel,act:k.act,th:k.th,wa:k.wa,ox:k.ox,why})}
+      return {groups:out,o2:o2Soil(),denit:denitRate,q10:climFor(GUILDS[0]).q10}},
     countGuilds,
     setPaused,
     togglePause(){return setPaused(!paused)},

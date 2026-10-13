@@ -67,6 +67,26 @@ Antes, a população tinha só um teto total (280) e quem se reproduzia mais rá
 | Água e temperatura na planta | o crescimento é multiplicado pelo menor entre o conforto hídrico (curva do indicador "Água") e o térmico (ótimo 20–30 °C); seca (<30%), encharcamento (>85%), calor (>33 °C) e frio (<13 °C) geram estresse e travam a recuperação; abaixo de 45% de conforto a planta murcha (perde biomassa) | antes só N, P e Fe limitavam o crescimento e um veranico quase não aparecia |
 | Triângulo da doença | umidade > 80% soma 0,6 e temperatura > 32 °C soma 0,4 ao fator ambiental, que aumenta o ataque e divide a antibiose | encharcamento e calor favorecem surtos |
 
+## Clima em cada grupo de organismos
+
+Na faixa de conforto de cada grupo nada muda em relação ao modelo anterior (a 25 °C e 60% de umidade a simulação é idêntica, conferido passo a passo). Fora dela:
+
+| Condição | O que acontece | Quem sente mais | Quem tolera |
+|---|---|---|---|
+| Calor (acima de T ótima + tolerância) | atividade (comer, funções, caçar) cai até 20%; o custo continua subindo como antes | Pseudomonas, rizóbio, micorriza, Trichoderma, protozoários | Bacillus (até 40 °C), patógeno, Azospirillum, cianobactérias, nematoides |
+| Frio (abaixo de 20 °C) | tudo desacelera pelo Q10 ≈ 2 (gasto, alimentação, caça, nado); abaixo da faixa do grupo, desacelera mais | Bacillus, Azospirillum, Methylobacterium, cianobactérias | Pseudomonas, saprófitos |
+| Seca (< 40%) | bactérias e protozoários perdem atividade (até 55%), nematoides mais (até 25%); custo extra até +50%; nado mais lento; protozoários encistam | nematoides, bactérias | fungos (as hifas cruzam os poros com ar: sentem 30% da viscosidade), cianobactérias da crosta |
+| Encharcamento (O₂ < 34) | aeróbios perdem atividade conforme a sensibilidade ao O₂; custo extra até +120% | fungos, nematoides, rizóbio, Methylobacterium | Azospirillum (microaeróbio), patógeno, cianobactérias |
+| Desnitrificação (O₂ < 30) | o NO₃ do solo vira gás, mais rápido quanto menos O₂ e mais C orgânico | — | — |
+
+Faixas (T ótima − tolerância ao frio … T ótima + tolerância ao calor): Pseudomonas 10–30 °C, Bacillus 22–40, Azospirillum 20–35, Methylobacterium 20–34, Trichoderma 13–31, rizóbio 16–30, patógeno 15–37, cianobactéria 20–36, protozoário 13–31, nematoide 17–34, saprófito 13–34, micorriza 14–30, Arthrobotrys 13–31.
+
+O O₂ depende da umidade e do solo: o franco só fica limitante acima de ~77% de umidade, o argiloso acima de ~60%, e o arenoso, que drena, nunca. Por isso o mesmo encharcamento é forte no argiloso, moderado no franco e quase nulo no arenoso.
+
+Organismos fora da faixa ficam mais pálidos. Quando o solo fica quente (≥ 32 °C), frio (≤ 15 °C), seco (< 35%) ou encharcado (> 82%) por alguns segundos, o selo sobre o solo e "O que está acontecendo?" dizem quais grupos presentes estão com dificuldade e quais toleram.
+
+Medido (4 sementes, 40 s de condição, comunidade com benéficas inoculadas, soma das populações; controle → condição): calor 36 °C: Pseudomonas 59 → 19, rizóbio 80 → 16, Bacillus 88 → 152 (os protozoários, sensíveis, caçam menos); seca 22%: fungos estáveis, protozoários encistam; argiloso encharcado: rizóbio 68 → 12, Trichoderma 129 → 81, micorriza 8 → 0, Azospirillum 37 → 104, NO₃ 18 → 4.
+
 ## Imprevistos naturais (`js/imprevistos.js`)
 
 - Ao escolher um cenário ou reiniciar, temperatura, pH, umidade, nutrientes, C orgânico, ferro e luz são sorteados em torno dos valores do cenário. O que caracteriza o cenário varia pouco.
